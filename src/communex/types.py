@@ -17,6 +17,10 @@ class NetworkParams(TypedDict):
     vote_mode: str
     max_proposals: int
     max_name_length: int
+    burn_rate: int
+    min_burn: int
+    min_stake: int
+    min_weight_stake: int
 
 
 class SubnetParams(TypedDict):
