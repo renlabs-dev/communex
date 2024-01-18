@@ -1,11 +1,23 @@
+# -*- coding: utf-8 -*-
+"""
+Common types for the communex module.
+
+"""
+
 from typing import NewType, TypedDict
 
 
 Ss58Address = NewType("Ss58Address", str)
+"""Substrate SS58 address 
 
+The `SS58 encoded address format`_ is based on the Bitcoin Base-58-check format,
+but with a few modification specifically designed to suite Substrate-based chains.
+
+.. _SS58 encoded address format:
+    https://docs.substrate.io/reference/address-formats/
+"""
 
 # TODO: replace with dataclasses(?)
-
 
 class NetworkParams(TypedDict):
     max_allowed_subnets: int
@@ -41,5 +53,11 @@ class SubnetParams(TypedDict):
     vote_threshold: int
 
 
-class SubnetParamsWithEmission(SubnetParams):
+# redundant "TypedDict" inheritance because of pdoc warns. 
+# see https://github.com/mitmproxy/pdoc/blob/26d40827ddbe1658e8ac46cd092f17a44cf0287b/pdoc/doc.py#L691-L692
+class SubnetParamsWithEmission(SubnetParams, TypedDict):
+    """SubnetParams with emission field.
+    """
     emission: int
+    """Subnet emission percentage (0-100).
+    """

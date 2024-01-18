@@ -1,5 +1,5 @@
 """
-Data storage compatible with the `commune` library.
+Data storage compatible with the *classic* `commune` library.
 """
 
 # TODO: encryption
@@ -9,12 +9,34 @@ import os.path
 import time
 from typing import Any
 
-from cexpl.util import ensure_parent_dir_exists
+from ._util import ensure_parent_dir_exists
 
 COMMUNE_HOME = "~/.commune"
+"""
+COMMUNE_HOME
+
+    classic commune data storage home directory.
+"""
 
 
 def classic_load(path: str, mode: str = "json") -> Any:
+    """
+    Load data from commune data storage.
+    
+    Args:
+        path: Data storage file path.
+        mode: Data storage mode. Defaults to "json".
+        
+    Returns:
+        Data loaded from the data storage.
+        
+    Todo:
+        * Other serialization modes support. Only json mode is supported now.
+    
+    Raises:
+        NotImplementedError: See Todo.
+        AssertionError: Raised when the data is not in the classic format.
+    """
     if mode != "json":
         raise NotImplementedError("Our commune data storage only supports json mode")
 
@@ -30,6 +52,24 @@ def classic_load(path: str, mode: str = "json") -> Any:
 
 
 def classic_put(path: str, value: Any, mode: str = "json", encrypt: bool = False):
+    """
+    Put data into commune data storage.
+    
+    Args:
+        path: Data storage path.
+        value: Data to store.
+        mode: Data storage mode. Defaults to "json". 
+        encrypt: Whether to encrypt the data. Defaults to False.
+    
+    Todo:
+        * Encryption support.
+        * Other serialization modes support. Only json mode is supported now.
+        
+    Raises:
+        NotImplementedError: See Todo.
+        TypeError: Raised when value is not a valid type.
+        FileExistsError: Raised when the file already exists.
+    """
     if mode != "json":
         raise NotImplementedError("Our commune data storage only supports json mode")
     if encrypt:
