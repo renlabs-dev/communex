@@ -275,6 +275,8 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
+        assert len(destinations) == len(amounts)
+
         params = {
             "netuid": netuid,
             "destinations": destinations,
@@ -470,6 +472,8 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
+        assert len(uids) == len(weights)
+
         params = {
             'uids': uids,
             'weights': weights,
@@ -586,6 +590,8 @@ class CommuneClient:
             fails.
         """
 
+        assert len(keys) == len(amounts)
+
         params = {
             "netuid": netuid,
             "module_keys": keys,
@@ -623,6 +629,8 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
+        assert len(keys) == len(amounts)
+
         params = {
             'module_keys': keys,
             'amounts': amounts,
@@ -657,6 +665,8 @@ class CommuneClient:
             MismatchedLengthError: If the lengths of keys and shares lists do not match.
             ChainTransactionError: If the transaction fails.
         """
+
+        assert len(keys) == len(shares)
 
         params = {
             'keys': keys,
