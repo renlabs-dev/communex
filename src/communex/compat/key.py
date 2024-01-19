@@ -4,7 +4,10 @@ Key storage compatible with the classic `commune` library.
 WIP
 """
 
+from pathlib import Path
 from typing import Any, cast
+
+from substrateinterface import Keypair  # type: ignore
 
 from cexpl.types import CommuneKeyDict
 from communex.key import is_ss58_address
@@ -41,3 +44,34 @@ def check_key_dict(key_dict: Any) -> CommuneKeyDict:
     assert isinstance(key_dict["private_key"], str)
     assert isinstance(key_dict["mnemonic"], str)
     return cast(CommuneKeyDict, key_dict)
+
+
+def classic_key_path(name: str) -> str:
+    """
+    Constructs the file path for a key in the classic commune format.
+
+    Args:
+        name: The name of the key.
+
+    Returns:
+        The file path for the key.
+    """
+
+    home = Path.home()
+    root_path = home / '.commune' / "key"
+    name = name + ".json"
+    return str(root_path / name)
+
+
+def classic_store_key(keypair: Keypair, name: str) -> None:
+    """
+    Stores the given keypair on a disk under the given name.
+    """
+    raise NotImplementedError()
+
+
+def classic_load_key(name: str) -> Keypair:
+    """
+    Loads the keypair with the given name from a disk.
+    """
+    raise NotImplementedError()
