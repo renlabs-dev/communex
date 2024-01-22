@@ -9,7 +9,9 @@ from communex.errors import ChainTransactionError
 from communex.types import NetworkParams, Ss58Address, SubnetParams
 
 # TODO: move within
-from communex_old.utils.batch_node_requests import query_batch, query_map_batch
+from communex.raw_ws_ops import query_batch, query_batch_map
+
+# from communex.raw_ws_ops import query_batch, query_batch_map
 
 
 # TODO: InsufficientBalanceError, MismatchedLengthError etc
@@ -142,8 +144,7 @@ class CommuneClient:
         """
 
         with self.get_conn() as substrate:
-            result = query_map_batch(substrate, {module: [(name, params)]})
-
+            result = query_batch_map(substrate, {module: [(name, params)]})
         return {k.value: v.value for k, v in result}  # type: ignore
 
     def compose_call(
@@ -1371,7 +1372,7 @@ class CommuneClient:
 
         Args:
             netuid: The network UID for which to query the maximum allowed UIDs.
-             
+
 
         Returns:
             The maximum number of allowed UIDs for the specified network subnet.
