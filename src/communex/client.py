@@ -15,8 +15,6 @@ from communex.raw_ws_ops import query_batch, query_batch_map
 
 
 # TODO: InsufficientBalanceError, MismatchedLengthError etc
-# TODO: cleant "This method does X" and other redundancies
-
 
 class CommuneClient:
     """
@@ -735,7 +733,7 @@ class CommuneClient:
         """
         Submits a proposal for altering the global network parameters.
 
-        This method allows for the submission of a proposal to 
+        Allows for the submission of a proposal to 
         change various global parameters
         of the network, such as emission rates, rate limits, and voting 
         thresholds. It is used to
@@ -914,7 +912,7 @@ class CommuneClient:
         """
         Retrieves a mapping of dividends for keys on the network.
 
-        This method queries the network for a mapping of key UIDs to 
+        Queries the network for a mapping of key UIDs to 
         their dividend values. 
 
         Returns:
@@ -1231,7 +1229,7 @@ class CommuneClient:
         """
         Retrieves a mapping of vote thresholds for subnets within the network.
 
-        This method queries the network for vote thresholds specific to various
+        Queries the network for vote thresholds specific to various
         subnets, which are the treshold intervals for setting weights.
 
         Returns:
@@ -1360,7 +1358,7 @@ class CommuneClient:
 
         The immunity period is a time duration during which a module 
         can not be deregistered from the network.
-        This method fetches the immunity period for a specified network subnet.
+        Fetches the immunity period for a specified network subnet.
 
         Args:
             netuid: The network UID for which to query the immunity period.
@@ -1420,7 +1418,7 @@ class CommuneClient:
         """
         Queries the network for the maximum allowed UIDs setting.
 
-        This method fetches the upper limit on the number of user IDs that can 
+        Fetches the upper limit on the number of user IDs that can 
         be allocated or used within a specific network subnet.
 
         Args:
@@ -1545,7 +1543,7 @@ class CommuneClient:
         """
         Queries the network for the trust setting of a specific network subnet.
 
-        This method retrieves the trust level or score, which may represent the 
+        Retrieves the trust level or score, which may represent the 
         level of trustworthiness or reliability within a 
         particular network subnet.
 
@@ -1926,13 +1924,13 @@ class CommuneClient:
 
         The existential deposit is the minimum balance that must be maintained 
         in an account to prevent it from being purged. 
-        This method returns the existential deposit amount set for the network, 
+        Returns the existential deposit amount set for the network, 
         denoted in nano units.
 
         Returns:
             The existential deposit value in nano units. 
         Note:
-            The value returned by this method is a fixed value defined in the 
+            The value returned is a fixed value defined in the 
             client and may not reflect changes in the network's configuration.
         """
 
