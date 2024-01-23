@@ -51,6 +51,7 @@ class SubnetParams(TypedDict):
     trust_ratio: int
     vote_mode: str
     vote_threshold: int
+    max_weight_age: int
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.
