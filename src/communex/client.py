@@ -20,8 +20,8 @@ from communex.raw_ws_ops import query_batch, query_batch_map
 
 class CommuneClient:
     """
-    A client for interacting with Commune network nodes, querying storage, and
-    submitting transactions etc.
+    A client for interacting with Commune network nodes, querying storage, 
+    submitting transactions, etc.
 
     Attributes:
         wait_for_finalization: Whether to wait for transaction finalization.
@@ -49,7 +49,7 @@ class CommuneClient:
         """
         Args:
             url: The URL of the network node to connect to.
-            connections: The number of websocket connections to be opened.
+            num_connections: The number of websocket connections to be opened.
         """
         assert num_connections > 0
         self._num_connections = num_connections
@@ -101,7 +101,7 @@ class CommuneClient:
         """
         Queries a storage function on the network.
 
-        This method sends a query to the network and retrieves data from a
+        Sends a query to the network and retrieves data from a
         specified storage function.
 
         Args:
@@ -165,7 +165,7 @@ class CommuneClient:
         """
         Composes and submits a call to the network node.
 
-        Composes an signs a call with the provided keypair, and submits it to
+        Composes and signs a call with the provided keypair, and submits it to
         the network. The call can be a standard extrinsic or a sudo extrinsic if 
         elevated permissions are required. The method can optionally wait for
         the call's inclusion in a block and/or its finalization.
@@ -269,7 +269,7 @@ class CommuneClient:
         Args:
             key: The keypair associated with the sender's account.
             destinations: A list of SS58 addresses of the recipients.
-            amounts: Amounts to transfer to each recipient, in nanotokens.
+            amounts: Amount to transfer to each recipient, in nanotokens.
             netuid: The network identifier.
 
         Returns:
@@ -374,16 +374,17 @@ class CommuneClient:
         netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
-        Updates the parameters of registered module.
+        Updates the parameters of a registered module.
 
-        The delegation fee must be an integer between 0 and 100. The method
-        allows for updating the module's name, address, and the delegation fee.
+        The delegation fee must be an integer between 0 and 100.
 
         Args:
             key: The keypair associated with the module's account.
             name: The new name for the module. If None, the name is not updated.
-            address: The new address for the module. If None, the address is not updated.
-            delegation_fee: The new delegation fee for the module, between 0 and 100.
+            address: The new address for the module. 
+                If None, the address is not updated.
+            delegation_fee: The new delegation fee for the module, 
+                between 0 and 100.
             netuid: The network identifier.
 
         Returns:
@@ -424,10 +425,13 @@ class CommuneClient:
 
         Args:
             key: The keypair used for registering the module.
-            name: The name of the module. If None, a default or previously set name is used. # How does this work?
-            address: The address of the module. If None, a default or previously set address is used. # How does this work?
+            name: The name of the module. If None, a default or previously 
+                set name is used. # How does this work?
+            address: The address of the module. If None, a default or 
+                previously set address is used. # How does this work?
             subnet: The network subnet to register the module in.
-            min_stake: The minimum stake required for the module, in nanotokens. If None, a default value is used.
+            min_stake: The minimum stake required for the module, in nanotokens. 
+                If None, a default value is used.
 
         Returns:
             A receipt of the registration transaction.
@@ -474,7 +478,8 @@ class CommuneClient:
             A receipt of the voting transaction.
 
         Raises:
-            InvalidParameterError: If the lengths of UIDs and weights lists do not match.
+            InvalidParameterError: If the lengths of UIDs and weights lists
+                do not match.
             ChainTransactionError: If the transaction fails.
         """
 
@@ -502,7 +507,7 @@ class CommuneClient:
         It requires the founder key for authorization. 
 
         Args:
-            key: The founder keypair for the subnet.
+            key: The founder keypair of the subnet.
             params: The new parameters for the subnet.
             netuid: The network identifier.
 
@@ -624,14 +629,16 @@ class CommuneClient:
         Args:
             key: The keypair associated with the staker's account.
             keys: A list of SS58 addresses of the module keys to stake to.
-            amounts: A list of amounts to stake to each module key, in nanotokens.
+            amounts: A list of amounts to stake to each module key, 
+                in nanotokens.
             netuid: The network identifier.
 
         Returns:
             A receipt of the multi-staking transaction.
 
         Raises:
-            MismatchedLengthError: If the lengths of keys and amounts lists do not match.
+            MismatchedLengthError: If the lengths of keys and amounts lists 
+                do not match.
             ChainTransactionError: If the transaction fails.
         """
 
@@ -660,15 +667,18 @@ class CommuneClient:
         with each share amount corresponding to the key at the same index.
 
         Args:
-            key: The keypair associated with the account distributing the shares.
+            key: The keypair associated with the account 
+                distributing the shares.
             keys: A list of SS58 addresses to allocate shares to.
-            shares: A list of share amounts to allocate to each key, in nanotokens.
+            shares: A list of share amounts to allocate to each key, 
+                in nanotokens.
 
         Returns:
             A receipt of the profit sharing transaction.
 
         Raises:
-            MismatchedLengthError: If the lengths of keys and shares lists do not match.
+            MismatchedLengthError: If the lengths of keys and shares 
+                lists do not match.
             ChainTransactionError: If the transaction fails.
         """
 
@@ -704,7 +714,8 @@ class CommuneClient:
             A receipt of the subnet proposal transaction.
 
         Raises:
-            InvalidParameterError: If the provided subnet parameters are invalid.
+            InvalidParameterError: If the provided subnet 
+                parameters are invalid.
             ChainTransactionError: If the transaction fails.
         """
 
@@ -724,20 +735,24 @@ class CommuneClient:
         """
         Submits a proposal for altering the global network parameters.
 
-        This method allows for the submission of a proposal to change various global parameters
-        of the network, such as emission rates, rate limits, and voting thresholds. It is used to
+        This method allows for the submission of a proposal to 
+        change various global parameters
+        of the network, such as emission rates, rate limits, and voting 
+        thresholds. It is used to
         suggest changes that affect the entire network's operation.
 
         Args:
             key: The keypair used for signing the proposal transaction.
-            params: A dictionary containing global network parameters like maximum
-                                    allowed subnets, modules, transaction rate limits, and others.
+            params: A dictionary containing global network parameters 
+                    like maximum allowed subnets, modules,
+                    transaction rate limits, and others.
 
         Returns:
             A receipt of the global proposal transaction.
 
         Raises:
-            InvalidParameterError: If the provided network parameters are invalid.
+            InvalidParameterError: If the provided network 
+                parameters are invalid.
             ChainTransactionError: If the transaction fails.
         """
 
@@ -763,7 +778,8 @@ class CommuneClient:
             A receipt of the voting transaction in nanotokens.
 
         Raises:
-            InvalidProposalIDError: If the provided proposal ID does not exist or is invalid.
+            InvalidProposalIDError: If the provided proposal ID does not 
+                exist or is invalid.
             ChainTransactionError: If the transaction fails.
         """
 
@@ -784,14 +800,17 @@ class CommuneClient:
 
         Args:
             key: The keypair used for signing the unvote transaction.
-            proposal_id: The unique identifier of the proposal to withdraw the vote from.
+            proposal_id: The unique identifier of the proposal to withdraw the 
+                vote from.
 
         Returns:
             A receipt of the unvoting transaction in nanotokens.
 
         Raises:
-            InvalidProposalIDError: If the provided proposal ID does not exist or is invalid.
-            ChainTransactionError: If the transaction fails to be processed, or if there was no prior vote to retract.
+            InvalidProposalIDError: If the provided proposal ID does not 
+                exist or is invalid.
+            ChainTransactionError: If the transaction fails to be processed, or 
+                if there was no prior vote to retract.
         """
 
         params = {
@@ -806,11 +825,12 @@ class CommuneClient:
         """
         Retrieves a mappping of proposals from the network.
 
-        This method queries the network and returns a mapping of proposal IDs to their respective
-        parameters. 
+        Queries the network and returns a mapping of proposal IDs to 
+        their respective parameters. 
 
         Returns:
-            A dictionary mapping proposal IDs to dictionaries of their parameters.
+            A dictionary mapping proposal IDs 
+            to dictionaries of their parameters.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -825,11 +845,12 @@ class CommuneClient:
         """
         Retrieves a map of keys from the network.
 
-        This method fetches a mapping of key UIDs to their associated addresses on the network.
+        Fetches a mapping of key UIDs to their associated 
+        addresses on the network.
         The query can be targeted at a specific network UID if required.
 
         Args:
-            netuid: The network UID from witch to get the keys.
+            netuid: The network UID from which to get the keys.
 
         Returns:
             A dictionary mapping key UIDs to their addresses.
@@ -843,11 +864,10 @@ class CommuneClient:
         """
         Retrieves a map of key addresses from the network.
 
-        This method queries the network for a mapping of key UIDs to their addresses. The query
-        can be targeted at a specific network UID if necessary.
+        Queries the network for a mapping of key UIDs to their addresses.
 
         Args:
-            netuid: The network UID from witch to get the addresses.
+            netuid: The network UID from which to get the addresses.
 
         Returns:
             A dictionary mapping key UIDs to their addresses.
@@ -862,7 +882,8 @@ class CommuneClient:
         """
         Retrieves a map of emissions for keys on the network.
 
-        This method queries the network to get a mapping of key UIDs to their emission values. 
+        Queries the network to get a mapping of 
+        key UIDs to their emission values. 
 
         Returns:
             A dictionary mapping key UIDs to lists of their emission values.
@@ -877,7 +898,8 @@ class CommuneClient:
         """
         Retrieves a mapping of incentives for keys on the network.
 
-        This method queries the network and returns a mapping of key UIDs to their respective incentive values.
+        Queries the network and returns a mapping of key UIDs to 
+        their respective incentive values.
 
         Returns:
             A dictionary mapping key UIDs to lists of their incentive values.
@@ -892,8 +914,8 @@ class CommuneClient:
         """
         Retrieves a mapping of dividends for keys on the network.
 
-        This method queries the network for a mapping of key UIDs to their dividend values. The query
-        can be targeted at a specific network UID if required.
+        This method queries the network for a mapping of key UIDs to 
+        their dividend values. 
 
         Returns:
             A dictionary mapping key UIDs to lists of their dividend values.
@@ -908,11 +930,11 @@ class CommuneClient:
         """
         Retrieves a mapping of registration blocks for keys on the network.
 
-        This method queries the network for a mapping of key UIDs to the blocks where they were registered.
-        The query can be targeted at a specific network UID if necessary.
+        Queries the network for a mapping of key UIDs to 
+        the blocks where they were registered.
 
         Args:
-            netuid: The network UID from witch to get the registration blocks.
+            netuid: The network UID from which to get the registration blocks.
 
         Returns:
             A dictionary mapping key UIDs to their registration blocks.
@@ -927,7 +949,7 @@ class CommuneClient:
         """
         Retrieves a mapping of the last update times for keys on the network.
 
-        This method queries the network for a mapping of key UIDs to their last update times.
+        Queries the network for a mapping of key UIDs to their last update times.
 
         Returns:
             A dictionary mapping key UIDs to lists of their last update times.
@@ -942,14 +964,15 @@ class CommuneClient:
         """
         Retrieves a mapping of stakes from various sources for keys on the network.
 
-        This method queries the network to obtain a mapping of key addresses to the sources and amounts of
-        stakes they have received. The query can be targeted at a specific network UID if necessary.
+        Queries the network to obtain a mapping of key addresses to the sources 
+        and amounts of stakes they have received.
 
         Args:
-            netuid: The network UID from witch to get the stakes.
+            netuid: The network UID from which to get the stakes.
 
         Returns:
-            A dictionary mapping key addresses to lists of tuples (module key address, amount).
+            A dictionary mapping key addresses to lists of tuples 
+            (module_key_address, amount).
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -959,16 +982,17 @@ class CommuneClient:
 
     def query_map_staketo(self, netuid: int = 0) -> dict[str, list[tuple[str, int]]]:
         """
-        Retrieves a mapping of stakes to various destinations for keys on the network.
+        Retrieves a mapping of stakes to destinations for keys on the network.
 
-        This method queries the network for a mapping of key addresses to the destinations and amounts of
-        stakes they have made. The query can be targeted at a specific network UID if necessary.
+        Queries the network for a mapping of key addresses to the destinations 
+        and amounts of stakes they have made. 
 
         Args:
-            netuid: The network UID from witch to get the stakes.
+            netuid: The network UID from which to get the stakes.
 
         Returns:
-            A dictionary mapping key addresses to lists of tuples (module key address, amount).
+            A dictionary mapping key addresses to lists of tuples 
+            (module_key_address, amount).
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -980,11 +1004,12 @@ class CommuneClient:
         """
         Retrieves a mapping of stakes for keys on the network.
 
-        This method queries the network and returns a mapping of key addresses to their respective delegated staked balances amounts.
+        Queries the network and returns a mapping of key addresses to their 
+        respective delegated staked balances amounts.
         The query can be targeted at a specific network UID if required.
 
         Args:
-            netuid: The network UID from witch to get the stakes.
+            netuid: The network UID from which to get the stakes.
 
         Returns:
             A dictionary mapping key addresses to their stake amounts.
@@ -999,8 +1024,8 @@ class CommuneClient:
         """
         Retrieves a mapping of delegation fees for keys on the network.
 
-        This method queries the network to obtain a mapping of key addresses to their respective delegation fees.
-        The query can be targeted at a specific network UID if necessary.
+        Queries the network to obtain a mapping of key addresses to their 
+        respective delegation fees.
 
         Args:
             netuid: The network UID to filter the delegation fees.
@@ -1018,8 +1043,8 @@ class CommuneClient:
         """
         Retrieves a mapping of tempo settings for the network.
 
-        This method queries the network to obtain the tempo (rate of reward distributions) settings for various
-        network subnets. 
+        Queries the network to obtain the tempo (rate of reward distributions) 
+        settings for various network subnets. 
 
         Returns:
             A dictionary mapping network UIDs to their tempo settings.
@@ -1034,8 +1059,9 @@ class CommuneClient:
         """
         Retrieves a mapping of immunity periods for the network.
 
-        This method queries the network for the immunity period settings, which represent the time duration during
-        which modules can not get deregistered. 
+        Queries the network for the immunity period settings, 
+        which represent the time duration during which modules 
+        can not get deregistered. 
 
         Returns:
             A dictionary mapping network UIDs to their immunity period settings.
@@ -1050,11 +1076,13 @@ class CommuneClient:
         """
         Retrieves a mapping of minimum allowed weights for the network.
 
-        This method queries the network to obtain the minimum allowed weights, which are the lowest permissible
-        weight values that can be set by validators. 
+        Queries the network to obtain the minimum allowed weights, 
+        which are the lowest permissible weight values that can be set by 
+        validators. 
 
         Returns:
-            A dictionary mapping network UIDs to their minimum allowed weight values.
+            A dictionary mapping network UIDs to 
+            their minimum allowed weight values.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1066,11 +1094,13 @@ class CommuneClient:
         """
         Retrieves a mapping of maximum allowed weights for the network.
 
-        This method queries the network for the maximum allowed weights, which are the highest permissible
+        Queries the network for the maximum allowed weights, 
+        which are the highest permissible
         weight values that can be set by validators. 
 
         Returns:
-            A dictionary mapping network UIDs to their maximum allowed weight values.
+            A dictionary mapping network UIDs to 
+            their maximum allowed weight values.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1080,12 +1110,17 @@ class CommuneClient:
 
     def query_map_max_allowed_uids(self) -> dict[int, int]:
         """
-        Queries the network for the maximum number of allowed user IDs (UIDs) for each network subnet.
+        Queries the network for the maximum number of allowed user IDs (UIDs) 
+        for each network subnet.
 
-        This method fetches a mapping of network subnets to their respective limits on the number of user IDs that can be created or used. The query can be targeted at a specific block hash, if provided, to get the information as of that block's state.
+        Fetches a mapping of network subnets to their respective 
+        limits on the number of user IDs that can be created or used. 
 
         Returns:
-            A dictionary mapping network UIDs (unique identifiers) to their maximum allowed number of UIDs. Each entry represents a network subnet with its corresponding UID limit.
+            A dictionary mapping network UIDs (unique identifiers) to their 
+            maximum allowed number of UIDs. 
+            Each entry represents a network subnet 
+            with its corresponding UID limit.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1097,10 +1132,12 @@ class CommuneClient:
         """
         Retrieves a mapping of minimum allowed stake on the network.
 
-        This method queries the network to obtain the minimum number of stake, which is represented in nanotokens. 
+        Queries the network to obtain the minimum number of stake, 
+        which is represented in nanotokens. 
 
         Returns:
-            A dictionary mapping network UIDs to their minimum allowed stake values.
+            A dictionary mapping network UIDs to 
+            their minimum allowed stake values.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1112,7 +1149,8 @@ class CommuneClient:
         """
         Retrieves a mapping of the maximum stake values for the network.
 
-        This method queries the network for the maximum stake values across various subnets of the network.
+        Queries the network for the maximum stake values across various s
+        ubnets of the network.
 
         Returns:
             A dictionary mapping network UIDs to their maximum stake values.
@@ -1127,8 +1165,8 @@ class CommuneClient:
         """
         Retrieves a mapping of founders for the network.
 
-        This method queries the network to obtain the founders associated with various subnets.
-        The query can be targeted at a specific block hash if necessary.
+        Queries the network to obtain the founders associated with 
+        various subnets.
 
         Returns:
             A dictionary mapping network UIDs to their respective founders.
@@ -1143,7 +1181,8 @@ class CommuneClient:
         """
         Retrieves a mapping of founder shares for the network.
 
-        This method queries the network for the share percentages allocated to founders across different subnets.
+        Queries the network for the share percentages 
+        allocated to founders across different subnets.
 
         Returns:
             A dictionary mapping network UIDs to their founder share percentages.
@@ -1158,7 +1197,8 @@ class CommuneClient:
         """
         Retrieves a mapping of incentive ratios for the network.
 
-        This method queries the network for the incentive ratios, which are the proportions of rewards or incentives
+        Queries the network for the incentive ratios, 
+        which are the proportions of rewards or incentives
         allocated in different subnets of the network. 
 
         Returns:
@@ -1174,8 +1214,9 @@ class CommuneClient:
         """
         Retrieves a mapping of trust ratios for the network.
 
-        This method queries the network for trust ratios, indicative of the level of trust or credibility assigned
-        to different subnets of the network. The query can be targeted at a specific block hash if necessary.
+        Queries the network for trust ratios, 
+        indicative of the level of trust or credibility assigned
+        to different subnets of the network.
 
         Returns:
             A dictionary mapping network UIDs to their trust ratios.
@@ -1194,7 +1235,8 @@ class CommuneClient:
         subnets, which are the treshold intervals for setting weights.
 
         Returns:
-            A dictionary mapping network UIDs to their vote thresholds for subnets.
+            A dictionary mapping network UIDs to their 
+            vote thresholds for subnets.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1206,7 +1248,7 @@ class CommuneClient:
         """
         Retrieves a mapping of vote modes for subnets within the network.
 
-        This method queries the network for the voting modes used in different
+        Queries the network for the voting modes used in different
         subnets, which define the methodology or approach of voting within those
         subnets. 
 
@@ -1224,11 +1266,12 @@ class CommuneClient:
         """
         Retrieves a mapping of self-vote settings for the network.
 
-        This method queries the network to determine whether self-voting is allowed in different subnets of the network.
-        The query can be targeted at a specific block hash if necessary.
+        Queries the network to determine whether self-voting is allowed in 
+        different subnets of the network.
 
         Returns:
-            A dictionary mapping network UIDs to their self-vote settings (true or false).
+            A dictionary mapping network UIDs to their self-vote settings 
+            (true or false).
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1240,7 +1283,8 @@ class CommuneClient:
         """
         Retrieves a mapping of subnet names within the network.
 
-        This method queries the network for the names of various subnets, providing an overview of the different
+        Queries the network for the names of various subnets, 
+        providing an overview of the different
         subnets within the network. 
 
         Returns:
@@ -1252,12 +1296,14 @@ class CommuneClient:
 
         return self.query_map("SubnetNames",)
 
-    def query_map_balances(self) -> dict[str, dict['str', int | dict[str, int]]]:
+    def query_map_balances(self) -> \
+            dict[str, dict['str', int | dict[str, int]]]:
         """
         Retrieves a mapping of account balances within the network.
 
-        This method queries the network for the balances associated with different accounts. It provides detailed
-        information including various types of balances for each account. 
+        Queries the network for the balances associated with different accounts. 
+        It provides detailed information including various types of 
+        balances for each account. 
 
         Returns:
             A dictionary mapping account addresses to their balance details.
@@ -1272,11 +1318,11 @@ class CommuneClient:
         """
         Retrieves a mapping of registration blocks for UIDs on the network.
 
-        This method queries the network to find the block numbers at which various UIDs were registered.
-        The query can be targeted at a specific block hash and filtered by network UID if required.
+        Queries the network to find the block numbers at which various 
+        UIDs were registered.
 
         Args:
-            netuid: The network UID from witch to get the registrations.
+            netuid: The network UID from which to get the registrations.
 
         Returns:
             A dictionary mapping UIDs to their registration block numbers.
@@ -1291,11 +1337,11 @@ class CommuneClient:
         """
         Retrieves a mapping of names for keys on the network.
 
-        This method queries the network for the names associated with different keys. It provides a mapping of key UIDs
-        to their registered names. The query can be targeted at a specific block hash and filtered by network UID if necessary.
+        Queries the network for the names associated with different keys. 
+        It provides a mapping of key UIDs to their registered names.
 
         Args:
-            netuid: The network UID from witch to get the names.
+            netuid: The network UID from which to get the names.
 
         Returns:
             A dictionary mapping key UIDs to their names.
@@ -1312,7 +1358,8 @@ class CommuneClient:
         """
         Queries the network for the immunity period setting.
 
-        The immunity period is a time duration during which a module can not be deregistered from the network.
+        The immunity period is a time duration during which a module 
+        can not be deregistered from the network.
         This method fetches the immunity period for a specified network subnet.
 
         Args:
@@ -1331,7 +1378,7 @@ class CommuneClient:
         """
         Queries the network for the minimum allowed weights setting.
 
-        This method retrieves the minimum weight values that are possible to set
+        Retrieves the minimum weight values that are possible to set
         by a validator within a specific network subnet.
 
         Args:
@@ -1352,7 +1399,7 @@ class CommuneClient:
         """
         Queries the network for the maximum allowed weights setting.
 
-        This method retrieves the maximum weight values that are possible to set
+        Retrieves the maximum weight values that are possible to set
         by a validator within a specific network subnet.
 
         Args:
@@ -1372,6 +1419,9 @@ class CommuneClient:
     def get_max_allowed_uids(self, netuid: int = 0) -> int:
         """
         Queries the network for the maximum allowed UIDs setting.
+
+        This method fetches the upper limit on the number of user IDs that can 
+        be allocated or used within a specific network subnet.
 
         Args:
             netuid: The network UID for which to query the maximum allowed UIDs.
@@ -1424,7 +1474,7 @@ class CommuneClient:
         """
         Queries the network for the total stake amount.
 
-        This method retrieves the total amount of stake within a specific network subnet.
+        Retrieves the total amount of stake within a specific network subnet.
 
         Args:
             netuid: The network UID for which to query the total stake.
@@ -1442,7 +1492,8 @@ class CommuneClient:
         """
         Queries the network for the number of registrations per block.
 
-        This method fetches the number of registrations that are processed per block within the network.
+        Fetches the number of registrations that are processed per 
+        block within the network.
 
         Returns:
             The number of registrations processed per block.
@@ -1457,13 +1508,15 @@ class CommuneClient:
         """
         Queries the network for the maximum number of registrations per block.
 
-        This method retrieves the upper limit of registrations that can be processed in each block within a specific network subnet.
+        Retrieves the upper limit of registrations that can be processed in 
+        each block within a specific network subnet.
 
         Args:
             netuid: The network UID for which to query.
 
         Returns:
-            The maximum number of registrations per block for the specified network subnet.
+            The maximum number of registrations per block for 
+            the specified network subnet.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1475,8 +1528,6 @@ class CommuneClient:
         """
         Queries the network for a specific proposal.
 
-        This method retrieves the details of a proposal identified by its proposal ID. 
-
         Args:
             proposal_id: The ID of the proposal to query.
 
@@ -1484,7 +1535,8 @@ class CommuneClient:
             The details of the specified proposal.
 
         Raises:
-            QueryError: If the query to the network fails, is invalid, or if the proposal ID does not exist.
+            QueryError: If the query to the network fails, is invalid, 
+                or if the proposal ID does not exist.
         """
 
         return self.query("Proposals", params=[proposal_id],)
@@ -1493,7 +1545,9 @@ class CommuneClient:
         """
         Queries the network for the trust setting of a specific network subnet.
 
-        This method retrieves the trust level or score, which may represent the level of trustworthiness or reliability within a particular network subnet.
+        This method retrieves the trust level or score, which may represent the 
+        level of trustworthiness or reliability within a 
+        particular network subnet.
 
         Args:
             netuid: The network UID for which to query the trust setting.
@@ -1528,7 +1582,8 @@ class CommuneClient:
         """
         Queries the network for the unit emission setting.
 
-        This method retrieves the unit emission value, which represents the emission rate or quantity for the $COMAI token.
+        Retrieves the unit emission value, which represents the 
+        emission rate or quantity for the $COMAI token.
 
         Returns:
             The unit emission value in nanos for the network.
@@ -1543,7 +1598,9 @@ class CommuneClient:
         """
         Queries the network for the transaction rate limit.
 
-        This method retrieves the rate limit for transactions within the network, which defines the maximum number of transactions that can be processed within a certain timeframe.
+        Retrieves the rate limit for transactions within the network, 
+        which defines the maximum number of transactions that can be 
+        processed within a certain timeframe.
 
         Returns:
             The transaction rate limit for the network.
@@ -1558,7 +1615,9 @@ class CommuneClient:
         """
         Queries the network for the burn rate setting.
 
-        This method retrieves the burn rate, which represents the rate at which the $COMAI token is permanently removed or 'burned' from circulation.
+        Retrieves the burn rate, which represents the rate at 
+        which the $COMAI token is permanently 
+        removed or 'burned' from circulation.
 
         Returns:
             The burn rate for the network.
@@ -1573,7 +1632,9 @@ class CommuneClient:
         """
         Queries the network for the minimum burn setting.
 
-        This method retrieves the minimum burn value, indicating the lowest amount of the $COMAI tokens that can be 'burned' or permanently removed from circulation.
+        Retrieves the minimum burn value, indicating the lowest 
+        amount of the $COMAI tokens that can be 'burned' or 
+        permanently removed from circulation.
 
         Returns:
             The minimum burn value for the network.
@@ -1588,7 +1649,9 @@ class CommuneClient:
         """
         Queries the network for the minimum weight stake setting.
 
-        This method retrieves the minimum weight stake, which represents the lowest stake weight that is allowed for certain operations or transactions within the network.
+        Retrieves the minimum weight stake, which represents the lowest 
+        stake weight that is allowed for certain operations or 
+        transactions within the network.
 
         Returns:
             The minimum weight stake for the network.
@@ -1603,7 +1666,8 @@ class CommuneClient:
         """
         Queries the network for the global vote mode setting.
 
-        This method retrieves the global vote mode, which defines the overall voting methodology or approach used across the network in default.
+        Retrieves the global vote mode, which defines the overall voting 
+        methodology or approach used across the network in default.
 
         Returns:
             The global vote mode setting for the network.
@@ -1618,7 +1682,8 @@ class CommuneClient:
         """
         Queries the network for the maximum number of proposals allowed.
 
-        This method retrieves the upper limit on the number of proposals that can be active or considered at any given time within the network.
+        Retrieves the upper limit on the number of proposals that can be 
+        active or considered at any given time within the network.
 
         Returns:
             The maximum number of proposals allowed on the network.
@@ -1633,7 +1698,8 @@ class CommuneClient:
         """
         Queries the network for the maximum number of registrations per block.
 
-        This method retrieves the maximum number of registrations that can be processed in each block within the network.
+        Retrieves the maximum number of registrations that can 
+        be processed in each block within the network.
 
         Returns:
             The maximum number of registrations per block on the network.
@@ -1648,7 +1714,8 @@ class CommuneClient:
         """
         Queries the network for the maximum length allowed for names.
 
-        This method retrieves the maximum character length permitted for names within the network. Such as the module names
+        Retrieves the maximum character length permitted for names 
+        within the network. Such as the module names
 
         Returns:
             The maximum length allowed for names on the network.
@@ -1663,7 +1730,8 @@ class CommuneClient:
         """
         Queries the network for the global vote threshold.
 
-        This method retrieves the global vote threshold, which is the critical value or percentage required for decisions in the network's governance process.
+        Retrieves the global vote threshold, which is the critical value or 
+        percentage required for decisions in the network's governance process.
 
         Returns:
             The global vote threshold for the network.
@@ -1678,7 +1746,8 @@ class CommuneClient:
         """
         Queries the network for the maximum number of allowed subnets.
 
-        This method retrieves the upper limit on the number of subnets that can be created or operated within the network.
+        Retrieves the upper limit on the number of subnets that can 
+        be created or operated within the network.
 
         Returns:
             The maximum number of allowed subnets on the network.
@@ -1693,7 +1762,8 @@ class CommuneClient:
         """
         Queries the network for the maximum number of allowed modules.
 
-        This method retrieves the upper limit on the number of modules that can be registered within the network.
+        Retrieves the upper limit on the number of modules that 
+        can be registered within the network.
 
         Returns:
             The maximum number of allowed modules on the network.
@@ -1709,7 +1779,8 @@ class CommuneClient:
         """
         Queries the network for the minimum stake required to register a key.
 
-        This method retrieves the minimum amount of stake necessary for registering a key within a specific network subnet.
+        Retrieves the minimum amount of stake necessary for 
+        registering a key within a specific network subnet.
 
         Args:
             netuid: The network UID for which to query the minimum stake.
@@ -1730,11 +1801,12 @@ class CommuneClient:
         """
         Queries the network for the stake delegated with a specific key.
 
-        This method retrieves the amount of total staked tokens delegated a specific key address
+        Retrieves the amount of total staked tokens 
+        delegated a specific key address
 
         Args:
             key: The address of the key to query the stake for.
-            netuid: The network UID from witch to get the query.
+            netuid: The network UID from which to get the query.
 
         Returns:
             The amount of stake held by the specified key in nanos.
@@ -1753,15 +1825,17 @@ class CommuneClient:
         """
         Retrieves a list of keys from which a specific key address is staked.
 
-        This method queries the network for all the stakes received by a particular key from different sources.
+        Queries the network for all the stakes received by a 
+        particular key from different sources.
 
         Args:
             key_addr: The address of the key to query stakes from.
 
-            netuid: The network UID from witch to get the query.
+            netuid: The network UID from which to get the query.
 
         Returns:
-            A dictionary mapping key addresses to the amount of stake received from each.
+            A dictionary mapping key addresses to the amount of stake 
+            received from each.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1778,15 +1852,17 @@ class CommuneClient:
         """
         Retrieves a list of keys to which a specific key address stakes to.
 
-        This method queries the network for all the stakes made by a particular key to different destinations.
+        Queries the network for all the stakes made by a particular key to 
+        different destinations.
 
         Args:
             key_addr: The address of the key to query stakes to.
 
-            netuid: The network UID from witch to get the query.
+            netuid: The network UID from which to get the query.
 
         Returns:
-            A dictionary mapping key addresses to the amount of stake given to each.
+            A dictionary mapping key addresses to the 
+            amount of stake given to each.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1802,8 +1878,6 @@ class CommuneClient:
     ) -> int:
         """
         Retrieves the balance of a specific key.
-
-        This method queries the network for the current balance of a given key address.
 
         Args:
             addr: The address of the key to query the balance for.
@@ -1829,10 +1903,13 @@ class CommuneClient:
         """
         Retrieves information about a specific block in the network.
 
-        This method queries the network for details about a block, such as its number, hash, or other relevant information.
+        Queries the network for details about a block, such as its number, 
+        hash, and other relevant information.
 
         Returns:
-            The requested information about the block, or None if the block does not exist or the information is not available.
+            The requested information about the block, 
+            or None if the block does not exist 
+            or the information is not available.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
@@ -1847,14 +1924,16 @@ class CommuneClient:
         """
         Retrieves the existential deposit value for the network.
 
-        The existential deposit is the minimum balance that must be maintained in an account to prevent it from being purged. 
-        This method returns the existential deposit amount set for the network, denoted in nano units.
+        The existential deposit is the minimum balance that must be maintained 
+        in an account to prevent it from being purged. 
+        This method returns the existential deposit amount set for the network, 
+        denoted in nano units.
 
         Returns:
-            The existential deposit value in nano units. For example, 100_000_000 nano represents 0.1 units of the network's currency.
-
+            The existential deposit value in nano units. 
         Note:
-            The value returned by this method is a fixed value defined in the client and may not reflect changes in the network's configuration.
+            The value returned by this method is a fixed value defined in the 
+            client and may not reflect changes in the network's configuration.
         """
 
         return 1_000  # 1k nano
