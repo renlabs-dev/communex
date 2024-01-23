@@ -126,6 +126,7 @@ class CommuneClient:
         name: str,
         params: list[Any] = [],
         module: str = 'SubspaceModule',
+        extract_value: bool = True,
     ) -> dict[Any, Any]:
         """
         Queries a storage map from a network node.
@@ -145,7 +146,11 @@ class CommuneClient:
 
         with self.get_conn() as substrate:
             result = query_batch_map(substrate, {module: [(name, params)]})
-        return {k.value: v.value for k, v in result}  # type: ignore
+
+        if extract_value:
+            return {k.value: v.value for k, v in result}  # type: ignore
+
+        return result
 
     def compose_call(
         self,
@@ -988,7 +993,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Stake', [netuid])
+        return self.query_map('Stake', [netuid], extract_value=False)
 
     def query_map_delegationfee(self, netuid: int = 0) -> dict[str, int]:
         """
