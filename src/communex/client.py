@@ -204,7 +204,9 @@ class CommuneClient:
                     }
                 )
 
-            extrinsic = substrate.create_signed_extrinsic(call=call, keypair=key)  # type: ignore
+            extrinsic = substrate.create_signed_extrinsic(  # type: ignore
+                call=call, keypair=key  # type: ignore
+            )  # type: ignore
             response = substrate.submit_extrinsic(
                 extrinsic=extrinsic,
                 wait_for_inclusion=wait_for_inclusion,
@@ -212,7 +214,9 @@ class CommuneClient:
             )
         if wait_for_inclusion:
             if not response.is_success:
-                raise ChainTransactionError(response.error_message, response)  # type: ignore
+                raise ChainTransactionError(
+                    response.error_message, response  # type: ignore
+                )
 
         return response
 
@@ -607,7 +611,10 @@ class CommuneClient:
             "amounts": amounts
         }
 
-        response = self.compose_call('remove_stake_multiple', params=params, key=key)
+        response = self.compose_call(
+            'remove_stake_multiple',
+            params=params, key=key
+        )
 
         return response
 
@@ -648,7 +655,9 @@ class CommuneClient:
             'netuid': netuid,
         }
 
-        response = self.compose_call('add_stake_multiple', params=params, key=key)
+        response = self.compose_call(
+            'add_stake_multiple', params=params, key=key
+        )
 
         return response
 
@@ -687,7 +696,10 @@ class CommuneClient:
             'shares': shares
         }
 
-        response = self.compose_call('add_profit_shares', params=params, key=key)
+        response = self.compose_call(
+            'add_profit_shares',
+            params=params, key=key
+        )
 
         return response
 
@@ -958,7 +970,8 @@ class CommuneClient:
 
         return self.query_map('LastUpdate',)
 
-    def query_map_stakefrom(self, netuid: int = 0) -> dict[str, list[tuple[str, int]]]:
+    def query_map_stakefrom(self, netuid: int = 0) -> \
+            dict[str, list[tuple[str, int]]]:
         """
         Retrieves a mapping of stakes from various sources for keys on the network.
 
@@ -978,7 +991,8 @@ class CommuneClient:
 
         return self.query_map('StakeFrom', [netuid])
 
-    def query_map_staketo(self, netuid: int = 0) -> dict[str, list[tuple[str, int]]]:
+    def query_map_staketo(self, netuid: int = 0) -> \
+            dict[str, list[tuple[str, int]]]:
         """
         Retrieves a mapping of stakes to destinations for keys on the network.
 
@@ -1914,7 +1928,9 @@ class CommuneClient:
         """
 
         with self.get_conn() as substrate:
-            block: dict[Any, Any] | None = substrate.get_block(block_hash)  # type: ignore
+            block: dict[Any, Any] | None = substrate.get_block(  # type: ignore
+                block_hash  # type: ignore
+            )
 
         return block
 
