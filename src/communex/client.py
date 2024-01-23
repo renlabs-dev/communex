@@ -1373,11 +1373,8 @@ class CommuneClient:
         """
         Queries the network for the maximum allowed UIDs setting.
 
-        This method fetches the upper limit on the number of user IDs that can be allocated or used within a specific network subnet.
-
         Args:
             netuid: The network UID for which to query the maximum allowed UIDs.
-
 
         Returns:
             The maximum number of allowed UIDs for the specified network subnet.
