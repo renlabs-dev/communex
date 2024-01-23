@@ -5,11 +5,11 @@ docs_run:
 	pdoc -n --docformat google ./src/communex 
 
 docs_generate:
-	pdoc communex 							\
-		--docformat google 					\
-		--output-directory ./docs/_build 	\
-		--logo assets/logo.png 				\
-		--favicon assets/favicon.ico 		\
+	pdoc communex \
+		--docformat google \
+		--output-directory ./docs/_build \
+		--logo assets/logo.png \
+		--favicon assets/favicon.ico \
 		--logo-link https://github.com/agicommies/communex \
 		--edit-url communex=https://github.com/agicommies/communex/blob/main/src/communex/
 
