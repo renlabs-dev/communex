@@ -285,6 +285,9 @@ class CommuneClient:
 
         assert len(destinations) == len(amounts)
 
+        # extract existential deposit from amounts
+        amounts = [a - self.get_existential_deposit() for a in amounts]
+
         params = {
             "netuid": netuid,
             "destinations": destinations,
@@ -443,7 +446,7 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        stake = self.get_min_stake() if min_stake is None else min_stake\
+        stake = self.get_min_stake() if min_stake is None else min_stake
 
         key_addr = key.ss58_address
 
@@ -544,11 +547,10 @@ class CommuneClient:
         Realocate staked tokens from one staked module to another module.
 
         Args:
-            key: The keypair associated with the account with staked tokens.
+            key: The keypair associated with the account that is delegating the tokens.
             amount: The amount of staked tokens to transfer, in nanotokens.
-            from_module_key: The SS58 address of the source module key.
-            dest_module_address: The SS58 address of the destination
-              module key.
+            from_module_key: The SS58 address of the module you want to transfer from (currently delegated by the key).
+            dest_module_address: The SS58 address of the destination (newly delegated key).
             netuid: The network identifier.
 
         Returns:
@@ -604,6 +606,9 @@ class CommuneClient:
         """
 
         assert len(keys) == len(amounts)
+
+        # extract existential deposit from amounts
+        amounts = [a - self.get_existential_deposit() for a in amounts]
 
         params = {
             "netuid": netuid,
@@ -1901,15 +1906,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        with self.get_conn() as substrate:
-            result = substrate.query(  # type: ignore
-                module='System',
-                storage_function='Account',
-                params=[addr],
-            )
+        result = self.query('Account', module='System', params=[addr])
 
-        balance: int = result.value["data"]["free"]  # type: ignore
-        return balance  # type: ignore
+        return result["data"]["free"]
 
     def get_block(self, block_hash: str | None = None) -> dict[Any, Any] | None:
         """
@@ -1934,14 +1933,12 @@ class CommuneClient:
 
         return block
 
-    def get_existential_deposit(self) -> int:
+    def get_existential_deposit(self, block_hash: str | None = None) -> int:
         """
         Retrieves the existential deposit value for the network.
 
         The existential deposit is the minimum balance that must be maintained 
-        in an account to prevent it from being purged. 
-        Returns the existential deposit amount set for the network, 
-        denoted in nano units.
+        in an account to prevent it from being purged. Denotated in nano units.
 
         Returns:
             The existential deposit value in nano units. 
@@ -1950,4 +1947,8 @@ class CommuneClient:
             client and may not reflect changes in the network's configuration.
         """
 
-        return 1_000  # 1k nano
+        with self.get_conn() as substrate:
+            result: int = substrate.get_constant(  #  type: ignore
+                "Balances", "ExistentialDeposit", block_hash).value  #  type: ignore
+
+        return result
