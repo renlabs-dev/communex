@@ -9,7 +9,7 @@ from typing import Any, cast
 
 from substrateinterface import Keypair  # type: ignore
 
-from cexpl.types import CommuneKeyDict
+from communex.compat.types import CommuneKeyDict
 from communex.key import is_ss58_address
 
 
