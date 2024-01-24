@@ -9,7 +9,7 @@ import os.path
 import time
 from typing import Any
 
-from ._util import ensure_parent_dir_exists
+from communex.util import ensure_parent_dir_exists
 
 COMMUNE_HOME = "~/.commune"
 """

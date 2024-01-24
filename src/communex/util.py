@@ -1,6 +1,7 @@
 import os.path
 from typing import Any
 
+import ipaddress
 
 def check_str(x: Any) -> str:
     assert isinstance(x, str)
@@ -39,3 +40,15 @@ def bytes_to_hex(value: str | bytes) -> str:
     assert isinstance(value, str)
     # TODO: Check that `value` is a valid hexadecimal string
     return value
+
+
+def is_ip_valid(ip: str) -> bool:
+    """
+    Checks if an ip address is valid
+    """
+    try:
+        ipaddress.ip_address(ip)
+        return True
+    except ValueError:
+        return False
+

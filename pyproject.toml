@@ -6,6 +6,9 @@ authors = ["Kelvin Steiner <kelvinsteinersantos@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 
+[tool.poetry.scripts]
+comx = "communex.cli:app"
+
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
 

@@ -4,13 +4,17 @@ Key storage compatible with the classic `commune` library.
 WIP
 """
 
+import json
 from pathlib import Path
 from typing import Any, cast
 
 from substrateinterface import Keypair  # type: ignore
 
+from communex.compat.storage import classic_load, classic_put
 from communex.compat.types import CommuneKeyDict
-from communex.key import is_ss58_address
+from communex.key import check_ss58_address, is_ss58_address
+from communex.types import Ss58Address
+from communex.util import bytes_to_hex, check_str
 
 
 def check_key_dict(key_dict: Any) -> CommuneKeyDict:
@@ -48,13 +52,7 @@ def check_key_dict(key_dict: Any) -> CommuneKeyDict:
 
 def classic_key_path(name: str) -> str:
     """
-    Constructs the file path for a key in the classic commune format.
-
-    Args:
-        name: The name of the key.
-
-    Returns:
-        The file path for the key.
+    Constructs the file path for a key name in the classic commune format.
     """
 
     home = Path.home()
@@ -63,15 +61,88 @@ def classic_key_path(name: str) -> str:
     return str(root_path / name)
 
 
-def classic_store_key(keypair: Keypair, name: str) -> None:
+def from_classic_dict(data: dict[Any, Any]) -> Keypair:
     """
-    Stores the given keypair on a disk under the given name.
+    Creates a `Key` from a dict conforming to the classic `commune` format.
+
+    Args:
+        data: The key data in a classic commune format.
+        name: The name to assign to the key.
+
+    Returns:
+        The reconstructed `Key` instance.
+
+    Raises:
+        AssertionError: If `data` does not conform to the expected format.
     """
-    raise NotImplementedError()
+
+    data_ = check_key_dict(data)
+
+    ss58_address = data_["ss58_address"]
+    private_key = data_["private_key"]
+    public_key = data_["public_key"]
+    ss58_format = data_["ss58_format"]
+
+    key = Keypair.create_from_private_key(private_key, public_key, ss58_address, ss58_format)
+
+    return key
+
+
+def to_classic_dict(keypair: Keypair, path: str) -> CommuneKeyDict:
+    """
+    Converts a keypair to a dictionary conforming to the classic commune format.
+
+    Args:
+        keypair: The keypair to convert.
+        path: The path/name of the key file.
+    """
+
+    return {
+        "path": path,
+        "mnemonic": check_str(keypair.mnemonic),
+        "public_key": bytes_to_hex(keypair.public_key),
+        "private_key": bytes_to_hex(keypair.private_key),
+        "ss58_address": check_ss58_address(keypair.ss58_address),
+        "seed_hex": bytes_to_hex(keypair.seed_hex),
+        "ss58_format": keypair.ss58_format,
+        "crypto_type": keypair.crypto_type,
+        "derive_path": keypair.derive_path,
+    }
 
 
 def classic_load_key(name: str) -> Keypair:
     """
     Loads the keypair with the given name from a disk.
     """
-    raise NotImplementedError()
+    path = classic_key_path(name)
+    key_dict_json = classic_load(path)
+    key_dict = json.loads(key_dict_json)
+    return from_classic_dict(key_dict)
+
+
+def classic_store_key(keypair: Keypair, name: str) -> None:
+    """
+    Stores the given keypair on a disk under the given name.
+    """
+    key_dict = to_classic_dict(keypair, name)
+    key_dict_json = json.dumps(key_dict)
+    path = classic_key_path(name)
+    classic_put(path, key_dict_json)
+
+
+def local_key_addresses() -> dict[str, Ss58Address]:
+    """
+    Retrieves a mapping of local key names to their SS58 addresses.
+    """
+    home = Path.home()
+    key_dir = home / '.commune' / "key"
+
+    key_names = [f.stem for f in key_dir.iterdir() if f.is_file()]
+
+    addresses_map: dict[str, Ss58Address] = {}
+
+    for key_name in key_names:
+        key_dict = classic_load_key(key_name)
+        addresses_map[key_name] = check_ss58_address(key_dict.ss58_address)
+
+    return addresses_map

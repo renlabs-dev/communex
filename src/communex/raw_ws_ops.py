@@ -366,7 +366,7 @@ def query_batch_map(
         The combined result of the map batch query.
 
     Example:
-        >>> query_map_batch(substrate_instance, {'module_name': [('function_name', ['param1', 'param2'])]})
+        >>> query_batch_map(substrate_instance, {'module_name': [('function_name', ['param1', 'param2'])]})
         # Returns the combined result of the map batch query
     """
 
