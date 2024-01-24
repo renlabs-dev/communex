@@ -4,7 +4,7 @@ from typing import TypeGuard
 
 from substrateinterface.utils import ss58  # type: ignore
 
-from cexpl.types import Ss58Address
+from communex.types import Ss58Address
 
 
 def is_ss58_address(address: str, ss58_format: int = 42) -> TypeGuard[Ss58Address]:

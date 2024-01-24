@@ -18,17 +18,22 @@ def _send_batch(
         request_ids: list[int],
         results: list[str | dict[Any, Any]],
         extract_result: bool = True
-):
+) -> None:
     """
     Sends a batch of requests to the substrate and collects the results.
 
     Args:
-        substrate (Any): An instance of the substrate interface.
-        batch_payload (list[Any]): The payload of the batch request.
-        request_ids (list[int]): A list of request IDs for tracking responses.
-        results (list[str]): A list to store the results of the requests.
+        substrate: An instance of the substrate interface.
+        batch_payload: The payload of the batch request.
+        request_ids: A list of request IDs for tracking responses.
+        results: A list to store the results of the requests.
+        extract_result: Whether to extract the result from the response.
+        
+    Raises:
+        NetworkQueryError: If there is an `error` in the response message.
 
-    No explicit return value as results are appended to the provided 'results' list.
+    Note:
+        No explicit return value as results are appended to the provided 'results' list.
     """
 
     try:
@@ -56,20 +61,21 @@ def _send_batch(
 def _decode_response(
         response: list[str],
         function_parameters: list[tuple[Any, Any, Any, Any, str]],
-        last_keys: list[Any], prefix_list: list[Any],
+        last_keys: list[Any],
+        prefix_list: list[Any],
         substrate: SubstrateInterface,
         block_hash: str,
-):
+) -> dict[str, dict[Any, Any]]:
     """
     Decodes a response from the substrate interface and organizes the data into a dictionary.
 
     Args:
-        response (list[str]): A list of encoded responses from a substrate query.
-        function_parameters (list[tuple[Any, Any, Any, Any, str]]): A list of tuples containing the parameters for each storage function.
-        last_keys (list[Any]): A list of the last keys used in the substrate query.
-        prefix_list (list[Any]): A list of prefixes used in the substrate query.
-        substrate (SubstrateInterface): An instance of the SubstrateInterface class.
-        block_hash (str): The hash of the block to be queried.
+        response: A list of encoded responses from a substrate query.
+        function_parameters: A list of tuples containing the parameters for each storage function.
+        last_keys: A list of the last keys used in the substrate query.
+        prefix_list: A list of prefixes used in the substrate query.
+        substrate: An instance of the SubstrateInterface class.
+        block_hash: The hash of the block to be queried.
 
     Returns:
         A dictionary where each key is a storage function name and the value is another dictionary. 
@@ -95,7 +101,7 @@ def _decode_response(
         Determines the length of the hash based on the given key hasher type.
 
         Args:
-            key_hasher (str): The type of key hasher.
+            key_hasher: The type of key hasher.
 
         Returns:
             The length of the hash corresponding to the given key hasher type.
@@ -160,14 +166,15 @@ def _decode_response(
 
 
 def _make_request_smaller(
-        batch_request: list[tuple[T1, T2]], max_size: int = 9_000_000
+        batch_request: list[tuple[T1, T2]],
+        max_size: int = 9_000_000
 ) -> list[list[tuple[T1, T2]]]:
     """
     Splits a batch of requests into smaller batches, each not exceeding the specified maximum size.
 
     Args:
-        batch_request (list[tuple[T1, T2]]): A list of requests to be sent in a batch.
-        max_size (int, optional): Maximum size of each batch in bytes. Default is 9000000.
+        batch_request: A list of requests to be sent in a batch.
+        max_size: Maximum size of each batch in bytes.
 
     Returns:
         A list of smaller request batches.
@@ -177,8 +184,8 @@ def _make_request_smaller(
         [[('method1', 'params1')], [('method2', 'params2')]]
     """
 
-    # Convert the batch request to a string and measure its length
     def estimate_size(request: tuple[T1, T2]):
+        """Convert the batch request to a string and measure its length"""
         return len(json.dumps(request))
 
     # Initialize variables
@@ -218,8 +225,10 @@ def _rpc_request_batch(
     Sends batch requests to the substrate node using multiple threads and collects the results.
 
     Args:
-        substrate (Any): An instance of the substrate interface.
-        batch_requests (list[tuple[str, list[Any]]]): A list of requests to be sent in batches.
+        substrate: An instance of the substrate interface.
+        batch_requests : A list of requests to be sent in batches.
+        max_size: Maximum size of each batch in bytes.
+        extract_result: Whether to extract the result from the response message.
 
     Returns:
         A list of results from the batch requests.
@@ -257,18 +266,20 @@ def _rpc_request_batch(
     return results
 
 
-def _get_lists(functions: dict[str, list[tuple[str, list[Any]]]], substrate: SubstrateInterface):
+def _get_lists(
+    functions: dict[str, list[tuple[str, list[Any]]]],
+    substrate: SubstrateInterface
+) -> list[tuple[Any, Any, Any, Any, str]]:
     """
     Generates a list of tuples containing parameters for each storage function based on the given functions and substrate interface.
 
     Args:
         functions (dict[str, list[query_call]]): A dictionary where keys are storage module names and values are lists of tuples. 
-        Each tuple consists of a storage function name and its parameters.
-        substrate (SubstrateInterface): An instance of the SubstrateInterface class used to interact with the substrate.
+            Each tuple consists of a storage function name and its parameters.
+        substrate: An instance of the SubstrateInterface class used to interact with the substrate.
 
     Returns:
-        A list of tuples where each tuple contains the value type, parameter types, 
-        key hashers, parameters, and storage function name for each storage function in the given functions.
+        A list of tuples in the format `(value_type, param_types, key_hashers, params, storage_function)` for each storage function in the given functions.
 
     Example:
         >>> _get_lists(
@@ -292,12 +303,15 @@ def _get_lists(functions: dict[str, list[tuple[str, list[Any]]]], substrate: Sub
     return function_parameters
 
 
-def query_batch(substrate: SubstrateInterface, functions: dict[str, list[tuple[str, list[Any]]]]) -> dict[str, str]:
+def query_batch(
+    substrate: SubstrateInterface,
+    functions: dict[str, list[tuple[str, list[Any]]]]
+) -> dict[str, str]:
     """
     Executes batch queries on a substrate and returns results in a dictionary format.
 
     Args:
-        substrate (SubstrateInterface): An instance of SubstrateInterface to interact with the substrate.
+        substrate: An instance of SubstrateInterface to interact with the substrate.
         functions (dict[str, list[query_call]]): A dictionary mapping module names to lists of query calls (function name and parameters).
 
     Returns:
@@ -337,12 +351,15 @@ def query_batch(substrate: SubstrateInterface, functions: dict[str, list[tuple[s
     return result
 
 
-def query_batch_map(substrate: SubstrateInterface, functions: dict[str, list[tuple[str, list[Any]]]]):
+def query_batch_map(
+    substrate: SubstrateInterface,
+    functions: dict[str, list[tuple[str, list[Any]]]]
+) -> dict[str, dict[Any, Any]]:
     """
     Queries multiple storage functions using a map batch approach and returns the combined result.
 
     Args:
-        substrate (SubstrateInterface): An instance of SubstrateInterface for substrate interaction.
+        substrate: An instance of SubstrateInterface for substrate interaction.
         functions (dict[str, list[query_call]]): A dictionary mapping module names to lists of query calls.
 
     Returns:
@@ -357,7 +374,7 @@ def query_batch_map(substrate: SubstrateInterface, functions: dict[str, list[tup
     substrate.init_runtime(block_hash=block_hash)  # type: ignore
 
     function_parameters = _get_lists(functions, substrate)
-    # it's working for a single module, but the resposne is weird when we try to uqery system
+    # it's working for a single module, but the response is weird when we try to query system
     send: list[tuple[str, list[Any]]] = []
     prefix_list: list[Any] = []
     for module, queries in functions.items():
