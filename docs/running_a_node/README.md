@@ -73,7 +73,7 @@ The provided [`./docker-compose.yaml` file] expects the environment variable
 and the RPC service at `9933`.
 
 ```sh
-docker compose up -d
+docker-compose up -d
 ```
 
 By default the node will work in archive mode, which means it will store all the
