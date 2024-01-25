@@ -240,7 +240,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
     return global_params
 
 
-# TODO: use query map batch
 
 def concat_to_local_keys(balance: dict[str, int]) -> dict[str, int]:
 
