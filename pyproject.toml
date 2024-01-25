@@ -2,7 +2,7 @@
 name = "communex"
 version = "0.1.0"
 description = "A library for Commune network focused on simplicity"
-authors = ["Kelvin Steiner <kelvinsteinersantos@gmail.com>"]
+authors = ["agicommies <info@agicommies.org>"]
 license = "MIT"
 readme = "README.md"
 
