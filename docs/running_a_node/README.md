@@ -3,13 +3,14 @@
 ## Requirements
 
 - [Docker](https://docs.docker.com/get-docker/)
+- Docker Compose
 - `wget`
 - [`yq`](https://mikefarah.gitbook.io/yq/)
 
 Installing on Ubuntu:
 
 ```sh
-sudo apt install docker.io
+sudo apt install docker.io docker-compose
 sudo apt install wget
 
 # Ubuntu has `yq` on apt since 23.04
