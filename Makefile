@@ -1,4 +1,4 @@
-.PHONY: docs_run
+.PHONY: docs_run docs_generate docs_copy_assets docs_build
 
 docs_run:
 	@echo "URL: http://localhost:8080/communex"
