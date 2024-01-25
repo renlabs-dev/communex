@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  node:
+    container_name: commune-node
+    image: commune-node
+    build:
+      context: .
+    volumes:
+      - ${COMMUNE_NODE_DIR}:/node-config
+    ports:
+      - 30333:30333 # P2P
+      - 9944:9944 # RPC
+      # - 9615:9615 # Prometheus
+    restart: always
+    command: ["bash", "${COMMUNE_NODE_DIR}/node-start.sh", "--sync=full", "--pruning=archive"]
