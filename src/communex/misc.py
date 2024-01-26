@@ -1,18 +1,18 @@
 from typing import Any
 
-from cexpl.types import ModuleWithOptionalBalance
 from communex.client import CommuneClient
+from communex.compat.key import local_key_addresses
 from communex.key import check_ss58_address
 from communex.raw_ws_ops import query_batch, query_batch_map
-from communex.types import NetworkParams, Ss58Address, SubnetParamsWithEmission
-from communex.compat.key import local_key_addresses
+from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
+                            Ss58Address, SubnetParamsWithEmission)
 
 
 def get_map_modules(
     client: CommuneClient,
     netuid: int = 0,
     include_balances: bool = False,
-) -> dict[str, ModuleWithOptionalBalance]:
+) -> dict[str, ModuleInfoWithOptionalBalance]:
     """
     Gets all modules info on the network
     """
@@ -52,7 +52,7 @@ def get_map_modules(
             bulk_query.get("Account", None),
         )
 
-    result_modules: dict[str, ModuleWithOptionalBalance] = {}
+    result_modules: dict[str, ModuleInfoWithOptionalBalance] = {}
 
     for uid, key in uid_to_key.items():
         key = check_ss58_address(key)
@@ -77,7 +77,7 @@ def get_map_modules(
                 balance = 0
         stake = sum(stake for _, stake in stake_from)
 
-        module: ModuleWithOptionalBalance = {
+        module: ModuleInfoWithOptionalBalance = {
             "uid": uid,
             "key": key,
             "name": name,

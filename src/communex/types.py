@@ -4,7 +4,6 @@ Common types for the communex module.
 
 from typing import NewType, TypedDict
 
-
 Ss58Address = NewType("Ss58Address", str)
 """Substrate SS58 address.
 
@@ -15,6 +14,7 @@ chains.
 .. _SS58 encoded address format:
     https://docs.substrate.io/reference/address-formats/
 """
+
 
 # TODO: replace with dataclasses(?)
 
@@ -62,3 +62,26 @@ class SubnetParamsWithEmission(SubnetParams, TypedDict):
     emission: int
     """Subnet emission percentage (0-100).
     """
+
+
+class ModuleInfo(TypedDict):
+    uid: int
+    key: Ss58Address
+    name: str
+    address: str  # "<ip>:<port>"
+    emission: int
+    incentive: int
+    dividends: int
+    stake_from: list[tuple[str, int]]  # TODO: type key with Ss58Address
+    regblock: int  # block number
+    last_update: int  # block number
+    stake: int
+    delegation_fee: int
+
+
+class ModuleInfoWithBalance(ModuleInfo):
+    balance: int
+
+
+class ModuleInfoWithOptionalBalance(ModuleInfo):
+    balance: int | None
