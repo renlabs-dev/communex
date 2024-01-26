@@ -37,7 +37,6 @@ def create(ctx: Context, name: str):
     context.info(f"Key successfully stored with name '{name}'.")
 
 
-@key_app.command(name="regen")
 def save(ctx: Context, name: str, mnemonic: str):
     """
     Stores the given key on a disk. Works with private key or mnemonic.
