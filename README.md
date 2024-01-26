@@ -67,7 +67,7 @@ comx subcommand [OPTIONS] COMMAND [ARGS]...
 #### Retrieving Balance
 
 ```sh
-comx balance show 5FgfC2DY4yreEWEughz46RZYQ8oBhHVqD9fVq6gV89E6z4Ea # Staked, free, total balance.
+comx balance show 5FgfC2DY4yreEWEughz46RZYQ8oBhHVqD9fVq6gV89E6z4Ea [--netuid] [--unit]# Staked, free, total balance.
 ```
 
 #### Creating a Key
@@ -115,5 +115,5 @@ comx subnet list
 #### Retrieving Circulating Supply
 
 ```sh
-comx misc circulating-supply # Gets all tokens then were ever emitted - burned
+comx misc circulating-supply [--unit] # Gets all tokens then were ever emitted - burned
 ```
