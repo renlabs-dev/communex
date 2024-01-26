@@ -40,7 +40,7 @@ def check_key_dict(key_dict: Any) -> CommuneKeyDict:
     assert isinstance(key_dict["crypto_type"], int)
     assert isinstance(key_dict["seed_hex"], str)
     assert isinstance(key_dict["derive_path"], str | None)
-    assert isinstance(key_dict["path"], str)
+    assert isinstance(key_dict["path"], str) or key_dict["path"] is None
     assert isinstance(key_dict["public_key"], str)
     assert isinstance(key_dict["ss58_format"], int)
     assert isinstance(key_dict["ss58_address"], str)
