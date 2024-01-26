@@ -1,14 +1,8 @@
-<div align="center">
-
-# **Communex**
+# Communex
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Discord Chat](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://discord.com/invite/DgjvQXvhqf)
 [![PyPI version](https://badge.fury.io/py/communex.svg)](https://pypi.org/project/communex/)
-
-## An Innovative Commune Alternative Library
-
-</div>
 
 ## Why Communex
 
