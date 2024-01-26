@@ -2,7 +2,7 @@ import typer
 from rich.console import Console
 
 from communex.balance import to_nano
-from cexpl.commune.key import Key
+from communex.compat.key import resolve_key_ss58, classic_load_key
 from communex.errors import ChainTransactionError
 
 from ._common import BalanceUnit, format_balance, make_client
@@ -19,7 +19,7 @@ def show(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
     console = Console()
     client = make_client()
 
-    key_address = Key.resolve_key_ss58(key)  # TODO: commune.compat.key.classic_resolve_key_ss58
+    key_address = resolve_key_ss58(key)  # TODO: commune.compat.key.classic_resolve_key_ss58
 
     with console.status(f"Getting balance of key {key_address}..."):
         balance = client.get_balance(key_address)
@@ -44,7 +44,7 @@ def free_balance(key: str, unit: BalanceUnit = BalanceUnit.joule):
     console = Console()
     client = make_client()
 
-    key_address = Key.resolve_key_ss58(key)
+    key_address = resolve_key_ss58(key)
 
     with console.status(f"Getting free balance of key {key_address}..."):
         balance = client.get_balance(key_address)
@@ -61,7 +61,7 @@ def staked_balance(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.jo
     console = Console()
     client = make_client()
 
-    key_address = Key.resolve_key_ss58(key)
+    key_address = resolve_key_ss58(key)
 
     with console.status(f"Getting staked balance of key {key_address}..."):
         staketo = client.get_staketo(key_addr=key_address, netuid=netuid)
@@ -80,7 +80,7 @@ def all_balance(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule
     console = Console()
     client = make_client()
 
-    key_address = Key.resolve_key_ss58(key)
+    key_address = resolve_key_ss58(key)
 
     with console.status(f"Getting value of key {key_address}..."):
         staketo = client.get_staketo(key_address, netuid=netuid)
@@ -100,7 +100,7 @@ def get_staked(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule)
     console = Console()
     client = make_client()
 
-    key_address = Key.resolve_key_ss58(key)
+    key_address = resolve_key_ss58(key)
 
     with console.status(f"Getting stake of {key_address}..."):
         result = client.get_stake(key=key_address, netuid=netuid)
@@ -118,8 +118,8 @@ def transfer(key: str, amount: float, dest: str):
     client = make_client()
 
     nano_amount = to_nano(amount)
-    resolved_key = Key.resolve_key(key)
-    resolved_dest = Key.resolve_key_ss58(dest)
+    resolved_key = classic_load_key(key)
+    resolved_dest = resolve_key_ss58(dest)
 
     # TODO: refactor yes/no prompts into function
     console.print(
@@ -147,9 +147,9 @@ def transfer_stake(key: str, amount: float, from_key: str, dest: str, netuid: in
     console = Console()
     client = make_client()
 
-    resolved_from = Key.resolve_key_ss58(from_key)
-    resolved_dest = Key.resolve_key_ss58(dest)
-    resolved_key = Key.resolve_key(key)
+    resolved_from = resolve_key_ss58(from_key)
+    resolved_dest = resolve_key_ss58(dest)
+    resolved_key = classic_load_key(key)
     nano_amount = to_nano(amount)
 
     with console.status(f"Transferring {amount} tokens from {from_key} to {dest} on a subnet with netuid '{netuid}' ..."):
@@ -178,8 +178,8 @@ def stake(key: str, amount: float, dest: str, netuid: int = 0):
     client = make_client()
 
     nano_amount = to_nano(amount)
-    resolved_key = Key.resolve_key(key)
-    resolved_dest = Key.resolve_key_ss58(dest)
+    resolved_key = classic_load_key(key)
+    resolved_dest = resolve_key_ss58(dest)
 
     with console.status(f"Staking {amount} tokens to {dest} on a subnet with netuid '{netuid}'..."):
 
@@ -202,8 +202,8 @@ def unstake(key: str, amount: float, dest: str, netuid: int = 0):
     client = make_client()
 
     nano_amount = to_nano(amount)
-    resolved_key = Key.resolve_key(key)
-    resolved_dest = Key.resolve_key_ss58(dest)
+    resolved_key = classic_load_key(key)
+    resolved_dest = resolve_key_ss58(dest)
 
     with console.status(f"Unstaking {amount} tokens from {dest} on a subnet with netuid '{netuid}'..."):
 

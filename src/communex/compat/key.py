@@ -146,3 +146,22 @@ def local_key_addresses() -> dict[str, Ss58Address]:
         addresses_map[key_name] = check_ss58_address(key_dict.ss58_address)
 
     return addresses_map
+
+
+def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
+    """
+    Resolves a keypair or key name to its corresponding SS58 address.
+
+    If the input is already an SS58 address, it is returned as is.
+    """
+
+    if isinstance(key, Keypair):
+        return key.ss58_address  # type: ignore
+
+    if is_ss58_address(key):
+        return key
+
+    keypair = classic_load_key(key)
+    address = keypair.ss58_address
+
+    return check_ss58_address(address)

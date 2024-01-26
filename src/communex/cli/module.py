@@ -3,9 +3,10 @@ from typing import Any, Optional, cast
 import typer
 from rich.console import Console
 
-import cexpl.commune.key as c_key
 import communex.balance as c_balance
+from communex.compat.key import classic_load_key, classic_store_key
 from communex.errors import ChainTransactionError
+from communex.key import generate_keypair
 from communex.misc import get_map_modules
 from communex.util import is_ip_valid
 
@@ -17,8 +18,9 @@ module_app = typer.Typer()
 @module_app.command()
 def register(name: str, ip: str, port: int, key: Optional[str] = None, subnet: str = "commune", stake: float = 100):
     """
-    Registers a module,
-    not passing key as a mandatory command as user may not have it yet
+    Registers a module.
+
+    Asks to generate a key if not provided.
     """
 
     console = Console()
@@ -27,19 +29,19 @@ def register(name: str, ip: str, port: int, key: Optional[str] = None, subnet: s
     stake_nano = c_balance.to_nano(stake)
 
     if key is not None:
-        resolved_key = c_key.Key.resolve_key(key)
+        resolved_key = classic_load_key(key)
     else:
         console.print("Do you want to generate a key for the module? (y/n)")
 
         answer = input()
-        if answer == "y":    # TODO: refactor prompt
-            key_details = c_key.Key.generate(name)
+        if answer == "y":  # TODO: refactor prompt
+            keypair = generate_keypair()
+            classic_store_key(keypair, name)
         else:
             console.print("You need to provide or generate a key.")
             exit(1)
 
-        c_key.Key(name=name, keypair=key_details.keypair).commune_store()
-        resolved_key = c_key.Key.resolve_key(name)
+        resolved_key = classic_load_key(name)
         console.print(
             f"Created key {name} with address {resolved_key.ss58_address}", style="bold green")
 
@@ -65,7 +67,7 @@ def update(key: str, name: str, address: str, delegation_fee: int = 20, netuid: 
     """
 
     console = Console()
-    resolved_key = c_key.Key.resolve_key(key)
+    resolved_key = classic_load_key(key)
     client = make_client()
 
     if not is_ip_valid(address):

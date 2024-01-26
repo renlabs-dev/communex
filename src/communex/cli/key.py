@@ -3,22 +3,21 @@ from typing import Any, cast
 
 import typer
 from rich.console import Console
+from substrateinterface import Keypair  # type: ignore
 from typer import Context
 
-from communex.compat.key import classic_key_path, local_key_addresses
+from communex.compat.key import (classic_key_path, classic_store_key,
+                                 local_key_addresses, resolve_key_ss58)
 from communex.compat.storage import classic_load
+from communex.key import generate_keypair
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
-
-from cexpl.commune.key import Key
 
 from ._common import (BalanceUnit, SortBalance, format_balance, make_client,
                       make_custom_context, print_table_from_plain_dict,
                       print_table_standardize)
 
 key_app = typer.Typer()
-
-# TODO: refactor `Key` out
 
 
 @key_app.command()
@@ -28,10 +27,13 @@ def create(ctx: Context, name: str):
     """
     context = make_custom_context(ctx)
 
-    key = Key.generate(name)
-    key_address = key.keypair.ss58_address
-    context.info(f"Generated key with public address '{key_address}'.")
-    key.commune_store()
+    keypair = generate_keypair()
+    address = keypair.ss58_address
+
+    context.info(f"Generated key with public address '{address}'.")
+
+    classic_store_key(keypair, name)
+
     context.info(f"Key successfully stored with name '{name}'.")
 
 
@@ -43,10 +45,13 @@ def save(ctx: Context, name: str, mnemonic: str):
     # TODO: secret input from env var and stdin
     context = make_custom_context(ctx)
 
-    key = Key.from_mnemonic(name, mnemonic)
-    key_address = key.keypair.ss58_address
-    context.info(f"Loaded key with public address `{key_address}`.")
-    key.commune_store()
+    keypair = Keypair.create_from_mnemonic(mnemonic)
+    address = keypair.ss58_address
+
+    context.info(f"Loaded key with public address `{address}`.")
+
+    classic_store_key(keypair, name)
+
     context.info(f"Key stored with name `{name}` successfully.")
 
 
@@ -64,6 +69,7 @@ def show(key: str, private: bool = False):
         key_dict["mnemonic"] = "[SENSITIVE-MODE]"
 
     print_table_from_plain_dict(key_dict, ["Key", "Value"], console)
+
 
 @key_app.command()
 def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule, sort_balance: SortBalance = SortBalance.all,):
@@ -139,7 +145,7 @@ def stakefrom(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
     console = Console()
     client = make_client()
 
-    key_address = Key.resolve_key_ss58(key)
+    key_address = resolve_key_ss58(key)
 
     with console.status(f"Getting stake-from map for {key_address}..."):
         result = client.get_stakefrom(key_addr=key_address, netuid=netuid)
@@ -158,7 +164,7 @@ def staketo(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
     console = Console()
     client = make_client()
 
-    key_address = Key.resolve_key_ss58(key)
+    key_address = resolve_key_ss58(key)
 
     with console.status(f"Getting stake-to of {key_address}..."):
         result = client.get_staketo(key_addr=key_address, netuid=netuid)

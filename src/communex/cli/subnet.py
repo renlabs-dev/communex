@@ -1,12 +1,12 @@
+from typing import Any, Optional, cast
+
 import typer
 from rich.console import Console
-from typing import cast, Any, Optional
 
-from communex.types import Ss58Address, SubnetParams
-
-from cexpl.commune.key import Key
-from communex.misc import get_map_subnets_params
+from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
+from communex.misc import get_map_subnets_params
+from communex.types import Ss58Address, SubnetParams
 
 from ._common import make_client, print_table_from_plain_dict
 
@@ -103,7 +103,7 @@ def update(netuid: int,
         "max_weight_age": max_weight_age,
     }
 
-    resolved_key = Key.resolve_key(key)
+    resolved_key = classic_load_key(key)
 
     with console.status("Updating subnet ..."):
         response = (client.update_subnet(key=resolved_key, params=params, netuid=netuid))

@@ -3,9 +3,9 @@ from typing import Any, cast
 import typer
 from rich.console import Console
 
-from communex.types import NetworkParams, SubnetParams
+from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.misc import get_global_params
-from cexpl.commune.key import Key
+from communex.types import NetworkParams, SubnetParams
 
 from ._common import make_client, print_table_from_plain_dict
 
@@ -57,7 +57,8 @@ def list_proposals():
 
     for _, batch_proposal in proposals.items():
         for proposal_id, proposal in batch_proposal.items():
-            print_table_from_plain_dict(proposal, [f"Proposal id: {proposal_id}", "Params"], console)
+            print_table_from_plain_dict(
+                proposal, [f"Proposal id: {proposal_id}", "Params"], console)
 
 
 @network_app.command()
@@ -84,7 +85,7 @@ def propose_globally(
     console = Console()
     client = make_client()
 
-    resolved_key = Key.resolve_key(key)
+    resolved_key = classic_load_key(key)
 
     proposal: NetworkParams = {"max_allowed_subnets": max_allowed_subnets,
                                "max_allowed_modules": max_allowed_modules,
@@ -133,8 +134,8 @@ def propose_on_subnet(
     console = Console()
     client = make_client()
 
-    resolve_founder = Key.resolve_key_ss58(founder)
-    resolved_key = Key.resolve_key(key)
+    resolve_founder = resolve_key_ss58(founder)
+    resolved_key = classic_load_key(key)
 
     proposal: SubnetParams = {"name": name,
                               "founder": resolve_founder,
@@ -163,7 +164,7 @@ def vote_proposal(key: str, proposal_id: int):
     console = Console()
     client = make_client()
 
-    resolved_key = Key.resolve_key(key)
+    resolved_key = classic_load_key(key)
     with console.status(f"Voting on a proposal {proposal_id}..."):
         client.vote_on_proposal(resolved_key, proposal_id)
 
@@ -173,6 +174,6 @@ def unvote_proposal(key: str, proposal_id: int):
     console = Console()
     client = make_client()
 
-    resolved_key = Key.resolve_key(key)
+    resolved_key = classic_load_key(key)
     with console.status(f"Unvoting on a proposal {proposal_id}..."):
         client.unvote_on_proposal(resolved_key, proposal_id)
