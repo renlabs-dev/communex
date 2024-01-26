@@ -48,7 +48,7 @@ def make_custom_context(ctx: typer.Context) -> CustomCtx:
 # Client
 
 def get_node_url() -> str:
-    return "wss://commune-node-0.agicommies.org"
+    return "wss://commune.api.onfinality.io/public-ws"
 
 
 def make_client():
