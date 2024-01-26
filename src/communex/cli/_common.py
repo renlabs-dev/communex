@@ -18,6 +18,12 @@ class BalanceUnit(str, Enum):
     n = "n"
 
 
+class SortBalance(str, Enum):
+    all = "all"
+    free = "free"
+    staked = "staked"
+
+
 @dataclass
 class CustomCtx:
     typer_ctx: typer.Context

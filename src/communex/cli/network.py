@@ -32,7 +32,7 @@ def last_block(hash: bool = False):
 
 
 @network_app.command()
-def list_params():
+def params():
     """
     Gets global params
     """
@@ -55,8 +55,9 @@ def list_proposals():
     with console.status("Getting proposals..."):
         proposals = client.query_map_proposals()
 
-    for proposal_id, proposal in proposals.items():
-        print_table_from_plain_dict(proposal, [f"Proposal id: {proposal_id}", "Params"], console)
+    for _, batch_proposal in proposals.items():
+        for proposal_id, proposal in batch_proposal.items():
+            print_table_from_plain_dict(proposal, [f"Proposal id: {proposal_id}", "Params"], console)
 
 
 @network_app.command()

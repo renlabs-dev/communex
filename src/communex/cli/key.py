@@ -1,5 +1,5 @@
 import json
-from typing import cast
+from typing import cast, Any
 
 import typer
 from rich.console import Console
@@ -11,8 +11,8 @@ from communex.compat.storage import classic_load
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
 
-from ._common import (BalanceUnit, format_balance, make_client,
-                      make_custom_context, print_table_from_plain_dict)
+from ._common import (BalanceUnit, SortBalance, format_balance, make_client,
+                      make_custom_context, print_table_from_plain_dict, print_table_standardize)
 
 key_app = typer.Typer()
 
@@ -64,67 +64,68 @@ def show(key: str, private: bool = False):
     print_table_from_plain_dict(key_dict, ["Key", "Value"], console)
 
 
+def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule, sort_balance: SortBalance = SortBalance.all,):
+    """
+    Gets balances of all keys.
+    """
+
+    context = make_custom_context(ctx)
+    client = make_client()
+
+    with context.console.status("Getting balances of all keys, this might take a while..."):
+        key2freebalance, key2stake = local_keys_allbalance(client, netuid)
+    key_to_freebalance = {k: format_balance(v, unit) for k, v in key2freebalance.items()}
+    key_to_stake = {k: format_balance(v, unit) for k, v in key2stake.items()}
+
+    key2balance = {k: v + key2stake[k] for k, v in key2freebalance.items()}
+    key_to_balance = {k: format_balance(v, unit) for k, v in key2balance.items()}
+
+    if sort_balance == SortBalance.all:
+        sorted_bal = {k: v for k, v in sorted(
+            key2balance.items(), key=lambda item: item[1], reverse=True)}
+    elif sort_balance == SortBalance.free:
+        sorted_bal = {k: v for k, v in sorted(
+            key2freebalance.items(), key=lambda item: item[1], reverse=True)}
+    elif sort_balance == SortBalance.staked:
+        sorted_bal = {k: v for k, v in sorted(
+            key2stake.items(), key=lambda item: item[1], reverse=True)}
+    else:
+        raise ValueError("Invalid sort balance option")
+
+    stake: list[str] = []
+    all_balance: list[str] = []
+    free: list[str] = []
+    keys: list[str] = []
+
+    for key, _ in sorted_bal.items():
+        keys.append(key)
+        free.append(key_to_freebalance[key])
+        stake.append(key_to_stake[key])
+        all_balance.append(key_to_balance[key])
+
+    pretty_dict = {
+        "key": keys,
+        "free": free,
+        "staked": stake,
+        "all": all_balance,
+    }
+
+    general_dict: dict[str, list[Any]] = cast(dict[str, list[Any]], pretty_dict)
+    print_table_standardize(general_dict, context.console)
+
+
 @key_app.command(name='list')
 def inventory(
     ctx: Context,
-    # netuid: int = 0,
-    # balances: bool = False,
-    # sort_balance: SortBalanceOptions = SortBalanceOptions.all,
-    # unit: BalanceUnit = BalanceUnit.joule
 ):
     """
     Lists all keys stored on disk, optionally with balances.
     """
     context = make_custom_context(ctx)
 
-    # if not balances:
-
     key_to_address = local_key_addresses()
     general_key_to_address: dict[str, str] = cast(dict[str, str], key_to_address)
     print_table_from_plain_dict(general_key_to_address, ["Key", "Address"], context.console)
-
-    # else:
-    #     client = make_client()
-    #     with context.console.status("Getting balances of all keys, this might take a while..."):
-    #         key2freebalance, key2stake = local_key2allbalances(client, netuid)
-    #     key_to_freebalance = {k: format_balance(v, unit) for k, v in key2freebalance.items()}
-    #     key_to_stake = {k: format_balance(v, unit) for k, v in key2stake.items()}
-
-    #     key2balance = {k: v + key2stake[k] for k, v in key2freebalance.items()}
-    #     key_to_balance = {k: format_balance(v, unit) for k, v in key2balance.items()}
-
-    #     if sort_balance == SortBalanceOptions.all:
-    #         sorted_bal = {k: v for k, v in sorted(
-    #             key2balance.items(), key=lambda item: item[1], reverse=True)}
-    #     elif sort_balance == SortBalanceOptions.free:
-    #         sorted_bal = {k: v for k, v in sorted(
-    #             key2freebalance.items(), key=lambda item: item[1], reverse=True)}
-    #     elif sort_balance == SortBalanceOptions.stake:
-    #         sorted_bal = {k: v for k, v in sorted(
-    #             key2stake.items(), key=lambda item: item[1], reverse=True)}
-    #     else:
-    #         raise ValueError("Invalid sort balance option")
-
-    #     stake: list[str] = []
-    #     all_balance: list[str] = []
-    #     free: list[str] = []
-    #     keys: list[str] = []
-
-    #     for key, _ in sorted_bal.items():
-    #         keys.append(key)
-    #         free.append(key_to_freebalance[key])
-    #         stake.append(key_to_stake[key])
-    #         all_balance.append(key_to_balance[key])
-
-    #     pretty_dict = {
-    #         "key": keys,
-    #         "free": free,
-    #         "staked": stake,
-    #         "all": all_balance,
-    #     }
-
-    #     general_dict: dict[str, list[Any]] = cast(dict[str, list[Any]], pretty_dict)
-    #     print_table_standardize(general_dict, context.console)
 
 
 @key_app.command()
