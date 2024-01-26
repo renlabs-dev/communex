@@ -851,7 +851,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Proposals',)
+        return self.query_map('Proposals', extract_value=False)
 
     def query_map_key(
             self,
