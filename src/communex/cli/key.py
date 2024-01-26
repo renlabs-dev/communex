@@ -63,7 +63,7 @@ def show(key: str, private: bool = False):
 
     print_table_from_plain_dict(key_dict, ["Key", "Value"], console)
 
-
+@key_app.command()
 def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule, sort_balance: SortBalance = SortBalance.all,):
     """
     Gets balances of all keys.
