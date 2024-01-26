@@ -1,18 +1,20 @@
 import json
-from typing import cast, Any
+from typing import Any, cast
 
 import typer
 from rich.console import Console
 from typer import Context
 
-from cexpl.commune.key import Key
 from communex.compat.key import classic_key_path, local_key_addresses
 from communex.compat.storage import classic_load
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
 
+from cexpl.commune.key import Key
+
 from ._common import (BalanceUnit, SortBalance, format_balance, make_client,
-                      make_custom_context, print_table_from_plain_dict, print_table_standardize)
+                      make_custom_context, print_table_from_plain_dict,
+                      print_table_standardize)
 
 key_app = typer.Typer()
 
