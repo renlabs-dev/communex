@@ -111,3 +111,15 @@ comx subnet list
 ```sh
 comx misc circulating-supply [--unit] # Gets all tokens then were ever emitted - burned
 ```
+
+## Commune compatibility
+
+Yes, Communex is compatible with Commune. However, there are important considerations to note. Communex verifies the integrity of your keys, which means that mixing certain types of keys is not permissible. Specifically, if you possess node keys or other similar types that are not designed to receive tokens, it is needed to relocate them outside of the key directory.
+
+### Note
+
+If you run into permissions problems when creating new keys, proceed with the following command:
+
+```sh
+sudo chown -R $USER:$USER ~/.commune
+```
