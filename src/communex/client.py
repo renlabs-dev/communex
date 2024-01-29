@@ -286,7 +286,8 @@ class CommuneClient:
         assert len(destinations) == len(amounts)
 
         # extract existential deposit from amounts
-        amounts = [a - self.get_existential_deposit() for a in amounts]
+        existential_deposit = self.get_existential_deposit()
+        amounts = [a - existential_deposit for a in amounts]
 
         params = {
             "netuid": netuid,
