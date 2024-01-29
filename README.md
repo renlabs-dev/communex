@@ -8,23 +8,23 @@
 
 Communex serves as an alternative library/SDK to the original [Commune
 Ai](https://github.com/commune-ai/commune) codebase, offering a streamlined and
-user-friendly experience. It is designed for simplicity and scalable development. Its
-decentralized approach underlines the versatile and adaptive nature of the
-Commune framework, catering to a broad range of machine learning and blockchain
-applications.
+user-friendly experience. It is designed for simplicity and scalable
+development. Its decentralized approach underlines the versatile and adaptive
+nature of the Commune framework, catering to a broad range of machine learning
+and blockchain applications.
 
 ## Installation
 
-To add `communex` to your Poetry project, run:
-
-```sh
-poetry add communex
-```
-
-or install it directly with `pip` with:
+Install `communex` directly with `pip`:
 
 ```sh
 pip install communex
+```
+
+Or add it to your Poetry project, run:
+
+```sh
+poetry add communex
 ```
 
 ## CLI Usage
@@ -46,7 +46,8 @@ comx [OPTIONS] COMMAND [ARGS]
 There are six essential subcommands:
 
 - **balance** transfer, stake, unstake, to showing balance operations
-- **key** creating, saving (AKA regenerating), listing, to showing balance operations
+- **key** creating, saving (AKA regenerating), listing, to showing balance
+  operations
 - **module** info, list, register, serve, update
 - **network** block, parameters, proposals / proposing, voting operations
 - **subnet** info, list, update
@@ -61,7 +62,7 @@ comx subcommand [OPTIONS] COMMAND [ARGS]...
 #### Retrieving Balance
 
 ```sh
-comx balance show 5FgfC2DY4yreEWEughz46RZYQ8oBhHVqD9fVq6gV89E6z4Ea [--netuid] [--unit]# Staked, free, total balance.
+comx balance show 5FgfC2DY4yreEWEughz46RZYQ8oBhHVqD9fVq6gV89E6z4Ea [--netuid] [--unit] # Staked, free, total balance.
 ```
 
 #### Creating a Key
@@ -114,12 +115,8 @@ comx misc circulating-supply [--unit] # Gets all tokens then were ever emitted -
 
 ## Commune compatibility
 
-Yes, Communex is compatible with Commune. However, there are important considerations to note. Communex verifies the integrity of your keys, which means that mixing certain types of keys is not permissible. Specifically, if you possess node keys or other similar types that are not designed to receive tokens, it is needed to relocate them outside of the key directory.
-
-### Note
-
-If you run into permissions problems when creating new keys, proceed with the following command:
-
-```sh
-sudo chown -R $USER:$USER ~/.commune
-```
+Yes, Communex is compatible with Commune. However, there are important
+considerations to note. Communex verifies the integrity of your keys, which
+means that mixing certain types of keys is not permissible. Specifically, if you
+possess node keys or other similar types that are not designed to receive
+tokens, it is needed to relocate them outside of the key directory.
