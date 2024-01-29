@@ -56,14 +56,14 @@ def save(ctx: Context, name: str, mnemonic: str):
 
 
 @key_app.command()
-def show(key: str, private: bool = False):
+def show(key: str, show_private: bool = False):
     console = Console()
 
     path = classic_key_path(key)
     key_dict_json = classic_load(path)
     key_dict = json.loads(key_dict_json)
 
-    if private is not True:
+    if show_private is not True:
         key_dict["private_key"] = "[SENSITIVE-MODE]"
         key_dict["seed_hex"] = "[SENSITIVE-MODE]"
         key_dict["mnemonic"] = "[SENSITIVE-MODE]"

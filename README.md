@@ -1,57 +1,72 @@
-# Communex
+# CommuneX
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Discord Chat](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://discord.com/invite/DgjvQXvhqf)
+[![Discord Chat](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://go.agicommies.org/commune-discord)
 [![PyPI version](https://badge.fury.io/py/communex.svg)](https://pypi.org/project/communex/)
 
-## Why Communex
+- [Why CommuneX](#why-communex)
+- [Installation](#installation)
+- [Features](#features)
+  - [Planned](#planned)
+- [CLI Usage](#cli-usage)
+  - [Examples](#examples)
+  - [Completions](#completions)
+- [Contributing](#contributing)
+- [Commune compatibility](#commune-compatibility)
 
-Communex serves as an alternative library/SDK to the original [Commune
+## Why CommuneX
+
+CommuneX serves as an alternative library/SDK to the original [Commune
 Ai](https://github.com/commune-ai/commune) codebase, offering a streamlined and
 user-friendly experience. It is designed for simplicity and scalable
-development. Its decentralized approach underlines the versatile and adaptive
-nature of the Commune framework, catering to a broad range of machine learning
-and blockchain applications.
+development.
 
 ## Installation
 
-Install `communex` directly with `pip`:
+Requirements: Python 3.10+
+
+Install the `communex` Python package directly with `pip`:
 
 ```sh
 pip install communex
 ```
 
-Or add it to your Poetry project, run:
+Or add it to your Poetry project with:
 
 ```sh
 poetry add communex
 ```
 
+## Features
+
+- [x] Commands
+  - [x] Key management
+  - [x] Transfering and staking tokens
+  - [x] Module management
+
+### Planned
+
+- [ ] Client to interact with served modules
+- [ ] Module class and server
+- [ ] Module API extraction and documentation generator
+
 ## CLI Usage
 
-You can install completions by:
-
-```sh
-comx --install-completion
-comx --show-completion
-source ~/.bashrc  # Reload Bash / Zsh configuration to take effect.
-```
-
-To navigate the cli, follow this structure:
+The CLI commands are structured as follows:
 
 ```sh
 comx [OPTIONS] COMMAND [ARGS]
 ```
 
-There are six essential subcommands:
+There are six top-level subcommands:
 
-- **balance** transfer, stake, unstake, to showing balance operations
-- **key** creating, saving (AKA regenerating), listing, to showing balance
+- **balance**: transfer, stake, unstake and showing balance operations
+- **key**: creating, saving (AKA regenerating), listing and showing balance
   operations
-- **module** info, list, register, serve, update
-- **network** block, parameters, proposals / proposing, voting operations
-- **subnet** info, list, update
-- **misc** apr, circulating supply
+- **module**: info, list, register, serve, update
+- **network**: block, parameters, proposals / proposing, voting operations
+- **subnet**: info, list, update
+- **misc**: apr, circulating supply
 
 ```sh
 comx subcommand [OPTIONS] COMMAND [ARGS]...
@@ -62,7 +77,8 @@ comx subcommand [OPTIONS] COMMAND [ARGS]...
 #### Retrieving Balance
 
 ```sh
-comx balance show 5FgfC2DY4yreEWEughz46RZYQ8oBhHVqD9fVq6gV89E6z4Ea [--netuid] [--unit] # Staked, free, total balance.
+# Show staked, free and total balance.
+comx balance show 5FgfC2DY4yreEWEughz46RZYQ8oBhHVqD9fVq6gV89E6z4Ea 
 ```
 
 #### Creating a Key
@@ -74,25 +90,31 @@ comx key create key_name
 #### Retrieving Key Info
 
 ```sh
-comx key show [--private]
+comx key show key_name
+
+# Add the `--show-private` flag to show sentitive fields like private key.
+comx key show key_name --show-private
 ```
 
-####  Listing Keys
+#### Listing Keys
 
 ```sh
-comx key list # Lists the names and addresses on a disk.
+# Lists the names and addresses of keys stored on disk.
+comx key list 
 ```
 
 #### List Keys With Balances
 
 ```sh
-comx key balances [--netuid] [--unit] [sort-balance] # Lists keys stored on a disk with their balance (staked, free, sum), ability to sort by the different type of balance.
+# Lists keys stored on disk with their balance (free, staked and total).
+comx key balances
 ```
 
 #### Retrieving Module Information
 
 ```sh
-comx module info vali::calc [--balance] # Note that the module has to be registered on the network. Otherwise, an error will be thrown.
+# Note that the module has to be registered on the network.
+comx module info vali::calc [--balance] 
 ```
 
 #### Retrieving Global Parameters
@@ -110,13 +132,42 @@ comx subnet list
 #### Retrieving Circulating Supply
 
 ```sh
-comx misc circulating-supply [--unit] # Gets all tokens then were ever emitted - burned
+# Gets all tokens then were ever emitted minus burned tokens.
+comx misc circulating-supply 
 ```
+
+### Completions
+
+You can enable completions for your shell by running:
+
+```sh
+# On bash
+comx --install-completion bash
+# On zsh
+comx --install-completion zsh
+```
+
+## Contributing
+
+Bug reports and pull requests and other forms of contribution are welcomed and
+encouraged!  :)
+
+To report a bug or request a feature, please [open an issue on GitHub].
+
+If you have any questions, feel free to ask on the [CommuneX Discord channel] or
+post on our [GitHub discussions page].
 
 ## Commune compatibility
 
-Yes, Communex is compatible with Commune. However, there are important
-considerations to note. Communex verifies the integrity of your keys, which
-means that mixing certain types of keys is not permissible. Specifically, if you
-possess node keys or other similar types that are not designed to receive
-tokens, it is needed to relocate them outside of the key directory.
+Yes, `communex` is compatible with the `commune` library/CLI. However, there are
+important considerations to note. `communex` verifies the integrity of your
+keys, which means that mixing certain types of keys is not permissible.
+Specifically, if you possess node keys or other similar types that are not
+designed to receive tokens, you to relocate them outside of the key
+directory.
+
+---
+
+[open an issue on GitHub]: https://github.com/agicommies/communex/issues/new/choose
+[CommuneX Discord channel]: https://go.agicommies.org/communex-channel
+[GitHub discussions page]: https://github.com/agicommies/communex/discussions

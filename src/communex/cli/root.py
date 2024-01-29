@@ -21,5 +21,7 @@ app.add_typer(subnet_app, name="subnet", help="Subnet operations")
 @app.callback()
 def main(json: Optional[bool] = False):
     """
-    Communex CLI
+    CommuneX CLI.
+
+    This command line interface is under development and subject to change.
     """
