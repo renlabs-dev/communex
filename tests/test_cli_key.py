@@ -4,8 +4,9 @@ import re
 from pathlib import Path
 import pytest
 
-from communex.cli import app
 from communex.key import is_ss58_address
+
+from .conftest import InvokeCli
 
 
 runner = CliRunner()
@@ -36,9 +37,9 @@ def clean(text: str) -> str:
 
 
 @pytest.fixture()
-def temporary_key():
+def temporary_key(invoke_cli: InvokeCli):
     try:
-        result = runner.invoke(app, ["key", "create", TEST_TEMPORARY_KEY])
+        result = invoke_cli(["key", "create", TEST_TEMPORARY_KEY])
         
         _, address, _, name, _ = result.stdout.split("'")
         
@@ -48,9 +49,9 @@ def temporary_key():
 
 
 @pytest.fixture()
-def temporary_key_from_mnemonic():
+def temporary_key_from_mnemonic(invoke_cli: InvokeCli):
     try:
-        result = runner.invoke(app, ["key", "save", TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS])
+        result = invoke_cli(["key", "save", TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS])
         
         print(result.stdout)
         
@@ -73,10 +74,10 @@ def test_cli_key_create(temporary_key):
     assert name == TEST_TEMPORARY_KEY
 
 
-def test_cli_key_balances_slow(temporary_key):
+def test_cli_key_balances_slow(invoke_cli: InvokeCli, temporary_key):
     _, key_name, _ = temporary_key
     
-    result = runner.invoke(app, ["key", "balances"], color=False)
+    result = invoke_cli(["key", "balances"])
     
     assert result.exit_code == 0
 
@@ -86,10 +87,10 @@ def test_cli_key_balances_slow(temporary_key):
     assert clean(f"│ {key_name} │ 0.0 J │ 0.0 J  │ 0.0 J │") in stdout
     
 
-def test_cli_key_list(temporary_key):
+def test_cli_key_list(invoke_cli: InvokeCli, temporary_key):
     address, name, _ = temporary_key
     
-    result = runner.invoke(app, ["key", "list"], color=False)
+    result = invoke_cli(["key", "list"])
     
     assert result.exit_code == 0
     
@@ -99,9 +100,9 @@ def test_cli_key_list(temporary_key):
     assert clean(f"│ {name} │ {address}     │") in stdout
 
 
-def test_cli_key_save():
+def test_cli_key_save(invoke_cli: InvokeCli):
     try:
-        result = runner.invoke(app, ["key", "save", TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS])
+        result = invoke_cli(["key", "save", TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS])
         
         assert result.exit_code == 0
 
@@ -112,10 +113,10 @@ def test_cli_key_save():
         delete_temporary_key()
 
 
-def test_cli_key_show(temporary_key_from_mnemonic):
+def test_cli_key_show(invoke_cli: InvokeCli, temporary_key_from_mnemonic):
     address, name, _ = temporary_key_from_mnemonic
     
-    result = runner.invoke(app, ["key", "show", name])
+    result = invoke_cli(["key", "show", name])
     
     assert result.exit_code == 0
     
@@ -135,10 +136,10 @@ def test_cli_key_show(temporary_key_from_mnemonic):
     assert clean("│ derive_path   │ None             │") in output
 
 
-def test_cli_key_show_private_option(temporary_key_from_mnemonic):
+def test_cli_key_show_private_option(invoke_cli: InvokeCli, temporary_key_from_mnemonic):
     address, name, _ = temporary_key_from_mnemonic
     
-    result = runner.invoke(app, ["key", "show", name, "--show-private"], env={"COLUMNS": "200"})
+    result = invoke_cli(["key", "show", name, "--show-private"])
     
     assert result.exit_code == 0
     
@@ -159,25 +160,25 @@ def test_cli_key_show_private_option(temporary_key_from_mnemonic):
 
 
 # TODO
-def test_cli_key_stakefrom():
-    pass
+def test_cli_key_stakefrom(invoke_cli: InvokeCli):
+    pytest.skip("Not implemented yet")
 
 
 # TODO
-def test_cli_key_staketo():
-    pass
+def test_cli_key_staketo(invoke_cli: InvokeCli):
+    pytest.skip("Not implemented yet")
 
 
 # TODO
-def test_cli_key_total_balance():
-    pass
+def test_cli_key_total_balance(invoke_cli: InvokeCli):
+    pytest.skip("Not implemented yet")
 
 
 # TODO
-def test_cli_key_total_free_balance():
-    pass
+def test_cli_key_total_free_balance(invoke_cli: InvokeCli):
+    pytest.skip("Not implemented yet")
 
 
 # TODO
-def test_cli_key_total_staked_balance():
-    pass
+def test_cli_key_total_staked_balance(invoke_cli: InvokeCli):
+    pytest.skip("Not implemented yet")
