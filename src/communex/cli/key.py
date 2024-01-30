@@ -146,7 +146,7 @@ def inventory(
     ctx: Context,
 ):
     """
-    Lists all keys stored on disk, optionally with balances.
+    Lists all keys stored on disk.
     """
     context = make_custom_context(ctx)
 
