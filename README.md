@@ -165,6 +165,14 @@ To report a bug or request a feature, please [open an issue on GitHub].
 If you have any questions, feel free to ask on the [CommuneX Discord channel] or
 post on our [GitHub discussions page].
 
+To contribute to the codebase, using Poetry you can install the development dependencies with:
+
+```sh
+poetry install --with dev
+```
+
+we use [ruff] to lint the codebase, it can [require some enviroment-specific binaries to be installed]. 
+
 ## Commune compatibility
 
 Yes, `communex` is compatible with the `commune` library/CLI. However, there are
@@ -179,3 +187,5 @@ directory.
 [open an issue on GitHub]: https://github.com/agicommies/communex/issues/new/choose
 [CommuneX Discord channel]: https://go.agicommies.org/communex-channel
 [GitHub discussions page]: https://github.com/agicommies/communex/discussions
+[ruff]: https://github.com/astral-sh/ruff
+[require some enviroment-specific binaries to be installed]: https://docs.astral.sh/ruff/installation/
