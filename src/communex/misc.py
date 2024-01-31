@@ -240,7 +240,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
     return global_params
 
 
-
 def concat_to_local_keys(balance: dict[str, int]) -> dict[str, int]:
 
     local_key_info: dict[str, Ss58Address] = local_key_addresses()
@@ -286,12 +285,25 @@ def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dic
 
 def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dict[str, int], dict[str, int]]:
     with c_client.get_conn() as substrate:
-        query_all = query_batch_map(substrate,
-                                    {
-                                        "SubspaceModule": [("StakeTo", [netuid])],
-                                        "System": [("Account", [])], })
-    staketo_map = query_all["StakeTo"]
-    balance_map = query_all["Account"]
+        # TODO, look for a faster implemenations, current approach is adopted
+        # because of a thread safety
+
+        query_stake = query_batch_map(
+            substrate,
+            {
+                "SubspaceModule": [("StakeTo", [netuid])],
+            }
+        )
+
+        query_balance = query_batch_map(
+            substrate,
+            {
+                "System": [("Account", [])],
+            }
+        )
+
+    staketo_map = query_stake["StakeTo"]
+    balance_map = query_balance["Account"]
 
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
