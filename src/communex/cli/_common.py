@@ -29,6 +29,7 @@ class CustomCtx:
     typer_ctx: typer.Context
     console: rich.console.Console
     console_err: rich.console.Console
+    interactive: bool
 
     def output(self, message: str) -> None:
         self.console.print(message)
@@ -36,12 +37,23 @@ class CustomCtx:
     def info(self, message: str) -> None:
         self.console_err.print(message)
 
+    def warn(self, message: str) -> None:
+        style = "yellow" if self.interactive else None
+        message = "WARNING: " + message
+        self.console_err.print(message, style=style)
+
+    def error(self, message: str) -> None:
+        style = "red" if self.interactive else None
+        message = "ERROR: " + message
+        self.console_err.print(message, style=style)
+
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:
     return CustomCtx(
         typer_ctx=ctx,
         console=Console(),
         console_err=Console(stderr=True),
+        interactive=True,
     )
 
 
