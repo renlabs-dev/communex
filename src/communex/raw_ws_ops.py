@@ -1,5 +1,6 @@
 from typing import Any, TypeVar
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from communex.client import CommuneClient
 
 import json
 from substrateinterface import SubstrateInterface  # type: ignore
@@ -13,7 +14,7 @@ T2 = TypeVar("T2")
 
 
 def _send_batch(
-        substrate: SubstrateInterface,
+        client: CommuneClient,
         batch_payload: list[Any],
         request_ids: list[int],
         results: list[str | dict[Any, Any]],
@@ -36,26 +37,27 @@ def _send_batch(
         No explicit return value as results are appended to the provided 'results' list.
     """
 
-    try:
-        substrate.websocket.send(json.dumps(batch_payload))  # type: ignore
-    except NetworkQueryError:
-        pass
+    with client.get_conn() as substrate:
+        try:
+            substrate.websocket.send(json.dumps(batch_payload))  # type: ignore
+        except NetworkQueryError:
+            pass
 
-    while len(results) < len(request_ids):
-        received_messages = json.loads(substrate.websocket.recv())  # type: ignore
-        if isinstance(received_messages, dict):
-            received_messages: list[dict[Any, Any]] = [received_messages]
-        for message in received_messages:
-            try:
-                if message.get('id') in request_ids:
-                    if extract_result:
-                        results.append(message['result'])
-                    else:
-                        results.append(message)
-                if 'error' in message:
-                    raise NetworkQueryError(message['error'])
-            except Exception as e:
-                print(e)
+        while len(results) < len(request_ids):
+            received_messages = json.loads(substrate.websocket.recv())  # type: ignore
+            if isinstance(received_messages, dict):
+                received_messages: list[dict[Any, Any]] = [received_messages]
+            for message in received_messages:
+                try:
+                    if message.get('id') in request_ids:
+                        if extract_result:
+                            results.append(message['result'])
+                        else:
+                            results.append(message)
+                    if 'error' in message:
+                        raise NetworkQueryError(message['error'])
+                except Exception as e:
+                    print(e)
 
 
 def _decode_response(
@@ -216,7 +218,7 @@ def _make_request_smaller(
 
 
 def _rpc_request_batch(
-        substrate: SubstrateInterface,
+        client: CommuneClient,
         batch_requests: list[tuple[str, list[Any]]],
         max_size: int = 9_000_000,
         extract_result: bool = True
@@ -247,6 +249,7 @@ def _rpc_request_batch(
             batch_payload: list[Any] = []
 
             for method, params in chunk:
+                # TODO: you should refactor this to not use substrate, or if you can't get the substrate from client and pass it to the executor
                 request_id = substrate.request_id
                 substrate.request_id += 1
                 request_ids.append(request_id)
@@ -258,7 +261,7 @@ def _rpc_request_batch(
                     "id": request_id
                 })
 
-            futures.append(executor.submit(_send_batch, substrate=substrate,
+            futures.append(executor.submit(_send_batch, client=client,
                                            batch_payload=batch_payload, request_ids=request_ids, results=results, extract_result=extract_result))
 
         for future in as_completed(futures):
