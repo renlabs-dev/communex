@@ -3,7 +3,7 @@ from typing import Any
 from communex.client import CommuneClient
 from communex.compat.key import local_key_addresses
 from communex.key import check_ss58_address
-from communex.raw_ws_ops import query_batch, query_batch_map
+from src.communex.raw_ws_ops import query_batch, query_batch_map
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsWithEmission)
 
@@ -284,27 +284,44 @@ def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dic
 
 
 def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dict[str, int], dict[str, int]]:
-    with c_client.get_conn() as substrate:
         # TODO, look for a faster implemenations, current approach is adopted
         # because of a thread safety
 
-        query_stake = query_batch_map(
-            substrate,
-            {
-                "SubspaceModule": [("StakeTo", [netuid])],
-            }
-        )
-
-        query_balance = query_batch_map(
-            substrate,
-            {
-                "System": [("Account", [])],
-            }
-        )
-
-    staketo_map = query_stake["StakeTo"]
-    balance_map = query_balance["Account"]
-
+    from time import time
+    now = time()
+    query_result = query_batch_map(
+        c_client,
+        {
+            "System": [("Account", [])],
+            "SubspaceModule": [("StakeTo", [netuid])],
+        }
+    )
+    print("query done")
+    staketo_map = query_result["StakeTo"]
+    balance_map = query_result["Account"]
+    # now = time()
+    # with c_client.get_conn() as substrate:
+    #     staketo_result = substrate.query_map(  # type: ignore
+    #                 module="SubspaceModule",
+    #                 storage_function="StakeTo",
+    #                 params=[netuid],
+    #                 page_size = 1000,
+    #                 # max_results = 100000,
+    #                 block_hash=None  # type: ignore
+    #             )
+    #     balance_result = substrate.query_map(  # type: ignore
+    #                 module="System",
+    #                 storage_function="Account",
+    #                 params=None,
+    #                 page_size = 1000,
+    #                 # max_results = 100000,
+    #                 block_hash=None  # type: ignore
+    #             )
+    # print("query fone")
+    # staketo_map = {k.value: v.value for k, v in staketo_result}
+    # balance_map = {k.value: v.value for k, v in balance_result}
+    print(f"Took {time() - now} seconds")
+    print("everything done")
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
                                        if 'data' in value and 'free' in value['data']}
@@ -323,3 +340,19 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dic
         key2stake.items(), key=lambda item: item[1], reverse=True)}
 
     return key2balance, key2stake
+
+if __name__ == "__main__":
+    from concurrent.futures import ThreadPoolExecutor
+    from itertools import repeat
+    from src.communex.cli._common import make_client
+    def my_test(x: Any):
+        client = make_client()
+        print("Sending to function")
+        result = local_keys_allbalance(client)
+        return result
+    
+    # threads = 3
+    # with ThreadPoolExecutor(threads) as pool:
+    #     it = pool.map(my_test, repeat(None, threads))
+    #     _ = list(it)
+    my_test(None)

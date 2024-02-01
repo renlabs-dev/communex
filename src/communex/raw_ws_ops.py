@@ -1,6 +1,7 @@
 from typing import Any, TypeVar
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from communex.client import CommuneClient
+from src.communex.cli._common import get_node_url
 
 import json
 from substrateinterface import SubstrateInterface  # type: ignore
@@ -14,7 +15,7 @@ T2 = TypeVar("T2")
 
 
 def _send_batch(
-        client: CommuneClient,
+        substrate: SubstrateInterface,
         batch_payload: list[Any],
         request_ids: list[int],
         results: list[str | dict[Any, Any]],
@@ -36,29 +37,27 @@ def _send_batch(
     Note:
         No explicit return value as results are appended to the provided 'results' list.
     """
-
-    with client.get_conn() as substrate:
-        try:
-            substrate.websocket.send(json.dumps(batch_payload))  # type: ignore
-        except NetworkQueryError:
-            pass
-
-        while len(results) < len(request_ids):
-            received_messages = json.loads(substrate.websocket.recv())  # type: ignore
-            if isinstance(received_messages, dict):
-                received_messages: list[dict[Any, Any]] = [received_messages]
-            for message in received_messages:
-                try:
-                    if message.get('id') in request_ids:
-                        if extract_result:
-                            results.append(message['result'])
-                        else:
-                            results.append(message)
-                    if 'error' in message:
-                        raise NetworkQueryError(message['error'])
-                except Exception as e:
-                    print(e)
-
+    print("got here")
+    try:
+        substrate.websocket.send(json.dumps(batch_payload))  # type: ignore
+    except NetworkQueryError:
+        pass
+    while len(results) < len(request_ids):
+        received_messages = json.loads(substrate.websocket.recv())  # type: ignore
+        if isinstance(received_messages, dict):
+            received_messages: list[dict[Any, Any]] = [received_messages]
+        for message in received_messages:
+            try:
+                if message.get('id') in request_ids:
+                    if extract_result:
+                        results.append(message['result'])
+                    else:
+                        results.append(message)
+                if 'error' in message:
+                    raise NetworkQueryError(message['error'])
+            except Exception as e:
+                print(e)
+    return results
 
 def _decode_response(
         response: list[str],
@@ -244,28 +243,31 @@ def _rpc_request_batch(
     smaller_requests = _make_request_smaller(batch_requests, max_size=max_size)
     with ThreadPoolExecutor() as executor:
         futures: list[Any] = []
-        for chunk in smaller_requests:
-            request_ids: list[int] = []
-            batch_payload: list[Any] = []
+        with client.get_conn(init=True) as substrate:
+            for chunk in smaller_requests:
+                request_ids: list[int] = []
+                batch_payload: list[Any] = []
 
-            for method, params in chunk:
-                # TODO: you should refactor this to not use substrate, or if you can't get the substrate from client and pass it to the executor
-                request_id = substrate.request_id
-                substrate.request_id += 1
-                request_ids.append(request_id)
+                for method, params in chunk:
+                    print("passing by one chunk")
+                    # TODO: you should refactor this to not use substrate, or if you can't get the substrate from client and pass it to the executor
+                    request_id = substrate.request_id
+                    request_ids.append(request_id)
+                    substrate.request_id += 1
 
-                batch_payload.append({
-                    "jsonrpc": "2.0",
-                    "method": method,
-                    "params": params,
-                    "id": request_id
-                })
+                    batch_payload.append({
+                        "jsonrpc": "2.0",
+                        "method": method,
+                        "params": params,
+                        "id": request_id    
+                    })
 
-            futures.append(executor.submit(_send_batch, client=client,
-                                           batch_payload=batch_payload, request_ids=request_ids, results=results, extract_result=extract_result))
+                # _send_batch(substrate=substrate,  batch_payload=batch_payload, request_ids=request_ids, results=results, extract_result=extract_result)
+                futures.append(executor.submit(_send_batch, substrate=substrate,
+                                                batch_payload=batch_payload, request_ids=request_ids, results=results, extract_result=extract_result))
 
-        for future in as_completed(futures):
-            future.result()
+    for future in as_completed(futures):
+        future.result()
     return results
 
 
@@ -354,8 +356,23 @@ def query_batch(
     return result
 
 
+def get_storage_keys(functions: dict, client: CommuneClient, block_hash: int):
+    send: list[tuple[str, list[Any]]] = []
+    prefix_list: list[Any] = []
+    with client.get_conn(init=True) as substrate:
+        for module, queries in functions.items():
+            for function, params in queries:
+                storage_key = StorageKey.create_from_storage_function(  # type: ignore
+                    module, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
+                )
+
+                prefix = storage_key.to_hex()
+                prefix_list.append(prefix)
+                send.append(("state_getKeys", [prefix, block_hash]))
+    return send, prefix_list
+
 def query_batch_map(
-    substrate: SubstrateInterface,
+    client: CommuneClient,
     functions: dict[str, list[tuple[str, list[Any]]]]
 ) -> dict[str, dict[Any, Any]]:
     """
@@ -372,32 +389,21 @@ def query_batch_map(
         >>> query_batch_map(substrate_instance, {'module_name': [('function_name', ['param1', 'param2'])]})
         # Returns the combined result of the map batch query
     """
-
-    block_hash = substrate.get_block_hash()
-    substrate.init_runtime(block_hash=block_hash)  # type: ignore
-
-    function_parameters = _get_lists(functions, substrate)
+    with client.get_conn(init=True) as substrate:
+        print(type(substrate))
+        block_hash = substrate.get_block_hash()
+        function_parameters = _get_lists(functions, substrate)
     # it's working for a single module, but the response is weird when we try to query system
-    send: list[tuple[str, list[Any]]] = []
-    prefix_list: list[Any] = []
-    for module, queries in functions.items():
-        for function, params in queries:
-            storage_key = StorageKey.create_from_storage_function(  # type: ignore
-                module, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
-            )
+    send, prefix_list = get_storage_keys(functions, client, block_hash)
 
-            prefix = storage_key.to_hex()
-            prefix_list.append(prefix)
-            send.append(("state_getKeys", [prefix, block_hash]))
-
-    responses = _rpc_request_batch(substrate, send)
-
+    responses = _rpc_request_batch(client, send)
     built_payload: list[tuple[str, list[Any]]] = []
     last_keys: list[Any] = []
     for result_key in responses:
         last_keys.append(result_key[-1])
         built_payload.append(("state_queryStorageAt", [result_key, block_hash]))
-    response = _rpc_request_batch(substrate, built_payload)
+    response = _rpc_request_batch(client, built_payload)
+    breakpoint()
 
     multi_result = _decode_response(
         response,

@@ -66,7 +66,7 @@ class CommuneClient:
         return self._num_connections
 
     @contextmanager
-    def get_conn(self, timeout: float | None = None):
+    def get_conn(self, timeout: float | None = None, init: bool = False):
         """
         Context manager to get a connection from the pool.
 
@@ -85,6 +85,8 @@ class CommuneClient:
               period.
         """
         conn = self._connection_queue.get(timeout=timeout)
+        if init:
+            conn.init_runtime()
         try:
             yield conn
         finally:

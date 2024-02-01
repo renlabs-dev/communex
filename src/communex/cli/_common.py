@@ -7,7 +7,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from communex.client import CommuneClient
+from src.communex.client import CommuneClient
 from communex.balance import from_nano
 
 
