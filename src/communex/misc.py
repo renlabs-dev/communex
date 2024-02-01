@@ -3,7 +3,6 @@ from typing import Any
 from communex.client import CommuneClient
 from communex.compat.key import local_key_addresses
 from communex.key import check_ss58_address
-from src.communex.raw_ws_ops import query_batch, query_batch_map
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsWithEmission)
 
@@ -289,8 +288,7 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dic
 
     from time import time
     now = time()
-    query_result = query_batch_map(
-        c_client,
+    query_result = c_client.query_batch_map(
         {
             "System": [("Account", [])],
             "SubspaceModule": [("StakeTo", [netuid])],
