@@ -288,9 +288,8 @@ class CommuneClient:
                     print("passing by one chunk")
                     # TODO: you should refactor this to not use substrate, or if you can't get the substrate from client and pass it to the executor
                     # request_id = substrate.request_id
-                    request_ids.append(request_id)
-                    #substrate.request_id += 1
                     request_id += 1
+                    request_ids.append(request_id)
                     batch_payload.append({
                         "jsonrpc": "2.0",
                         "method": method,
