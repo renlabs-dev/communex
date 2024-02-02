@@ -1,7 +1,7 @@
 import queue
 from contextlib import contextmanager
 from typing import Any
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, Future
 import json
 from typing import TypeVar
 
@@ -20,6 +20,27 @@ from communex.errors import NetworkQueryError
 
 
 # TODO: InsufficientBalanceError, MismatchedLengthError etc
+
+
+def are_lists_equal(list1, list2):
+    # Check if lengths are equal
+    if len(list1) != len(list2):
+        return False
+
+    # Check each sublist element-wise
+    for sublist1, sublist2 in zip(list1, list2):
+        # Check if lengths of sublists are equal
+        if len(sublist1) != len(sublist2):
+            return False
+
+        # Check each element in the sublists
+        for elem1, elem2 in zip(sublist1, sublist2):
+            if elem1 != elem2:
+                return False
+
+    # Lists are equal
+    return True
+
 
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
@@ -159,7 +180,6 @@ class CommuneClient:
         self,
         batch_payload: list[Any],
         request_ids: list[int],
-        results: list[str | dict[Any, Any]],
         extract_result: bool = True
 ) -> None:
         """
@@ -178,6 +198,7 @@ class CommuneClient:
         Note:
             No explicit return value as results are appended to the provided 'results' list.
         """
+        results: list[str | dict[Any, Any]] = []
         with self.get_conn(init=True) as substrate:
             print("got here")
             try:
@@ -185,20 +206,24 @@ class CommuneClient:
             except NetworkQueryError:
                 pass
             while len(results) < len(request_ids):
+                print("trying to get messages")
                 received_messages = json.loads(substrate.websocket.recv())  # type: ignore
                 if isinstance(received_messages, dict):
                     received_messages: list[dict[Any, Any]] = [received_messages]
+
                 for message in received_messages:
-                    try:
-                        if message.get('id') in request_ids:
-                            if extract_result:
+                    if message.get('id') in request_ids:
+                        if extract_result:
+                            try:
                                 results.append(message['result'])
-                            else:
-                                results.append(message)
-                        if 'error' in message:
-                            raise NetworkQueryError(message['error'])
-                    except Exception as e:
-                        print(e)
+                            except Exception:
+                                print(message)
+                                exit(0)
+                        else:
+                            results.append(message)
+                    if 'error' in message:
+                        raise NetworkQueryError(message['error'])
+
             return results
 
     def _make_request_smaller(
@@ -251,6 +276,10 @@ class CommuneClient:
 
         return result
 
+    def _are_changes_equal(self, change_a: Any, change_b: Any):
+        for ((a, b), (c, d)) in zip(change_a, change_b):
+            if a != c or b != d:
+                return False
 
     def _rpc_request_batch(
             self,
@@ -275,17 +304,19 @@ class CommuneClient:
         """
 
         results: list[Any] = []
+        chunk_results: list[Any] = []
         smaller_requests = self._make_request_smaller(batch_requests)
         request_id = 0
+        print(f"WE HAVE {len(smaller_requests)} CHUNKS")
         with ThreadPoolExecutor() as executor:
-            futures: list[Any] = []
+            futures: list[Future] = []
             # with self.get_conn(init=True) as substrate:
             for chunk in smaller_requests:
                 request_ids: list[int] = []
                 batch_payload: list[Any] = []
 
                 for method, params in chunk:
-                    print("passing by one chunk")
+                    print("passing by one query")
                     # TODO: you should refactor this to not use substrate, or if you can't get the substrate from client and pass it to the executor
                     # request_id = substrate.request_id
                     request_id += 1
@@ -299,10 +330,13 @@ class CommuneClient:
 
                 # _send_batch(substrate=substrate,  batch_payload=batch_payload, request_ids=request_ids, results=results, extract_result=extract_result)
                 futures.append(executor.submit(self._send_batch,
-                                                batch_payload=batch_payload, request_ids=request_ids, results=results, extract_result=extract_result))
+                                                batch_payload=batch_payload, request_ids=request_ids, extract_result=extract_result))
 
-        for future in as_completed(futures):
-            future.result()
+            for future in futures:
+                resul = future.result()
+                chunk_results.append(resul)
+        # breakpoint()
+        return chunk_results
         return results
 
 
@@ -312,7 +346,6 @@ class CommuneClient:
             function_parameters: list[tuple[Any, Any, Any, Any, str]],
             last_keys: list[Any],
             prefix_list: list[Any],
-            substrate: SubstrateInterface,
             block_hash: str,
     ) -> dict[str, dict[Any, Any]]:
         """
@@ -372,44 +405,51 @@ class CommuneClient:
             else:
                 raise ValueError('Unsupported hash type')
 
+        assert len(response) == len(function_parameters) == len(prefix_list)
         result_dict: dict[str, dict[Any, Any]] = {}
-        for res, fun_params_tuple, _, prefix in zip(
-            response, function_parameters, last_keys, prefix_list
+        # breakpoint()
+        changes_a = response[0][0][0]["changes"]
+        changes_b = response[1][0][0]["changes"]
+        for res, fun_params_tuple, prefix in zip(
+            response, function_parameters, prefix_list
         ):
-            res = res[0]
+            res = res[0][0]
             changes = res["changes"]  # type: ignore
             value_type, param_types, key_hashers, params, storage_function = fun_params_tuple
-            for item in changes:
-                # Determine type string
-                key_type_string: list[Any] = []
-                for n in range(len(params), len(param_types)):
-                    key_type_string.append(f'[u8; {concat_hash_len(key_hashers[n])}]')
-                    key_type_string.append(param_types[n])
+            print(storage_function)
+            with self.get_conn(init=True) as substrate:
+                breakpoint()
+                for item in changes:
+                    # Determine type string
+                    key_type_string: list[Any] = []
+                    for n in range(len(params), len(param_types)):
+                        key_type_string.append(f'[u8; {concat_hash_len(key_hashers[n])}]')
+                        key_type_string.append(param_types[n])
 
-                item_key_obj = substrate.decode_scale(  # type: ignore
-                    type_string=f"({', '.join(key_type_string)})",
-                    scale_bytes='0x' + item[0][len(prefix):],
-                    return_scale_obj=True,
-                    block_hash=block_hash
-                )
-                # strip key_hashers to use as item key
-                if len(param_types) - len(params) == 1:
-                    item_key = item_key_obj.value_object[1]  # type: ignore
-                else:
-                    item_key = tuple(  # type: ignore
-                        item_key_obj.value_object[key + 1] for key in range(  # type: ignore
-                            len(params), len(param_types) + 1, 2
-                        )
+                    item_key_obj = substrate.decode_scale(  # type: ignore
+                        type_string=f"({', '.join(key_type_string)})",
+                        scale_bytes='0x' + item[0][len(prefix):],
+                        return_scale_obj=True,
+                        block_hash=block_hash
                     )
+                    # strip key_hashers to use as item key
+                    if len(param_types) - len(params) == 1:
+                        item_key = item_key_obj.value_object[1]  # type: ignore
+                    else:
+                        item_key = tuple(  # type: ignore
+                            item_key_obj.value_object[key + 1] for key in range(  # type: ignore
+                                len(params), len(param_types) + 1, 2
+                            )
+                        )
 
-                item_value = substrate.decode_scale(  # type: ignore
-                    type_string=value_type,
-                    scale_bytes=item[1],
-                    return_scale_obj=True,
-                    block_hash=block_hash
-                )
-                result_dict.setdefault(storage_function, {})
-                result_dict[storage_function][item_key.value] = item_value.value  # type: ignore
+                    item_value = substrate.decode_scale(  # type: ignore
+                        type_string=value_type,
+                        scale_bytes=item[1],
+                        return_scale_obj=True,
+                        block_hash=block_hash
+                    )
+                    result_dict.setdefault(storage_function, {})
+                    result_dict[storage_function][item_key.value] = item_value.value  # type: ignore
 
         return result_dict
     
@@ -486,21 +526,20 @@ class CommuneClient:
         # it's working for a single module, but the response is weird when we try to query system
         send, prefix_list = self._get_storage_keys(functions, block_hash)
 
-        responses = self._rpc_request_batch(send)
+        storage_responses = self._rpc_request_batch(send)
         built_payload: list[tuple[str, list[Any]]] = []
         last_keys: list[Any] = []
-        for result_key in responses:
-            last_keys.append(result_key[-1])
-            built_payload.append(("state_queryStorageAt", [result_key, block_hash]))
+        for storage in storage_responses:
+            for result_key in storage:
+                last_keys.append(result_key[-1])
+                built_payload.append(("state_queryStorageAt", [result_key, block_hash]))
         response = self._rpc_request_batch(built_payload)
-        breakpoint()
 
         multi_result = self._decode_response(
             response,
             function_parameters,
             last_keys,
             prefix_list,
-            substrate,
             block_hash
         )
         return multi_result
