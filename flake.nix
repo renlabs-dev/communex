@@ -25,12 +25,7 @@
         };
       in
       {
-        packages.communex = p2n.mkPoetryApplication {
-          projectDir = ./.;
-          python = pkgs.python311;
-          overrides = p2n-overrides;
-        };
-        packages.default = pkgs.mkShell {
+        devShells.default = pkgs.mkShell {
 	  buildInputs = [
 	    pkgs.python311
 	    pkgs.python311Packages.ipython
@@ -38,5 +33,13 @@
 	    pkgs.poetry
 	  ];
 	};
+        packages = rec {
+          communex = p2n.mkPoetryApplication {
+            projectDir = ./.;
+            python = pkgs.python311;
+            overrides = p2n-overrides;
+          };
+          default = communex;
+        };
       });
 }
