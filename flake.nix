@@ -13,6 +13,8 @@
       {
         packages.default = pkgs.mkShell {
 	  buildInputs = [
+	    pkgs.python311
+	    pkgs.python311Packages.ipython
 	    pkgs.ruff
 	    pkgs.poetry
 	  ];
