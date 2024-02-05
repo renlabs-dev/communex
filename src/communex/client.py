@@ -220,6 +220,49 @@ class CommuneClient:
 
         return response
 
+    def compose_call_multisig(self,
+                              fn: str,
+                              params: dict[str, Any],
+                              key: Keypair,
+                              multisig_accounts: list[Ss58Address],
+                              mutisig_account : Ss58Address,
+                              module: str = 'SubspaceModule',
+                              wait_for_inclusion: bool = True,
+                              wait_for_finalization: bool | None = None,
+                              sudo: bool = False,
+                              era : dict[str, int] | None = None,
+                              ):
+        """
+        
+        multisig_account: MultiAccountId to use of origin of the extrinsic (see `generate_multisig_account()`)
+        era: Specify mortality in blocks in follow format: {'period': [amount_blocks]} If omitted the extrinsic is immortal
+
+        """
+        # getting the call ready
+        with self.get_conn() as substrate:
+            if wait_for_finalization is None:
+                wait_for_finalization = self.wait_for_finalization
+
+            call = substrate.compose_call(  # type: ignore
+                call_module=module,
+                call_function=fn,
+                call_params=params
+            )
+            if sudo:
+                call = substrate.compose_call(  # type: ignore
+                    call_module='Sudo',
+                    call_function='sudo',
+                    call_params={
+                        'call': call.value,  # type: ignore
+                    }
+                )
+
+            # -> GenericExtrinsic that is passed into the multisig extrinsic
+            extrinsic = substrate.create_signed_extrinsic(  # type: ignore
+                call=call, keypair=key  # type: ignore
+            )  # type: ignore
+        
+
     def transfer(
             self,
             key: Keypair,
