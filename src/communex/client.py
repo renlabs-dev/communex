@@ -122,7 +122,7 @@ class CommuneClient:
             self._connection_queue.put(conn)
 
 
-    def _get_storage_keys(self, functions: dict, block_hash: int):
+    def _get_storage_keys(self, functions: dict, block_hash: str):
         send: list[tuple[str, list[Any]]] = []
         prefix_list: list[Any] = []
         with self.get_conn(init=True) as substrate:
@@ -181,7 +181,7 @@ class CommuneClient:
         batch_payload: list[Any],
         request_ids: list[int],
         extract_result: bool = True
-) -> None:
+):
         """
         Sends a batch of requests to the substrate and collects the results.
 
@@ -407,9 +407,6 @@ class CommuneClient:
 
         assert len(response) == len(function_parameters) == len(prefix_list)
         result_dict: dict[str, dict[Any, Any]] = {}
-        # breakpoint()
-        changes_a = response[0][0][0]["changes"]
-        changes_b = response[1][0][0]["changes"]
         for res, fun_params_tuple, prefix in zip(
             response, function_parameters, prefix_list
         ):
@@ -455,7 +452,7 @@ class CommuneClient:
     
 
     def query_batch(
-    substrate: SubstrateInterface,
+    self,
     functions: dict[str, list[tuple[str, list[Any]]]]
 ) -> dict[str, str]:
         """
@@ -477,27 +474,28 @@ class CommuneClient:
         """
 
         result = None
-        for module, queries in functions.items():
-            storage_keys: list[Any] = []
-            for fn, params in queries:
-                storage_function = substrate.create_storage_key(  # type: ignore
-                    pallet=module, storage_function=fn, params=params)
-                storage_keys.append(storage_function)
+        with self.get_conn(init=True) as substrate:
+            for module, queries in functions.items():
+                storage_keys: list[Any] = []
+                for fn, params in queries:
+                    storage_function = substrate.create_storage_key(  # type: ignore
+                        pallet=module, storage_function=fn, params=params)
+                    storage_keys.append(storage_function)
 
-            block_hash = substrate.get_block_hash()
-            responses: list[Any] = substrate.query_multi(  # type: ignore
-                storage_keys=storage_keys, block_hash=block_hash)
+                block_hash = substrate.get_block_hash()
+                responses: list[Any] = substrate.query_multi(  # type: ignore
+                    storage_keys=storage_keys, block_hash=block_hash)
 
-            result: dict[str, str] | None = {}
+                result: dict[str, str] | None = {}
 
-            for item in responses:
-                fun = item[0]
-                query = item[1]
-                storage_fun = fun.storage_function
-                result[storage_fun] = query.value
+                for item in responses:
+                    fun = item[0]
+                    query = item[1]
+                    storage_fun = fun.storage_function
+                    result[storage_fun] = query.value
 
-        if result is None:
-            raise Exception("No result")
+            if result is None:
+                raise Exception("No result")
 
         return result
 
@@ -569,8 +567,7 @@ class CommuneClient:
             NetworkQueryError: If the query fails or is invalid.
         """
 
-        with self.get_conn() as substrate:
-            result = self.query_batch(substrate, {module: [(name, params)]})
+        result = self.query_batch({module: [(name, params)]})
 
         return result[name]
 
@@ -597,8 +594,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        with self.get_conn() as substrate:
-            result = self.query_batch_map(substrate, {module: [(name, params)]})
+        result = self.query_batch_map({module: [(name, params)]})
 
         if extract_value:
             return {k.value: v.value for k, v in result}  # type: ignore
