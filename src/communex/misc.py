@@ -278,43 +278,15 @@ def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dic
 
 
 def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dict[str, int], dict[str, int]]:
-        # TODO, look for a faster implemenations, current approach is adopted
-        # because of a thread safety
-
-    from time import time
-    now = time()
     query_result = c_client.query_batch_map(
         {
             "SubspaceModule": [("StakeTo", [netuid])],
             "System": [("Account", [])],
         }
     )
-    print("query done")
     balance_map = query_result["Account"]
     staketo_map = query_result["StakeTo"]
-    # now = time()
-    # with c_client.get_conn() as substrate:
-    #     staketo_result = substrate.query_map(  # type: ignore
-    #                 module="SubspaceModule",
-    #                 storage_function="StakeTo",
-    #                 params=[netuid],
-    #                 page_size = 1000,
-    #                 # max_results = 100000,
-    #                 block_hash=None  # type: ignore
-    #             )
-    #     balance_result = substrate.query_map(  # type: ignore
-    #                 module="System",
-    #                 storage_function="Account",
-    #                 params=None,
-    #                 page_size = 1000,
-    #                 # max_results = 100000,
-    #                 block_hash=None  # type: ignore
-    #             )
-    # print("query fone")
-    # staketo_map = {k.value: v.value for k, v in staketo_result}
-    # balance_map = {k.value: v.value for k, v in balance_result}
-    print(f"Took {time() - now} seconds")
-    print("everything done")
+
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
                                        if 'data' in value and 'free' in value['data']}
