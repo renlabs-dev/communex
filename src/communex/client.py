@@ -200,13 +200,11 @@ class CommuneClient:
         """
         results: list[str | dict[Any, Any]] = []
         with self.get_conn(init=True) as substrate:
-            print("got here")
             try:
                 substrate.websocket.send(json.dumps(batch_payload))  # type: ignore
             except NetworkQueryError:
                 pass
             while len(results) < len(request_ids):
-                print("trying to get messages")
                 received_messages = json.loads(substrate.websocket.recv())  # type: ignore
                 if isinstance(received_messages, dict):
                     received_messages: list[dict[Any, Any]] = [received_messages]
@@ -217,8 +215,7 @@ class CommuneClient:
                             try:
                                 results.append(message['result'])
                             except Exception:
-                                print(message)
-                                exit(0)
+                                raise(RuntimeError(f"Error extracting result from message: {message}")
                         else:
                             results.append(message)
                     if 'error' in message:
@@ -307,7 +304,6 @@ class CommuneClient:
         chunk_results: list[Any] = []
         smaller_requests = self._make_request_smaller(batch_requests)
         request_id = 0
-        print(f"WE HAVE {len(smaller_requests)} CHUNKS")
         with ThreadPoolExecutor() as executor:
             futures: list[Future] = []
             # with self.get_conn(init=True) as substrate:
@@ -316,7 +312,6 @@ class CommuneClient:
                 batch_payload: list[Any] = []
 
                 for method, params in chunk:
-                    print("passing by one query")
                     # TODO: you should refactor this to not use substrate, or if you can't get the substrate from client and pass it to the executor
                     # request_id = substrate.request_id
                     request_id += 1
@@ -335,7 +330,6 @@ class CommuneClient:
             for future in futures:
                 resul = future.result()
                 chunk_results.append(resul)
-        # breakpoint()
         return chunk_results
         return results
 
@@ -413,9 +407,7 @@ class CommuneClient:
             res = res[0][0]
             changes = res["changes"]  # type: ignore
             value_type, param_types, key_hashers, params, storage_function = fun_params_tuple
-            print(storage_function)
             with self.get_conn(init=True) as substrate:
-                breakpoint()
                 for item in changes:
                     # Determine type string
                     key_type_string: list[Any] = []
@@ -518,7 +510,6 @@ class CommuneClient:
             # Returns the combined result of the map batch query
         """
         with self.get_conn(init=True) as substrate:
-            print(type(substrate))
             block_hash = substrate.get_block_hash()
             function_parameters = self._get_lists(functions, substrate)
         # it's working for a single module, but the response is weird when we try to query system
