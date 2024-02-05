@@ -1,7 +1,7 @@
 import queue
 from contextlib import contextmanager
 from typing import Any
-from concurrent.futures import ThreadPoolExecutor, as_completed, Future
+from concurrent.futures import ThreadPoolExecutor, Future
 import json
 from typing import TypeVar
 
@@ -654,6 +654,106 @@ class CommuneClient:
                 wait_for_inclusion=wait_for_inclusion,
                 wait_for_finalization=wait_for_finalization,
             )
+        if wait_for_inclusion:
+            if not response.is_success:
+                raise ChainTransactionError(
+                    response.error_message, response  # type: ignore
+                )
+
+        return response
+
+    def compose_call_multisig(self,
+                              fn: str,
+                              params: dict[str, Any],
+                              key: Keypair,
+                              signatories: list[Ss58Address],
+                              threshold: int,
+                              module: str = 'SubspaceModule',
+                              wait_for_inclusion: bool = True,
+                              wait_for_finalization: bool | None = None,
+                              sudo: bool = False,
+                              era: dict[str, int] | None = None,
+                              ) -> ExtrinsicReceipt:
+        """
+        Composes and submits a multisignature call to the network node.
+
+        This method allows the composition and submission of a call that
+        requires multiple signatures for execution, known as a multisignature
+        call. It supports specifying signatories, a threshold of signatures for
+        the call's execution, and an optional era for the call's mortality. The
+        call can be a standard extrinsic, a sudo extrinsic for elevated
+        permissions, or a multisig extrinsic if multiple signatures are
+        required. Optionally, the method can wait for the call's inclusion in a
+        block and/or its finalization. Make sure to pass all keys,
+        that are part of the multisignature.
+
+        Args:
+            fn: The function name to call on the network. params: A dictionary
+            of parameters for the call. key: The keypair for signing the
+            extrinsic. signatories: List of SS58 addresses of the signatories.
+            Include ALL KEYS that are part of the multisig. threshold: The
+            minimum number of signatories required to execute the extrinsic.
+            module: The module containing the function to call.
+            wait_for_inclusion: Whether to wait for the call's inclusion in a
+            block. wait_for_finalization: Whether to wait for the transaction's
+            finalization. sudo: Execute the call as a sudo (superuser)
+            operation. era: Specifies the call's mortality in terms of blocks in
+            the format
+                {'period': amount_blocks}. If omitted, the extrinsic is
+                immortal.
+
+        Returns:
+            The receipt of the submitted extrinsic if `wait_for_inclusion` is
+            True. Otherwise, returns a string identifier of the extrinsic.
+
+        Raises:
+            ChainTransactionError: If the transaction fails.
+        """
+
+        # getting the call ready
+        with self.get_conn() as substrate:
+            if wait_for_finalization is None:
+                wait_for_finalization = self.wait_for_finalization
+
+            # prepares the `GenericCall` object
+            call = substrate.compose_call(  # type: ignore
+                call_module=module,
+                call_function=fn,
+                call_params=params
+            )
+            if sudo:
+                call = substrate.compose_call(  # type: ignore
+                    call_module='Sudo',
+                    call_function='sudo',
+                    call_params={
+                        'call': call.value,  # type: ignore
+                    }
+                )
+
+            # modify the rpc methods at runtime, to allow for correct payment
+            # fee calculation parity has a bug in this version,
+            # where the method has to be removed
+
+            rpc_methods = substrate.config.get('rpc_methods')
+
+            if "state_call" in rpc_methods:  # type: ignore
+                rpc_methods.remove("state_call")  # type: ignore
+
+            # create the multisig account
+            multisig_acc = (substrate.generate_multisig_account(  # type: ignore
+                signatories, threshold))
+
+            # send the multisig extrinsic
+            extrinsic = substrate.create_multisig_extrinsic(  # type: ignore
+                call=call, keypair=key, multisig_account=multisig_acc,  # type: ignore
+                era=era)  # type: ignore
+
+            response = substrate.submit_extrinsic(
+                extrinsic=extrinsic,
+                wait_for_inclusion=wait_for_inclusion,
+                wait_for_finalization=wait_for_finalization,
+            )
+
         if wait_for_inclusion:
             if not response.is_success:
                 raise ChainTransactionError(

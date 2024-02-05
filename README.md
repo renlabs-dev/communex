@@ -21,7 +21,7 @@ Ai](https://github.com/commune-ai/commune) codebase, offering a streamlined and
 user-friendly experience. It is designed for simplicity and scalable
 development.
 
-## Installation
+## Installation with `pip`
 
 Requirements: Python 3.10+
 
@@ -35,6 +35,13 @@ Or add it to your Poetry project with:
 
 ```sh
 poetry add communex
+```
+
+## Installation with Nix
+
+To install `communex` the communex cli with Nix
+```sh
+nix profile install .
 ```
 
 ## Features
