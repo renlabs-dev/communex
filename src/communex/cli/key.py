@@ -55,7 +55,7 @@ def save(ctx: Context, name: str, mnemonic: str):
     context.info(f"Key stored with name `{name}` successfully.")
 
 
-def create_multisig(ctx: Context, signatories: list[str], threshold: int):
+def multi_address(ctx: Context, signatories: list[str], threshold: int):
     """
     Outputs a multisig address from the given signatories.
     """
@@ -64,9 +64,10 @@ def create_multisig(ctx: Context, signatories: list[str], threshold: int):
     client = make_client()
 
     with client.get_conn() as substrate:
-        multisig = substrate.generate_multisig_account(signatories, threshold)  # type: ignore
+        multisig_address = (substrate.generate_multisig_account(  # type: ignore
+            signatories, threshold)).ss58_address 
 
-    context.info(f"Multisig address: {multisig}")
+    context.info(f"Multisig address: {multisig_address}")
 
 
 @key_app.command()
