@@ -215,7 +215,7 @@ class CommuneClient:
                             try:
                                 results.append(message['result'])
                             except Exception:
-                                raise(RuntimeError(f"Error extracting result from message: {message}")
+                                raise(RuntimeError(f"Error extracting result from message: {message}"))
                         else:
                             results.append(message)
                     if 'error' in message:
