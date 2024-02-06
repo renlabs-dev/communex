@@ -104,3 +104,8 @@ def apr(netuid: int = 0, miner_reinvest: int = 85, fee: int = 0):
     console.print(
         f"Predicted staking APR with fee: {fee} , is: {apr:.2f}%.\n"
         f"Lowest possible APR (all miner profits are reinvested) is: {apr_lowest:.2f}%.")
+
+
+if __name__ == "__main__":
+    client = make_client()
+    circulating_tokens(client)

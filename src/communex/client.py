@@ -122,25 +122,29 @@ class CommuneClient:
             self._connection_queue.put(conn)
 
 
-    def _get_storage_keys(self, functions: dict, block_hash: str):
+    def _get_storage_keys(self, arg_tupl: tuple[Any, Any], block_hash: str, page_size=1000, start_key = None):
+        assert page_size <= 1000
         send: list[tuple[str, list[Any]]] = []
         prefix_list: list[Any] = []
         with self.get_conn(init=True) as substrate:
-            for module, queries in functions.items():
-                for function, params in queries:
-                    storage_key = StorageKey.create_from_storage_function(  # type: ignore
-                        module, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
-                    )
+            module, queries = arg_tupl
+            for function, params in queries:
+                storage_key = StorageKey.create_from_storage_function(  # type: ignore
+                    module, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
+                )
 
-                    prefix = storage_key.to_hex()
-                    prefix_list.append(prefix)
-                    send.append(("state_getKeys", [prefix, block_hash]))
+                prefix = storage_key.to_hex()
+                prefix_list.append(prefix)
+                if start_key is None:
+                    start_key = prefix
+                send.append(("state_getKeysPaged", [prefix, page_size, start_key, block_hash]))
         return send, prefix_list
     
 
     def _get_lists(
     self,
-    functions: dict[str, list[tuple[str, list[Any]]]],
+    storage_module: str,
+    queries: list[tuple[str, list[Any]]],
     substrate: SubstrateInterface
 ) -> list[tuple[Any, Any, Any, Any, str]]:
         """
@@ -162,17 +166,17 @@ class CommuneClient:
             [('value_type', 'param_types', 'key_hashers', ['param1', 'param2'], 'storage_function'), ...]
         """
 
+
         function_parameters: list[tuple[Any, Any, Any, Any, str]] = []
-        for storage_module, queries in functions.items():
-            metadata_pallet = substrate.metadata.get_metadata_pallet(storage_module)  # type: ignore
-            for storage_function, params in queries:
-                storage_item = metadata_pallet.get_storage_function(storage_function)  # type: ignore
-                value_type = storage_item.get_value_type_string()  # type: ignore
-                param_types = storage_item.get_params_type_string()  # type: ignore
-                key_hashers = storage_item.get_param_hashers()  # type: ignore
-                function_parameters.append(
-                    (value_type, param_types, key_hashers, params, storage_function)  # type: ignore
-                )
+        metadata_pallet = substrate.metadata.get_metadata_pallet(storage_module)  # type: ignore
+        for storage_function, params in queries:
+            storage_item = metadata_pallet.get_storage_function(storage_function)  # type: ignore
+            value_type = storage_item.get_value_type_string()  # type: ignore
+            param_types = storage_item.get_params_type_string()  # type: ignore
+            key_hashers = storage_item.get_param_hashers()  # type: ignore
+            function_parameters.append(
+                (value_type, param_types, key_hashers, params, storage_function)  # type: ignore
+            )
         return function_parameters
 
 
@@ -300,7 +304,6 @@ class CommuneClient:
             ['result1', 'result2', ...]
         """
 
-        results: list[Any] = []
         chunk_results: list[Any] = []
         smaller_requests = self._make_request_smaller(batch_requests)
         request_id = 0
@@ -331,7 +334,6 @@ class CommuneClient:
                 resul = future.result()
                 chunk_results.append(resul)
         return chunk_results
-        return results
 
 
     def _decode_response(
@@ -509,28 +511,32 @@ class CommuneClient:
             >>> query_batch_map(substrate_instance, {'module_name': [('function_name', ['param1', 'param2'])]})
             # Returns the combined result of the map batch query
         """
+        page_size = 1000
+        multi_result: dict[str, dict[Any, Any]] = {}
         with self.get_conn(init=True) as substrate:
             block_hash = substrate.get_block_hash()
-            function_parameters = self._get_lists(functions, substrate)
-        # it's working for a single module, but the response is weird when we try to query system
-        send, prefix_list = self._get_storage_keys(functions, block_hash)
+        for storage, queries in functions.items():
+            function_parameters = self._get_lists(storage, queries, substrate)
+            send, prefix_list = self._get_storage_keys((storage, queries), block_hash, page_size)
+            responses = self._rpc_request_batch(send)
+            built_payload: list[tuple[str, list[Any]]] = []
+            last_keys: list[Any] = []
+            for chunk in responses:
+                for result_keys in chunk:
+                    last_keys.append(result_keys[-1])
+                    built_payload.append(("state_queryStorageAt", [result_keys, block_hash]))
+            response = self._rpc_request_batch(built_payload)
 
-        storage_responses = self._rpc_request_batch(send)
-        built_payload: list[tuple[str, list[Any]]] = []
-        last_keys: list[Any] = []
-        for storage in storage_responses:
-            for result_key in storage:
-                last_keys.append(result_key[-1])
-                built_payload.append(("state_queryStorageAt", [result_key, block_hash]))
-        response = self._rpc_request_batch(built_payload)
-
-        multi_result = self._decode_response(
-            response,
-            function_parameters,
-            last_keys,
-            prefix_list,
-            block_hash
-        )
+            storage_result = self._decode_response(
+                response,
+                function_parameters,
+                last_keys,
+                prefix_list,
+                block_hash
+            )
+            multi_result.update(storage_result)
+        # needs to flatten multi_result
+        breakpoint()
         return multi_result
 
 
