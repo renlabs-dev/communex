@@ -122,22 +122,27 @@ class CommuneClient:
             self._connection_queue.put(conn)
 
 
-    def _get_storage_keys(self, arg_tupl: tuple[Any, Any], block_hash: str, page_size=1000, start_key = None):
-        assert page_size <= 1000
+    def _get_storage_keys(
+            self, 
+            storage: str,
+            queries: list[tuple[str, list[Any]]],
+            block_hash: str, 
+            ):
+
         send: list[tuple[str, list[Any]]] = []
         prefix_list: list[Any] = []
+
+        key_idx = 0
         with self.get_conn(init=True) as substrate:
-            module, queries = arg_tupl
             for function, params in queries:
                 storage_key = StorageKey.create_from_storage_function(  # type: ignore
-                    module, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
+                    storage, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
                 )
 
                 prefix = storage_key.to_hex()
                 prefix_list.append(prefix)
-                if start_key is None:
-                    start_key = prefix
-                send.append(("state_getKeysPaged", [prefix, page_size, start_key, block_hash]))
+                send.append(("state_getKeys", [prefix, block_hash]))
+                key_idx += 1
         return send, prefix_list
     
 
@@ -326,9 +331,14 @@ class CommuneClient:
                         "id": request_id
                     })
 
-                # _send_batch(substrate=substrate,  batch_payload=batch_payload, request_ids=request_ids, results=results, extract_result=extract_result)
-                futures.append(executor.submit(self._send_batch,
-                                                batch_payload=batch_payload, request_ids=request_ids, extract_result=extract_result))
+                futures.append(
+                    executor.submit(
+                        self._send_batch,
+                        batch_payload=batch_payload, 
+                        request_ids=request_ids, 
+                        extract_result=extract_result
+                        )
+                    )
 
             for future in futures:
                 resul = future.result()
@@ -340,7 +350,6 @@ class CommuneClient:
             self,
             response: list[str],
             function_parameters: list[tuple[Any, Any, Any, Any, str]],
-            last_keys: list[Any],
             prefix_list: list[Any],
             block_hash: str,
     ) -> dict[str, dict[Any, Any]]:
@@ -511,26 +520,47 @@ class CommuneClient:
             >>> query_batch_map(substrate_instance, {'module_name': [('function_name', ['param1', 'param2'])]})
             # Returns the combined result of the map batch query
         """
-        page_size = 1000
         multi_result: dict[str, dict[Any, Any]] = {}
+        responses: list[Any] = []
+        last_keys: list[str] = []
+        
+        
+        def split_chunks(chunk: list[list[str]]):
+            manhattam_chunks = []
+            max_n_keys = 3000
+            for result_keys in chunk:
+                keys_amount = len(result_keys)
+                for i in range(0, keys_amount, max_n_keys):
+                    manhattam_chunks.append(result_keys[i:i+max_n_keys])
+            return manhattam_chunks
+
+        def get_page(start_keys: list[str]=[], page_size: int = 100):
+            send, prefix_list = self._get_storage_keys(storage, queries, block_hash)
+            responses = self._rpc_request_batch(send)
+            last_keys: list[Any] = []
+            for chunk in responses:
+                built_payload: list[tuple[str, list[Any]]] = []
+                splitted_chunk = split_chunks(chunk)
+                for result_keys in splitted_chunk:
+                    if not result_keys:
+                        return [], prefix_list, last_keys
+                    last_keys.append(result_keys[-1])
+                    built_payload.append(("state_queryStorageAt", [result_keys, block_hash]))
+                page_response = self._rpc_request_batch(built_payload)
+            return page_response, prefix_list, last_keys
+
         with self.get_conn(init=True) as substrate:
             block_hash = substrate.get_block_hash()
         for storage, queries in functions.items():
-            function_parameters = self._get_lists(storage, queries, substrate)
-            send, prefix_list = self._get_storage_keys((storage, queries), block_hash, page_size)
-            responses = self._rpc_request_batch(send)
-            built_payload: list[tuple[str, list[Any]]] = []
-            last_keys: list[Any] = []
-            for chunk in responses:
-                for result_keys in chunk:
-                    last_keys.append(result_keys[-1])
-                    built_payload.append(("state_queryStorageAt", [result_keys, block_hash]))
-            response = self._rpc_request_batch(built_payload)
-
+            with self.get_conn(init=True) as substrate:
+                function_parameters = self._get_lists(storage, queries, substrate)
+            
+            page_response, prefix_list, last_keys = get_page(last_keys)
+            responses += page_response
+            breakpoint()
             storage_result = self._decode_response(
-                response,
+                responses,
                 function_parameters,
-                last_keys,
                 prefix_list,
                 block_hash
             )

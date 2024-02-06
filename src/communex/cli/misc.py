@@ -108,4 +108,5 @@ def apr(netuid: int = 0, miner_reinvest: int = 85, fee: int = 0):
 
 if __name__ == "__main__":
     client = make_client()
-    circulating_tokens(client)
+    x = circulating_tokens(client)
+    print(x)
