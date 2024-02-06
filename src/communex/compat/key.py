@@ -161,7 +161,11 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
     if is_ss58_address(key):
         return key
 
-    keypair = classic_load_key(key)
+    try:
+        keypair = classic_load_key(key)
+    except FileNotFoundError:
+        raise ValueError(f"Key is not a valid SS58 address nor a valid key name: {key}")
+
     address = keypair.ss58_address
 
     return check_ss58_address(address)
