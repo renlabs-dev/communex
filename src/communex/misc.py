@@ -3,6 +3,7 @@ from typing import Any
 from communex.client import CommuneClient
 from communex.compat.key import local_key_addresses
 from communex.key import check_ss58_address
+from communex.raw_ws_ops import query_batch, query_batch_map
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsWithEmission)
 
@@ -15,25 +16,26 @@ def get_map_modules(
     """
     Gets all modules info on the network
     """
+    with client.get_conn() as substrate:
 
-    request_dict: dict[Any, Any] = {
-        "SubspaceModule": [
-            ("StakeFrom", [netuid]),
-            ("Keys", [netuid]),
-            ("Name", [netuid]),
-            ("Address", [netuid]),
-            ("RegistrationBlock", [netuid]),
-            ('DelegationFee', [netuid]),
-            ('Emission', []),
-            ('Incentive', []),
-            ("Dividends", []),
-            ('LastUpdate', []),
-        ],
-    }
+        request_dict: dict[Any, Any] = {
+            "SubspaceModule": [
+                ("StakeFrom", [netuid]),
+                ("Keys", [netuid]),
+                ("Name", [netuid]),
+                ("Address", [netuid]),
+                ("RegistrationBlock", [netuid]),
+                ('DelegationFee', [netuid]),
+                ('Emission', []),
+                ('Incentive', []),
+                ("Dividends", []),
+                ('LastUpdate', []),
+            ],
+        }
     if include_balances:
         request_dict["System"] = [("Account", [])]
 
-    bulk_query = client.query_batch_map(request_dict)
+    bulk_query = query_batch_map(substrate, request_dict)
     ss58_to_stakefrom, uid_to_key, uid_to_name, uid_to_address, uid_to_regblock, \
         ss58_to_delegationfee, uid_to_emission, uid_to_incentive, uid_to_dividend, \
         uid_to_lastupdate, ss58_to_balances = (
@@ -102,7 +104,8 @@ def get_map_subnets_params(
     Gets all subnets info on the network
     """
 
-    bulk_query = client.query_batch_map(
+    with c_client.get_conn() as substrate:
+        bulk_query = query_batch_map(substrate,
                                      {
                                          "SubspaceModule": [
                                              ("ImmunityPeriod", []),
@@ -126,26 +129,26 @@ def get_map_subnets_params(
                                      }
                                      )
 
-    (
-        netuid_to_emission, netuid_to_tempo, netuid_to_immunity_period,
-        netuid_to_min_allowed_weights, netuid_to_max_allowed_weights,
-        netuid_to_max_allowed_uids, netuid_to_min_stake,
-        netuid_to_max_stake, netuid_to_founder, netuid_to_founder_share,
-        netuid_to_incentive_ratio, netuid_to_trust_ratio,
-        netuid_to_vote_treshold_subnet, netuid_to_vote_mode_subnet,
-        netuid_to_self_vote, netuid_to_subnet_names,
-        netuid_to_weight_age
-    ) = (
-        bulk_query["Emission"], bulk_query["Tempo"],
-        bulk_query["ImmunityPeriod"], bulk_query["MinAllowedWeights"],
-        bulk_query["MaxAllowedWeights"], bulk_query["MaxAllowedUids"],
-        bulk_query["MinStake"], bulk_query["MaxStake"],
-        bulk_query["Founder"], bulk_query["FounderShare"],
-        bulk_query["IncentiveRatio"], bulk_query["TrustRatio"],
-        bulk_query["VoteThresholdSubnet"], bulk_query["VoteModeSubnet"],
-        bulk_query["SelfVote"], bulk_query["SubnetNames"],
-        bulk_query["MaxWeightAge"]
-    )
+        (
+            netuid_to_emission, netuid_to_tempo, netuid_to_immunity_period,
+            netuid_to_min_allowed_weights, netuid_to_max_allowed_weights,
+            netuid_to_max_allowed_uids, netuid_to_min_stake,
+            netuid_to_max_stake, netuid_to_founder, netuid_to_founder_share,
+            netuid_to_incentive_ratio, netuid_to_trust_ratio,
+            netuid_to_vote_treshold_subnet, netuid_to_vote_mode_subnet,
+            netuid_to_self_vote, netuid_to_subnet_names,
+            netuid_to_weight_age
+        ) = (
+            bulk_query["Emission"], bulk_query["Tempo"],
+            bulk_query["ImmunityPeriod"], bulk_query["MinAllowedWeights"],
+            bulk_query["MaxAllowedWeights"], bulk_query["MaxAllowedUids"],
+            bulk_query["MinStake"], bulk_query["MaxStake"],
+            bulk_query["Founder"], bulk_query["FounderShare"],
+            bulk_query["IncentiveRatio"], bulk_query["TrustRatio"],
+            bulk_query["VoteThresholdSubnet"], bulk_query["VoteModeSubnet"],
+            bulk_query["SelfVote"], bulk_query["SubnetNames"],
+            bulk_query["MaxWeightAge"]
+        )
 
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
@@ -198,24 +201,25 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
     Returns global parameters of the whole commune ecosystem
     """
 
+    with c_client.get_conn() as substrate:
 
-    query_all = c_client.query_batch({
-        "SubspaceModule": [
-            ("MaxAllowedSubnets", []),
-            ("MaxAllowedModules", []),
-            ("MaxRegistrationsPerBlock", []),
-            ("UnitEmission", []),
-            ("TxRateLimit", []),
-            ("GlobalVoteThreshold", []),
-            ("VoteModeGlobal", []),
-            ("MaxProposals", []),
-            ("MaxNameLength", []),
-            ("BurnRate", []),
-            ("MinBurn", []),
-            ("MinStake", []),
-            ("MinWeightStake", []),
-        ],
-    })
+        query_all = query_batch(substrate, {
+            "SubspaceModule": [
+                ("MaxAllowedSubnets", []),
+                ("MaxAllowedModules", []),
+                ("MaxRegistrationsPerBlock", []),
+                ("UnitEmission", []),
+                ("TxRateLimit", []),
+                ("GlobalVoteThreshold", []),
+                ("VoteModeGlobal", []),
+                ("MaxProposals", []),
+                ("MaxNameLength", []),
+                ("BurnRate", []),
+                ("MinBurn", []),
+                ("MinStake", []),
+                ("MinWeightStake", []),
+            ],
+        })
 
     global_params: NetworkParams = {
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
@@ -246,9 +250,10 @@ def concat_to_local_keys(balance: dict[str, int]) -> dict[str, int]:
 
 
 def local_keys_to_freebalance(c_client: CommuneClient) -> dict[str, int]:
-    query_all = c_client.query_batch_map(
-                                {
-                                    "System": [("Account", [])], })
+    with c_client.get_conn() as substrate:
+        query_all = query_batch_map(substrate,
+                                    {
+                                        "System": [("Account", [])], })
     balance_map = query_all["Account"]
 
     format_balances: dict[str, int] = {key: value['data']['free']
@@ -261,31 +266,44 @@ def local_keys_to_freebalance(c_client: CommuneClient) -> dict[str, int]:
 
 
 def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dict[str, int]:
+    with c_client.get_conn() as substrate:
 
-    query_all = c_client.query_batch_map(
-                                {
-                                    "SubspaceModule": [("StakeTo", [netuid])],
-                                })
+        query_all = query_batch_map(substrate,
+                                    {
+                                        "SubspaceModule": [("StakeTo", [netuid])],
+                                    })
 
-    staketo_map = query_all["StakeTo"]
+        staketo_map = query_all["StakeTo"]
 
-    format_stake: dict[str, int] = {
-        key: sum(stake for _, stake in value) for key, value in staketo_map.items()}
+        format_stake: dict[str, int] = {
+            key: sum(stake for _, stake in value) for key, value in staketo_map.items()}
 
-    key2stake: dict[str, int] = concat_to_local_keys(format_stake)
+        key2stake: dict[str, int] = concat_to_local_keys(format_stake)
 
     return key2stake
 
 
 def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dict[str, int], dict[str, int]]:
-    query_result = c_client.query_batch_map(
-        {
-            "SubspaceModule": [("StakeTo", [netuid])],
-            "System": [("Account", [])],
-        }
-    )
-    balance_map = query_result["Account"]
-    staketo_map = query_result["StakeTo"]
+    with c_client.get_conn() as substrate:
+        # TODO, look for a faster implemenations, current approach is adopted
+        # because of a thread safety
+
+        query_stake = query_batch_map(
+            substrate,
+            {
+                "SubspaceModule": [("StakeTo", [netuid])],
+            }
+        )
+
+        query_balance = query_batch_map(
+            substrate,
+            {
+                "System": [("Account", [])],
+            }
+        )
+
+    staketo_map = query_stake["StakeTo"]
+    balance_map = query_balance["Account"]
 
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
@@ -305,25 +323,3 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dic
         key2stake.items(), key=lambda item: item[1], reverse=True)}
 
     return key2balance, key2stake
-
-if __name__ == "__main__":
-    from concurrent.futures import ThreadPoolExecutor
-    from itertools import repeat
-    from communex.cli._common import make_client
-    client = make_client()
-    with client.get_conn(init=True) as substrate:
-        bh = substrate.get_block_hash()
-        print(bh)
-        print(type(bh))
-    exit(0)
-    def my_test(x: Any):
-        client = make_client()
-        print("Sending to function")
-        result = local_keys_allbalance(client)
-        return result
-    
-    # threads = 3
-    # with ThreadPoolExecutor(threads) as pool:
-    #     it = pool.map(my_test, repeat(None, threads))
-    #     _ = list(it)
-    my_test(None)

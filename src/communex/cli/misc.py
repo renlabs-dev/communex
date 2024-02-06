@@ -4,6 +4,7 @@ from rich.console import Console
 from communex.balance import from_nano
 from communex.client import CommuneClient
 from communex.misc import get_map_modules
+from communex.raw_ws_ops import query_batch_map
 
 from ._common import BalanceUnit, format_balance, make_client
 
@@ -37,10 +38,11 @@ def circulating_tokens(c_client: CommuneClient) -> int:
     Gets total circulating supply
     """
 
-    query_all = c_client.query_batch_map(
-                                {
-                                    "SubspaceModule": [("TotalStake", [])],
-                                    "System": [("Account", [])], })
+    with c_client.get_conn() as substrate:
+        query_all = query_batch_map(substrate,
+                                    {
+                                        "SubspaceModule": [("TotalStake", [])],
+                                        "System": [("Account", [])], })
 
     balances, stake = query_all["Account"], query_all["TotalStake"]
     format_balances: dict[str, int] = {key: value['data']['free']
