@@ -5,7 +5,8 @@
 [![PyPI version](https://badge.fury.io/py/communex.svg)](https://pypi.org/project/communex/)
 
 - [Why CommuneX](#why-communex)
-- [Installation](#installation)
+- [Installation with `pip`](#installation-with-pip)
+- [Installation with Nix](#installation-with-nix)
 - [Features](#features)
   - [Planned](#planned)
 - [CLI Usage](#cli-usage)
@@ -19,9 +20,9 @@
 CommuneX serves as an alternative library/SDK to the original [Commune
 Ai](https://github.com/commune-ai/commune) codebase, offering a streamlined and
 user-friendly experience. It is designed for simplicity and scalable
-development.
+development. To learn more [visit docs](https://docs.communex.ai/communex)
 
-## Installation
+## Installation with `pip`
 
 Requirements: Python 3.10+
 
@@ -35,6 +36,13 @@ Or add it to your Poetry project with:
 
 ```sh
 poetry add communex
+```
+
+## Installation with Nix
+
+To install `communex` the communex cli with Nix
+```sh
+nix profile install .
 ```
 
 ## Features
