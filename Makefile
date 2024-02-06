@@ -15,6 +15,8 @@ lint:
 type_check:
 	pyright ./src ./tests
 
+test_all: test test_slow
+
 test:
 	pytest -k "not slow"
 
