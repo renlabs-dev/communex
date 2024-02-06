@@ -40,6 +40,9 @@ pdoc = "^14.3.0"
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
 testpaths = "./tests"
+pythonpath = [
+  "."
+]
 
 [tool.pyright]
 strict = ["src"]

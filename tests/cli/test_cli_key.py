@@ -1,39 +1,10 @@
-from typer.testing import CliRunner
-
-import re
-from pathlib import Path
 import pytest
 
 from communex.key import is_ss58_address
 
-from .conftest import InvokeCli
-
-
-runner = CliRunner()
-
-TEST_TEMPORARY_KEY = "warn_temporary_key_983"
-
-TEST_FAKE_MNEM_DO_NOT_USE_THIS = "spy odor tomato foam supreme double vanish minute quarter anxiety wagon hundred"
-
-
-
-def delete_temporary_key():
-    """ WARNING: this function deletes the key from the disk. USE WITH CAUTION."""
-
-    path = Path(Path.home(), ".commune", "key", TEST_TEMPORARY_KEY+".json")
-    if path.exists():
-        path.unlink()
-
-
-# remove all weird non-alphanumeric characters, sucha as table borders
-clean_pattern = re.compile("[^a-zA-Z0-9_\\s'\"-]", re.UNICODE)
-
-
-def clean(text: str) -> str:
-    """ removes extra spaces and weird non-alphanumeric characters from a string."""
-    text = re.sub(clean_pattern, '', text)
-
-    return " ".join(text.split())
+from tests.conftest import InvokeCli
+from tests.str_utils import clean
+from tests.key_config import TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS, delete_temporary_key
 
 
 @pytest.fixture()
@@ -60,6 +31,7 @@ def temporary_key_from_mnemonic(invoke_cli: InvokeCli):
         yield address, name, result
     finally:
         delete_temporary_key()
+
 
 
 def test_cli_key_create(temporary_key):
