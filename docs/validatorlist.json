@@ -1,0 +1,30 @@
+[
+    {
+        "name": "vali::calc",
+        "description": "Established community validator. Supporting CommuneX development",
+        "x": "https://twitter.com/Calc482",
+        "validation_fee": 1,
+        "address": "5FqVuhD8E5rmd8akHi31vQUXagsDWWmSbb8zSWUampR1Rq7F"
+    },
+    {
+        "name": "vali::comswap",
+        "description": "Operators of the 'https://comswap.io/' exchange. Supporting Comswap projects",
+        "x": "https://twitter.com/comswap_io",
+        "validation_fee": 20,
+        "address": "5CXiWwsS76H2vwroWu4SvdAS3kxprb7aFtqWLxxZC5FNhYri"
+    },
+    {
+        "name": "vali.text.truthqa::commie3",
+        "description": "Validator of the founder Sal Vivona. Supporting Commune development",
+        "x": "https://twitter.com/communeaidotorg",
+        "validation_fee": 20,
+        "address": "5CkghExW7kSbDg2phCuQR4K5QqdVsUjdQqGtkME9hGwz5PB6"
+    },
+    {
+        "name": "vali::smart",
+        "description": "Validator of developer Smart. Supporting Commune development",
+        "x": "",
+        "validation_fee": 5,
+        "address": "5D4o6H19z6ctWjS9HzxBpMxqhuzCCCsgXk49AqXGPUqZEpRt"
+    }
+]
