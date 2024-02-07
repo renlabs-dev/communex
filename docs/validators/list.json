@@ -22,7 +22,7 @@
     },
     {
         "name": "vali::smart",
-        "description": "Validator of developer Smart. Supporting Commune development",
+        "description": "Validator of developer Smart. Supporting Commune development, specifically comchat",
         "x": "",
         "validation_fee": 5,
         "address": "5D4o6H19z6ctWjS9HzxBpMxqhuzCCCsgXk49AqXGPUqZEpRt"
