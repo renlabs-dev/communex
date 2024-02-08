@@ -4,6 +4,8 @@ from typing import Any
 from concurrent.futures import ThreadPoolExecutor, Future
 import json
 from typing import TypeVar
+import math
+from copy import deepcopy
 
 from substrateinterface import (ExtrinsicReceipt, Keypair,  # type: ignore
                                 SubstrateInterface)
@@ -312,6 +314,7 @@ class CommuneClient:
             if a != c or b != d:
                 return False
 
+
     def _rpc_request_batch(
             self,
             batch_requests: list[tuple[str, list[Any]]],
@@ -368,6 +371,100 @@ class CommuneClient:
                 chunk_results.append(resul)
         return chunk_results
 
+
+    def _rpc_request_batch_chunked(
+            self,
+            chunk_requests: list[Chunk]|None=None,
+            extract_result: bool = True
+    ) -> list[str]:
+        """
+        Sends batch requests to the substrate node using multiple threads and collects the results.
+
+        Args:
+            substrate: An instance of the substrate interface.
+            batch_requests : A list of requests to be sent in batches.
+            max_size: Maximum size of each batch in bytes.
+            extract_result: Whether to extract the result from the response message.
+
+        Returns:
+            A list of results from the batch requests.
+
+        Example:
+            >>> _rpc_request_batch(substrate_instance, [('method1', ['param1']), ('method2', ['param2'])])
+            ['result1', 'result2', ...]
+        """
+        def split_list(lst, n):
+            sublist_length = len(lst) // n
+            sublists = []
+            for i in range(n):
+                start_index = i * sublist_length
+                end_index = (i + 1) * sublist_length if i < n - 1 else None
+                sublists.append(lst[start_index:end_index])
+            return sublists
+        
+        
+        def split_chunks(chunk: Chunk, chunk_info: list[Chunk], chunk_info_idx: int):
+            manhattam_chunks = []
+            max_n_keys = 35000
+            print("HELLO?")
+            for query in chunk.batch_requests:
+                result_keys = query[1]
+                keys_amount = len(result_keys[0])
+                if keys_amount > max_n_keys:
+                    print("BIGGERRRRRRRRRRRRRRRRRRRRRR")
+                    mini_chunks_amount = math.ceil(keys_amount / max_n_keys)
+                    splitted_params = split_list(chunk.fun_params, mini_chunks_amount)
+                    splitted_prefix = split_list(chunk.prefix_list, mini_chunks_amount)
+                    chunk_info.pop(chunk_info_idx)
+                    for params_list, prefix_list in zip(splitted_params, splitted_prefix):
+                        print("hello")
+                        new_chunk = deepcopy(chunk)
+                        new_chunk.prefix_list = prefix_list
+                        new_chunk.fun_params = params_list
+                        chunk_info.insert(chunk_info_idx, new_chunk)
+                    for i in range(0, keys_amount, max_n_keys):
+                        print("im hereeee")
+                        manhattam_chunks.append(result_keys[i:i+max_n_keys])
+                else:
+                    manhattam_chunks.append(result_keys)
+            breakpoint()
+            return [manhattam_chunks]
+
+        chunk_results: list[Any] = []
+        # smaller_requests = self._make_request_smaller(batch_requests)
+        request_id = 0
+        
+        with ThreadPoolExecutor() as executor:
+            futures: list[Future] = []
+            for idx, macro_chunk in enumerate(chunk_requests):
+                breakpoint()
+                atomic_chunks = split_chunks(macro_chunk, chunk_requests, idx)
+                for micro_chunk in atomic_chunks:
+                    request_ids: list[int] = []
+                    batch_payload: list[Any] = []
+                    breakpoint()
+                    for method, params in micro_chunk:
+                        request_id += 1
+                        request_ids.append(request_id)
+                        batch_payload.append({
+                            "jsonrpc": "2.0",
+                            "method": method,
+                            "params": params,
+                            "id": request_id
+                        })
+                    futures.append(
+                        executor.submit(
+                            self._send_batch,
+                            batch_payload=batch_payload, 
+                            request_ids=request_ids, 
+                            extract_result=extract_result
+                            )
+                        )
+                    
+            for future in futures:
+                resul = future.result()
+                chunk_results.append(resul)
+        return chunk_results
 
     def _decode_response(
         self,
@@ -433,7 +530,7 @@ class CommuneClient:
             else:
                 raise ValueError('Unsupported hash type')
 
-        breakpoint()
+
         assert len(response) == len(function_parameters) == len(prefix_list)
         result_dict: dict[str, dict[Any, Any]] = {}
         for res, fun_params_tuple, prefix in zip(
@@ -549,15 +646,6 @@ class CommuneClient:
         last_keys: list[str] = []
         
         
-        def split_chunks(chunk: list[list[str]]):
-            manhattam_chunks = []
-            max_n_keys = 3000
-            for result_keys in chunk:
-                keys_amount = len(result_keys)
-                for i in range(0, keys_amount, max_n_keys):
-                    manhattam_chunks.append(result_keys[i:i+max_n_keys])
-            return manhattam_chunks
-
         def get_page(start_keys: list[str]=[], page_size: int = 100):
             send, prefix_list = self._get_storage_keys(storage, queries, block_hash)
             with self.get_conn(init=True) as substrate:
@@ -580,8 +668,8 @@ class CommuneClient:
                 prefix_list, 
                 function_parameters
             )
-            chunks_response = self._rpc_request_batch(
-                built_payload, chunks_info
+            chunks_response = self._rpc_request_batch_chunked(
+                chunks_info
                 )
             return chunks_response, prefix_list, chunks_info
 
