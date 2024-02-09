@@ -399,28 +399,14 @@ class CommuneClient:
             >>> _rpc_request_batch(substrate_instance, [('method1', ['param1']), ('method2', ['param2'])])
             ['result1', 'result2', ...]
         """
-        def split_list(lst, n):
-            sublist_length = len(lst) // n
-            sublists = []
-            for i in range(n):
-                start_index = i * sublist_length
-                end_index = (i + 1) * sublist_length if i < n - 1 else None
-                sublists.append(lst[start_index:end_index])
-            return sublists
-        
-        
         def split_chunks(chunk: Chunk, chunk_info: list[Chunk], chunk_info_idx: int):
             manhattam_chunks = []
             mutaded_chunk_info = deepcopy(chunk_info)
             max_n_keys = 35000
-            print("Splitting the atom")
             for query in chunk.batch_requests:
                 result_keys = query[1][0]
                 keys_amount = len(result_keys)
                 if keys_amount > max_n_keys:
-                    mini_chunks_amount = math.ceil(keys_amount / max_n_keys)
-                    splitted_params = split_list(chunk.fun_params, mini_chunks_amount)
-                    splitted_prefix = split_list(chunk.prefix_list, mini_chunks_amount)
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
@@ -441,7 +427,6 @@ class CommuneClient:
         with ThreadPoolExecutor() as executor:
             futures: list[Future] = []
             for idx, macro_chunk in enumerate(chunk_requests):
-                print("WTF")
                 atomic_chunks, mutated_chunk_info = split_chunks(macro_chunk, chunk_requests, idx)
             assert mutated_chunk_info
             for chunk in mutated_chunk_info:
@@ -465,7 +450,6 @@ class CommuneClient:
                         extract_result=extract_result
                         )
                     )
-                print("iterated")    
             for future in futures:
                 resul = future.result()
                 chunk_results.append(resul)
@@ -668,19 +652,13 @@ class CommuneClient:
             assert len(responses) == 1
             res = responses[0]
             built_payload: list[tuple[str, list[Any]]] = []
-            # splitted_chunk = split_chunks(chunk)
             for result_keys in res:
-                if not result_keys:
-                    print("?")
-                    continue
                 built_payload.append(("state_queryStorageAt", [result_keys, block_hash]))
-            print(len(built_payload))
             chunked_payload, chunks_info = self._make_request_smaller(
                 built_payload, 
                 prefix_list, 
                 function_parameters
             )
-            print("toaqui")
             chunks_response, chunks_info = self._rpc_request_batch_chunked(
                 chunks_info
                 )
@@ -689,7 +667,6 @@ class CommuneClient:
         with self.get_conn(init=True) as substrate:
             block_hash = substrate.get_block_hash()
         for storage, queries in functions.items():
-            print(storage)
             chunks, prefix_list, chunks_info = get_page(last_keys)
             # if this doesn't happen something is wrong on the code
             # and we won't be able to decode the data properly
