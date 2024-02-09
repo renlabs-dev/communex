@@ -289,8 +289,13 @@ class CommuneClient:
             # Check if adding this request exceeds the max size
             if current_size + request_size > MAX_REQUEST_SIZE:
                 # If so, start a new batch
-                chunk_list.append(Chunk(current_batch, current_prefix_batch, current_params_batch))
-                result.append(current_batch)
+                
+                # Essentiatly checks that it's not the first iteration
+                if current_batch:
+                    chunk = Chunk(current_batch, current_prefix_batch, current_params_batch)
+                    chunk_list.append(chunk)
+                    result.append(current_batch)
+                
                 current_batch = [request]
                 current_prefix_batch = [prefix]
                 current_params_batch = [params]
@@ -305,7 +310,8 @@ class CommuneClient:
         # Add the last batch if it's not empty
         if current_batch:
             result.append(current_batch)
-            chunk_list.append(Chunk(current_batch, current_prefix_batch, current_params_batch))
+            chunk = Chunk(current_batch, current_prefix_batch, current_params_batch)
+            chunk_list.append(chunk)
 
         return result, chunk_list
 
@@ -405,30 +411,30 @@ class CommuneClient:
         
         def split_chunks(chunk: Chunk, chunk_info: list[Chunk], chunk_info_idx: int):
             manhattam_chunks = []
+            mutaded_chunk_info = deepcopy(chunk_info)
             max_n_keys = 35000
-            print("HELLO?")
+            print("Splitting the atom")
             for query in chunk.batch_requests:
-                result_keys = query[1]
-                keys_amount = len(result_keys[0])
+                result_keys = query[1][0]
+                keys_amount = len(result_keys)
                 if keys_amount > max_n_keys:
-                    print("BIGGERRRRRRRRRRRRRRRRRRRRRR")
                     mini_chunks_amount = math.ceil(keys_amount / max_n_keys)
                     splitted_params = split_list(chunk.fun_params, mini_chunks_amount)
                     splitted_prefix = split_list(chunk.prefix_list, mini_chunks_amount)
-                    chunk_info.pop(chunk_info_idx)
+                    mutaded_chunk_info.pop(chunk_info_idx)
                     for params_list, prefix_list in zip(splitted_params, splitted_prefix):
-                        print("hello")
                         new_chunk = deepcopy(chunk)
-                        new_chunk.prefix_list = prefix_list
-                        new_chunk.fun_params = params_list
-                        chunk_info.insert(chunk_info_idx, new_chunk)
+                        # new_chunk.prefix_list = prefix_list
+                        # new_chunk.fun_params = params_list
+                        mutaded_chunk_info.insert(chunk_info_idx, new_chunk)
                     for i in range(0, keys_amount, max_n_keys):
-                        print("im hereeee")
-                        manhattam_chunks.append(result_keys[i:i+max_n_keys])
+                        splitted_keys = result_keys[i:i+max_n_keys]
+                        splitted_query = deepcopy(query)
+                        splitted_query[1][0] = splitted_keys
+                        manhattam_chunks.append(splitted_query)
                 else:
-                    manhattam_chunks.append(result_keys)
-            breakpoint()
-            return [manhattam_chunks]
+                    manhattam_chunks.append(query)
+            return manhattam_chunks, mutaded_chunk_info
 
         chunk_results: list[Any] = []
         # smaller_requests = self._make_request_smaller(batch_requests)
@@ -437,21 +443,20 @@ class CommuneClient:
         with ThreadPoolExecutor() as executor:
             futures: list[Future] = []
             for idx, macro_chunk in enumerate(chunk_requests):
-                breakpoint()
-                atomic_chunks = split_chunks(macro_chunk, chunk_requests, idx)
-                for micro_chunk in atomic_chunks:
+                print("WTF")
+                atomic_chunks, mutated_chunk_info = split_chunks(macro_chunk, chunk_requests, idx)
+                for method, params in atomic_chunks:
                     request_ids: list[int] = []
                     batch_payload: list[Any] = []
-                    breakpoint()
-                    for method, params in micro_chunk:
-                        request_id += 1
-                        request_ids.append(request_id)
-                        batch_payload.append({
-                            "jsonrpc": "2.0",
-                            "method": method,
-                            "params": params,
-                            "id": request_id
-                        })
+                    #for method, params in micro_chunk:
+                    request_id += 1
+                    request_ids.append(request_id)
+                    batch_payload.append({
+                        "jsonrpc": "2.0",
+                        "method": method,
+                        "params": params,
+                        "id": request_id
+                    })
                     futures.append(
                         executor.submit(
                             self._send_batch,
@@ -460,11 +465,11 @@ class CommuneClient:
                             extract_result=extract_result
                             )
                         )
-                    
+                    print("iterated")    
             for future in futures:
                 resul = future.result()
                 chunk_results.append(resul)
-        return chunk_results
+        return chunk_results, mutated_chunk_info
 
     def _decode_response(
         self,
@@ -529,7 +534,6 @@ class CommuneClient:
                 return 0
             else:
                 raise ValueError('Unsupported hash type')
-
 
         assert len(response) == len(function_parameters) == len(prefix_list)
         result_dict: dict[str, dict[Any, Any]] = {}
@@ -645,7 +649,15 @@ class CommuneClient:
         responses: list[Any] = []
         last_keys: list[str] = []
         
+        def recursive_update(d: dict[str, dict[T1, T2]], u: dict[str, dict[T1, T2]]) -> dict[str, T1, T2]:
+            for k, v in u.items():
+                if isinstance(v, dict):
+                    d[k] = recursive_update(d.get(k, {}), v)
+                else:
+                    d[k] = v
+            return d
         
+
         def get_page(start_keys: list[str]=[], page_size: int = 100):
             send, prefix_list = self._get_storage_keys(storage, queries, block_hash)
             with self.get_conn(init=True) as substrate:
@@ -668,7 +680,8 @@ class CommuneClient:
                 prefix_list, 
                 function_parameters
             )
-            chunks_response = self._rpc_request_batch_chunked(
+            print("toaqui")
+            chunks_response, chunks_info = self._rpc_request_batch_chunked(
                 chunks_info
                 )
             return chunks_response, prefix_list, chunks_info
@@ -680,6 +693,7 @@ class CommuneClient:
             chunks, prefix_list, chunks_info = get_page(last_keys)
             # if this doesn't happen something is wrong on the code
             # and we won't be able to decode the data properly
+            breakpoint()
             assert len(chunks) == len(chunks_info)
             for chunk_info, response in zip(chunks_info, chunks):
                 storage_result = self._decode_response(
@@ -688,7 +702,7 @@ class CommuneClient:
                     chunk_info.prefix_list,
                     block_hash
                 )
-                multi_result.update(storage_result)
+                multi_result = recursive_update(multi_result, storage_result)
         # needs to flatten multi_result
         return multi_result
 
