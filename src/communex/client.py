@@ -422,16 +422,14 @@ class CommuneClient:
                     splitted_params = split_list(chunk.fun_params, mini_chunks_amount)
                     splitted_prefix = split_list(chunk.prefix_list, mini_chunks_amount)
                     mutaded_chunk_info.pop(chunk_info_idx)
-                    for params_list, prefix_list in zip(splitted_params, splitted_prefix):
-                        new_chunk = deepcopy(chunk)
-                        # new_chunk.prefix_list = prefix_list
-                        # new_chunk.fun_params = params_list
-                        mutaded_chunk_info.insert(chunk_info_idx, new_chunk)
                     for i in range(0, keys_amount, max_n_keys):
+                        new_chunk = deepcopy(chunk)
                         splitted_keys = result_keys[i:i+max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
+                        new_chunk.batch_requests = [splitted_query]
                         manhattam_chunks.append(splitted_query)
+                        mutaded_chunk_info.insert(chunk_info_idx, new_chunk)
                 else:
                     manhattam_chunks.append(query)
             return manhattam_chunks, mutaded_chunk_info
@@ -445,9 +443,11 @@ class CommuneClient:
             for idx, macro_chunk in enumerate(chunk_requests):
                 print("WTF")
                 atomic_chunks, mutated_chunk_info = split_chunks(macro_chunk, chunk_requests, idx)
-                for method, params in atomic_chunks:
-                    request_ids: list[int] = []
-                    batch_payload: list[Any] = []
+            assert mutated_chunk_info
+            for chunk in mutated_chunk_info:
+                request_ids: list[int] = []
+                batch_payload: list[Any] = []
+                for method, params in chunk.batch_requests:
                     #for method, params in micro_chunk:
                     request_id += 1
                     request_ids.append(request_id)
@@ -457,15 +457,15 @@ class CommuneClient:
                         "params": params,
                         "id": request_id
                     })
-                    futures.append(
-                        executor.submit(
-                            self._send_batch,
-                            batch_payload=batch_payload, 
-                            request_ids=request_ids, 
-                            extract_result=extract_result
-                            )
+                futures.append(
+                    executor.submit(
+                        self._send_batch,
+                        batch_payload=batch_payload, 
+                        request_ids=request_ids, 
+                        extract_result=extract_result
                         )
-                    print("iterated")    
+                    )
+                print("iterated")    
             for future in futures:
                 resul = future.result()
                 chunk_results.append(resul)
@@ -693,7 +693,6 @@ class CommuneClient:
             chunks, prefix_list, chunks_info = get_page(last_keys)
             # if this doesn't happen something is wrong on the code
             # and we won't be able to decode the data properly
-            breakpoint()
             assert len(chunks) == len(chunks_info)
             for chunk_info, response in zip(chunks_info, chunks):
                 storage_result = self._decode_response(
