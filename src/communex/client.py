@@ -4,6 +4,8 @@ from typing import Any
 from concurrent.futures import ThreadPoolExecutor, Future
 import json
 from typing import TypeVar
+import math
+from copy import deepcopy
 
 from substrateinterface import (ExtrinsicReceipt, Keypair,  # type: ignore
                                 SubstrateInterface)
@@ -20,6 +22,17 @@ from communex.errors import NetworkQueryError
 
 
 # TODO: InsufficientBalanceError, MismatchedLengthError etc
+
+MAX_REQUEST_SIZE = 9_000_000
+
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Chunk:
+    batch_requests: list[tuple[Any, Any]]
+    prefix_list: list[str]
+    fun_params: list[tuple[Any, Any, Any, Any, str]]
 
 
 def are_lists_equal(list1, list2):
@@ -122,25 +135,34 @@ class CommuneClient:
             self._connection_queue.put(conn)
 
 
-    def _get_storage_keys(self, functions: dict, block_hash: str):
+    def _get_storage_keys(
+            self, 
+            storage: str,
+            queries: list[tuple[str, list[Any]]],
+            block_hash: str, 
+            ):
+
         send: list[tuple[str, list[Any]]] = []
         prefix_list: list[Any] = []
-        with self.get_conn(init=True) as substrate:
-            for module, queries in functions.items():
-                for function, params in queries:
-                    storage_key = StorageKey.create_from_storage_function(  # type: ignore
-                        module, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
-                    )
 
-                    prefix = storage_key.to_hex()
-                    prefix_list.append(prefix)
-                    send.append(("state_getKeys", [prefix, block_hash]))
+        key_idx = 0
+        with self.get_conn(init=True) as substrate:
+            for function, params in queries:
+                storage_key = StorageKey.create_from_storage_function(  # type: ignore
+                    storage, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
+                )
+
+                prefix = storage_key.to_hex()
+                prefix_list.append(prefix)
+                send.append(("state_getKeys", [prefix, block_hash]))
+                key_idx += 1
         return send, prefix_list
     
 
     def _get_lists(
     self,
-    functions: dict[str, list[tuple[str, list[Any]]]],
+    storage_module: str,
+    queries: list[tuple[str, list[Any]]],
     substrate: SubstrateInterface
 ) -> list[tuple[Any, Any, Any, Any, str]]:
         """
@@ -162,17 +184,17 @@ class CommuneClient:
             [('value_type', 'param_types', 'key_hashers', ['param1', 'param2'], 'storage_function'), ...]
         """
 
+
         function_parameters: list[tuple[Any, Any, Any, Any, str]] = []
-        for storage_module, queries in functions.items():
-            metadata_pallet = substrate.metadata.get_metadata_pallet(storage_module)  # type: ignore
-            for storage_function, params in queries:
-                storage_item = metadata_pallet.get_storage_function(storage_function)  # type: ignore
-                value_type = storage_item.get_value_type_string()  # type: ignore
-                param_types = storage_item.get_params_type_string()  # type: ignore
-                key_hashers = storage_item.get_param_hashers()  # type: ignore
-                function_parameters.append(
-                    (value_type, param_types, key_hashers, params, storage_function)  # type: ignore
-                )
+        metadata_pallet = substrate.metadata.get_metadata_pallet(storage_module)  # type: ignore
+        for storage_function, params in queries:
+            storage_item = metadata_pallet.get_storage_function(storage_function)  # type: ignore
+            value_type = storage_item.get_value_type_string()  # type: ignore
+            param_types = storage_item.get_params_type_string()  # type: ignore
+            key_hashers = storage_item.get_param_hashers()  # type: ignore
+            function_parameters.append(
+                (value_type, param_types, key_hashers, params, storage_function)  # type: ignore
+            )
         return function_parameters
 
 
@@ -226,8 +248,9 @@ class CommuneClient:
     def _make_request_smaller(
             self,
             batch_request: list[tuple[T1, T2]],
-            max_size: int = 9_000_000,
-    ) -> list[list[tuple[T1, T2]]]:
+            prefix_list: list[list[str]],
+            fun_params: list[list[Any]]
+    ) -> tuple[list[list[tuple[T1, T2]]], list[Chunk]]:
         """
         Splits a batch of requests into smaller batches, each not exceeding the specified maximum size.
 
@@ -242,6 +265,7 @@ class CommuneClient:
             >>> _make_request_smaller(batch_request=[('method1', 'params1'), ('method2', 'params2')], max_size=1000)
             [[('method1', 'params1')], [('method2', 'params2')]]
         """
+        assert len(prefix_list) == len(fun_params) == len(batch_request)
 
         def estimate_size(request: tuple[T1, T2]):
             """Convert the batch request to a string and measure its length"""
@@ -250,37 +274,57 @@ class CommuneClient:
         # Initialize variables
         result: list[list[tuple[T1, T2]]] = []
         current_batch = []
+        current_prefix_batch = []
+        current_params_batch = []
         current_size = 0
 
+        chunk_list: list[Chunk] = []
+
         # Iterate through each request in the batch
-        for request in batch_request:
+        for request, prefix, params in zip(
+            batch_request, prefix_list, fun_params
+        ):
             request_size = estimate_size(request)
 
             # Check if adding this request exceeds the max size
-            if current_size + request_size > max_size:
+            if current_size + request_size > MAX_REQUEST_SIZE:
                 # If so, start a new batch
-                result.append(current_batch)
+                
+                # Essentiatly checks that it's not the first iteration
+                if current_batch:
+                    chunk = Chunk(current_batch, current_prefix_batch, current_params_batch)
+                    chunk_list.append(chunk)
+                    result.append(current_batch)
+                
                 current_batch = [request]
+                current_prefix_batch = [prefix]
+                current_params_batch = [params]
                 current_size = request_size
             else:
                 # Otherwise, add to the current batch
                 current_batch.append(request)
                 current_size += request_size
+                current_prefix_batch.append(prefix)
+                current_params_batch.append(params)
 
         # Add the last batch if it's not empty
         if current_batch:
             result.append(current_batch)
+            chunk = Chunk(current_batch, current_prefix_batch, current_params_batch)
+            chunk_list.append(chunk)
 
-        return result
+        return result, chunk_list
 
     def _are_changes_equal(self, change_a: Any, change_b: Any):
         for ((a, b), (c, d)) in zip(change_a, change_b):
             if a != c or b != d:
                 return False
 
+
     def _rpc_request_batch(
             self,
             batch_requests: list[tuple[str, list[Any]]],
+            chunk_requests: list[Chunk]|None=None,
             extract_result: bool = True
     ) -> list[str]:
         """
@@ -300,20 +344,17 @@ class CommuneClient:
             ['result1', 'result2', ...]
         """
 
-        results: list[Any] = []
         chunk_results: list[Any] = []
-        smaller_requests = self._make_request_smaller(batch_requests)
+        # smaller_requests = self._make_request_smaller(batch_requests)
         request_id = 0
         with ThreadPoolExecutor() as executor:
             futures: list[Future] = []
-            # with self.get_conn(init=True) as substrate:
-            for chunk in smaller_requests:
+            chunks_iterator = chunk_requests if chunk_requests else [batch_requests]
+            for chunk in chunks_iterator:
                 request_ids: list[int] = []
                 batch_payload: list[Any] = []
-
-                for method, params in chunk:
-                    # TODO: you should refactor this to not use substrate, or if you can't get the substrate from client and pass it to the executor
-                    # request_id = substrate.request_id
+                queries_iterator = chunk if not chunk_requests else chunk.batch_requests
+                for method, params in queries_iterator:
                     request_id += 1
                     request_ids.append(request_id)
                     batch_payload.append({
@@ -323,25 +364,104 @@ class CommuneClient:
                         "id": request_id
                     })
 
-                # _send_batch(substrate=substrate,  batch_payload=batch_payload, request_ids=request_ids, results=results, extract_result=extract_result)
-                futures.append(executor.submit(self._send_batch,
-                                                batch_payload=batch_payload, request_ids=request_ids, extract_result=extract_result))
-
+                futures.append(
+                    executor.submit(
+                        self._send_batch,
+                        batch_payload=batch_payload, 
+                        request_ids=request_ids, 
+                        extract_result=extract_result
+                        )
+                    )
             for future in futures:
                 resul = future.result()
                 chunk_results.append(resul)
         return chunk_results
-        return results
 
+
+    def _rpc_request_batch_chunked(
+            self,
+            chunk_requests: list[Chunk]|None=None,
+            extract_result: bool = True
+    ) -> list[str]:
+        """
+        Sends batch requests to the substrate node using multiple threads and collects the results.
+
+        Args:
+            substrate: An instance of the substrate interface.
+            batch_requests : A list of requests to be sent in batches.
+            max_size: Maximum size of each batch in bytes.
+            extract_result: Whether to extract the result from the response message.
+
+        Returns:
+            A list of results from the batch requests.
+
+        Example:
+            >>> _rpc_request_batch(substrate_instance, [('method1', ['param1']), ('method2', ['param2'])])
+            ['result1', 'result2', ...]
+        """
+        def split_chunks(chunk: Chunk, chunk_info: list[Chunk], chunk_info_idx: int):
+            manhattam_chunks = []
+            mutaded_chunk_info = deepcopy(chunk_info)
+            max_n_keys = 35000
+            for query in chunk.batch_requests:
+                result_keys = query[1][0]
+                keys_amount = len(result_keys)
+                if keys_amount > max_n_keys:
+                    mutaded_chunk_info.pop(chunk_info_idx)
+                    for i in range(0, keys_amount, max_n_keys):
+                        new_chunk = deepcopy(chunk)
+                        splitted_keys = result_keys[i:i+max_n_keys]
+                        splitted_query = deepcopy(query)
+                        splitted_query[1][0] = splitted_keys
+                        new_chunk.batch_requests = [splitted_query]
+                        manhattam_chunks.append(splitted_query)
+                        mutaded_chunk_info.insert(chunk_info_idx, new_chunk)
+                else:
+                    manhattam_chunks.append(query)
+            return manhattam_chunks, mutaded_chunk_info
+
+        chunk_results: list[Any] = []
+        # smaller_requests = self._make_request_smaller(batch_requests)
+        request_id = 0
+        
+        with ThreadPoolExecutor() as executor:
+            futures: list[Future] = []
+            for idx, macro_chunk in enumerate(chunk_requests):
+                atomic_chunks, mutated_chunk_info = split_chunks(macro_chunk, chunk_requests, idx)
+            assert mutated_chunk_info
+            for chunk in mutated_chunk_info:
+                request_ids: list[int] = []
+                batch_payload: list[Any] = []
+                for method, params in chunk.batch_requests:
+                    #for method, params in micro_chunk:
+                    request_id += 1
+                    request_ids.append(request_id)
+                    batch_payload.append({
+                        "jsonrpc": "2.0",
+                        "method": method,
+                        "params": params,
+                        "id": request_id
+                    })
+                futures.append(
+                    executor.submit(
+                        self._send_batch,
+                        batch_payload=batch_payload, 
+                        request_ids=request_ids, 
+                        extract_result=extract_result
+                        )
+                    )
+            for future in futures:
+                resul = future.result()
+                chunk_results.append(resul)
+        return chunk_results, mutated_chunk_info
 
     def _decode_response(
-            self,
-            response: list[str],
-            function_parameters: list[tuple[Any, Any, Any, Any, str]],
-            last_keys: list[Any],
-            prefix_list: list[Any],
-            block_hash: str,
-    ) -> dict[str, dict[Any, Any]]:
+        self,
+        response: list[str],
+        function_parameters: list[tuple[Any, Any, Any, Any, str]],
+        prefix_list: list[Any],
+        block_hash: str,
+) -> dict[str, dict[Any, Any]]:
         """
         Decodes a response from the substrate interface and organizes the data into a dictionary.
 
@@ -404,7 +524,7 @@ class CommuneClient:
         for res, fun_params_tuple, prefix in zip(
             response, function_parameters, prefix_list
         ):
-            res = res[0][0]
+            res = res[0]
             changes = res["changes"]  # type: ignore
             value_type, param_types, key_hashers, params, storage_function = fun_params_tuple
             with self.get_conn(init=True) as substrate:
@@ -509,28 +629,55 @@ class CommuneClient:
             >>> query_batch_map(substrate_instance, {'module_name': [('function_name', ['param1', 'param2'])]})
             # Returns the combined result of the map batch query
         """
+        multi_result: dict[str, dict[Any, Any]] = {}
+        
+        def recursive_update(d: dict[str, dict[T1, T2]], u: dict[str, dict[T1, T2]]) -> dict[str, T1, T2]:
+            for k, v in u.items():
+                if isinstance(v, dict):
+                    d[k] = recursive_update(d.get(k, {}), v)
+                else:
+                    d[k] = v
+            return d
+        
+
+        def get_page():
+            send, prefix_list = self._get_storage_keys(storage, queries, block_hash)
+            with self.get_conn(init=True) as substrate:
+                function_parameters = self._get_lists(storage, queries, substrate)
+            responses = self._rpc_request_batch(send)
+            # assumption because send is just the storage_function keys
+            # so it should always be really small regardless of the amount of queries
+            assert len(responses) == 1
+            res = responses[0]
+            built_payload: list[tuple[str, list[Any]]] = []
+            for result_keys in res:
+                built_payload.append(("state_queryStorageAt", [result_keys, block_hash]))
+            _, chunks_info = self._make_request_smaller(
+                built_payload, 
+                prefix_list, 
+                function_parameters
+            )
+            chunks_response, chunks_info = self._rpc_request_batch_chunked(
+                chunks_info
+                )
+            return chunks_response, chunks_info
+
         with self.get_conn(init=True) as substrate:
             block_hash = substrate.get_block_hash()
-            function_parameters = self._get_lists(functions, substrate)
-        # it's working for a single module, but the response is weird when we try to query system
-        send, prefix_list = self._get_storage_keys(functions, block_hash)
+        for storage, queries in functions.items():
+            chunks, chunks_info = get_page()
+            # if this doesn't happen something is wrong on the code
+            # and we won't be able to decode the data properly
+            assert len(chunks) == len(chunks_info)
+            for chunk_info, response in zip(chunks_info, chunks):
+                storage_result = self._decode_response(
+                    response,
+                    chunk_info.fun_params,
+                    chunk_info.prefix_list,
+                    block_hash
+                )
+                multi_result = recursive_update(multi_result, storage_result)
 
-        storage_responses = self._rpc_request_batch(send)
-        built_payload: list[tuple[str, list[Any]]] = []
-        last_keys: list[Any] = []
-        for storage in storage_responses:
-            for result_key in storage:
-                last_keys.append(result_key[-1])
-                built_payload.append(("state_queryStorageAt", [result_key, block_hash]))
-        response = self._rpc_request_batch(built_payload)
-
-        multi_result = self._decode_response(
-            response,
-            function_parameters,
-            last_keys,
-            prefix_list,
-            block_hash
-        )
         return multi_result
 
 
