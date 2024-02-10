@@ -630,8 +630,6 @@ class CommuneClient:
             # Returns the combined result of the map batch query
         """
         multi_result: dict[str, dict[Any, Any]] = {}
-        responses: list[Any] = []
-        last_keys: list[str] = []
         
         def recursive_update(d: dict[str, dict[T1, T2]], u: dict[str, dict[T1, T2]]) -> dict[str, T1, T2]:
             for k, v in u.items():
@@ -642,7 +640,7 @@ class CommuneClient:
             return d
         
 
-        def get_page(start_keys: list[str]=[], page_size: int = 100):
+        def get_page():
             send, prefix_list = self._get_storage_keys(storage, queries, block_hash)
             with self.get_conn(init=True) as substrate:
                 function_parameters = self._get_lists(storage, queries, substrate)
@@ -654,7 +652,7 @@ class CommuneClient:
             built_payload: list[tuple[str, list[Any]]] = []
             for result_keys in res:
                 built_payload.append(("state_queryStorageAt", [result_keys, block_hash]))
-            chunked_payload, chunks_info = self._make_request_smaller(
+            _, chunks_info = self._make_request_smaller(
                 built_payload, 
                 prefix_list, 
                 function_parameters
@@ -662,12 +660,12 @@ class CommuneClient:
             chunks_response, chunks_info = self._rpc_request_batch_chunked(
                 chunks_info
                 )
-            return chunks_response, prefix_list, chunks_info
+            return chunks_response, chunks_info
 
         with self.get_conn(init=True) as substrate:
             block_hash = substrate.get_block_hash()
         for storage, queries in functions.items():
-            chunks, prefix_list, chunks_info = get_page(last_keys)
+            chunks, chunks_info = get_page()
             # if this doesn't happen something is wrong on the code
             # and we won't be able to decode the data properly
             assert len(chunks) == len(chunks_info)
@@ -679,7 +677,7 @@ class CommuneClient:
                     block_hash
                 )
                 multi_result = recursive_update(multi_result, storage_result)
-        # needs to flatten multi_result
+
         return multi_result
 
 
