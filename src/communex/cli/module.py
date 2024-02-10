@@ -61,7 +61,7 @@ def register(name: str, ip: str, port: int, key: Optional[str] = None, subnet: s
 
 
 @module_app.command()
-def update(key: str, name: str, address: str, delegation_fee: int = 20, netuid: int = 0):
+def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, netuid: int = 0):
     """
     Update module with custom parameters.
     """
@@ -70,8 +70,10 @@ def update(key: str, name: str, address: str, delegation_fee: int = 20, netuid: 
     resolved_key = classic_load_key(key)
     client = make_client()
 
-    if not is_ip_valid(address):
+    if not is_ip_valid(ip):
         raise ValueError("Invalid ip address")
+
+    address = f"{ip}:{port}"
 
     with console.status(f"Updating Module on a subnet with netuid '{netuid}' ..."):
         response = (client.update_module(resolved_key, name,
