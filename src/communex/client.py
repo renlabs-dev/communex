@@ -4,7 +4,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Mapping
 
 from substrateinterface import (ExtrinsicReceipt, Keypair,  # type: ignore
                                 SubstrateInterface)
@@ -23,36 +23,16 @@ from communex.types import NetworkParams, Ss58Address, SubnetParams
 MAX_REQUEST_SIZE = 9_000_000
 
 
-
 @dataclass
 class Chunk:
     batch_requests: list[tuple[Any, Any]]
-    prefix_list: list[str]
+    prefix_list: list[list[str]]
     fun_params: list[tuple[Any, Any, Any, Any, str]]
-
-
-def are_lists_equal(list1, list2):
-    # Check if lengths are equal
-    if len(list1) != len(list2):
-        return False
-
-    # Check each sublist element-wise
-    for sublist1, sublist2 in zip(list1, list2):
-        # Check if lengths of sublists are equal
-        if len(sublist1) != len(sublist2):
-            return False
-
-        # Check each element in the sublists
-        for elem1, elem2 in zip(sublist1, sublist2):
-            if elem1 != elem2:
-                return False
-
-    # Lists are equal
-    return True
 
 
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
+
 
 class CommuneClient:
     """
@@ -124,19 +104,18 @@ class CommuneClient:
         """
         conn = self._connection_queue.get(timeout=timeout)
         if init:
-            conn.init_runtime()
+            conn.init_runtime()  # type: ignore
         try:
             yield conn
         finally:
             self._connection_queue.put(conn)
 
-
     def _get_storage_keys(
-            self, 
+            self,
             storage: str,
             queries: list[tuple[str, list[Any]]],
-            block_hash: str, 
-            ):
+            block_hash: str,
+    ):
 
         send: list[tuple[str, list[Any]]] = []
         prefix_list: list[Any] = []
@@ -153,14 +132,13 @@ class CommuneClient:
                 send.append(("state_getKeys", [prefix, block_hash]))
                 key_idx += 1
         return send, prefix_list
-    
 
     def _get_lists(
-    self,
-    storage_module: str,
-    queries: list[tuple[str, list[Any]]],
-    substrate: SubstrateInterface
-) -> list[tuple[Any, Any, Any, Any, str]]:
+        self,
+        storage_module: str,
+        queries: list[tuple[str, list[Any]]],
+        substrate: SubstrateInterface
+    ) -> list[tuple[Any, Any, Any, Any, str]]:
         """
         Generates a list of tuples containing parameters for each storage function based on the given functions and substrate interface.
 
@@ -180,7 +158,6 @@ class CommuneClient:
             [('value_type', 'param_types', 'key_hashers', ['param1', 'param2'], 'storage_function'), ...]
         """
 
-
         function_parameters: list[tuple[Any, Any, Any, Any, str]] = []
         metadata_pallet = substrate.metadata.get_metadata_pallet(storage_module)  # type: ignore
         for storage_function, params in queries:
@@ -193,13 +170,12 @@ class CommuneClient:
             )
         return function_parameters
 
-
     def _send_batch(
         self,
         batch_payload: list[Any],
         request_ids: list[int],
         extract_result: bool = True
-):
+    ):
         """
         Sends a batch of requests to the substrate and collects the results.
 
@@ -209,7 +185,7 @@ class CommuneClient:
             request_ids: A list of request IDs for tracking responses.
             results: A list to store the results of the requests.
             extract_result: Whether to extract the result from the response.
-            
+
         Raises:
             NetworkQueryError: If there is an `error` in the response message.
 
@@ -233,7 +209,8 @@ class CommuneClient:
                             try:
                                 results.append(message['result'])
                             except Exception:
-                                raise(RuntimeError(f"Error extracting result from message: {message}"))
+                                raise (RuntimeError(
+                                    f"Error extracting result from message: {message}"))
                         else:
                             results.append(message)
                     if 'error' in message:
@@ -245,7 +222,7 @@ class CommuneClient:
             self,
             batch_request: list[tuple[T1, T2]],
             prefix_list: list[list[str]],
-            fun_params: list[list[Any]]
+            fun_params: list[tuple[Any, Any, Any, Any, str]]
     ) -> tuple[list[list[tuple[T1, T2]]], list[Chunk]]:
         """
         Splits a batch of requests into smaller batches, each not exceeding the specified maximum size.
@@ -285,13 +262,13 @@ class CommuneClient:
             # Check if adding this request exceeds the max size
             if current_size + request_size > MAX_REQUEST_SIZE:
                 # If so, start a new batch
-                
+
                 # Essentiatly checks that it's not the first iteration
                 if current_batch:
                     chunk = Chunk(current_batch, current_prefix_batch, current_params_batch)
                     chunk_list.append(chunk)
                     result.append(current_batch)
-                
+
                 current_batch = [request]
                 current_prefix_batch = [prefix]
                 current_params_batch = [params]
@@ -316,11 +293,9 @@ class CommuneClient:
             if a != c or b != d:
                 return False
 
-
     def _rpc_request_batch(
             self,
             batch_requests: list[tuple[str, list[Any]]],
-            chunk_requests: list[Chunk]|None=None,
             extract_result: bool = True
     ) -> list[str]:
         """
@@ -344,12 +319,12 @@ class CommuneClient:
         # smaller_requests = self._make_request_smaller(batch_requests)
         request_id = 0
         with ThreadPoolExecutor() as executor:
-            futures: list[Future] = []
-            chunks_iterator = chunk_requests if chunk_requests else [batch_requests]
+            futures: list[Future[list[str | dict[Any, Any]]]] = []
+            chunks_iterator = [batch_requests]
             for chunk in chunks_iterator:
                 request_ids: list[int] = []
                 batch_payload: list[Any] = []
-                queries_iterator = chunk if not chunk_requests else chunk.batch_requests
+                queries_iterator = chunk
                 for method, params in queries_iterator:
                     request_id += 1
                     request_ids.append(request_id)
@@ -363,22 +338,21 @@ class CommuneClient:
                 futures.append(
                     executor.submit(
                         self._send_batch,
-                        batch_payload=batch_payload, 
-                        request_ids=request_ids, 
+                        batch_payload=batch_payload,
+                        request_ids=request_ids,
                         extract_result=extract_result
-                        )
                     )
+                )
             for future in futures:
                 resul = future.result()
                 chunk_results.append(resul)
         return chunk_results
 
-
     def _rpc_request_batch_chunked(
             self,
-            chunk_requests: list[Chunk]|None=None,
+            chunk_requests: list[Chunk],
             extract_result: bool = True
-    ) -> list[str]:
+    ):
         """
         Sends batch requests to the substrate node using multiple threads and collects the results.
 
@@ -396,7 +370,7 @@ class CommuneClient:
             ['result1', 'result2', ...]
         """
         def split_chunks(chunk: Chunk, chunk_info: list[Chunk], chunk_info_idx: int):
-            manhattam_chunks = []
+            manhattam_chunks: list[tuple[Any, Any]] = []
             mutaded_chunk_info = deepcopy(chunk_info)
             max_n_keys = 35000
             for query in chunk.batch_requests:
@@ -406,7 +380,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i:i+max_n_keys]
+                        splitted_keys = result_keys[i:i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -416,20 +390,21 @@ class CommuneClient:
                     manhattam_chunks.append(query)
             return manhattam_chunks, mutaded_chunk_info
 
+        assert len(chunk_requests) > 0
+        mutated_chunk_info: list[Chunk] = []
         chunk_results: list[Any] = []
         # smaller_requests = self._make_request_smaller(batch_requests)
         request_id = 0
-        
+
         with ThreadPoolExecutor() as executor:
-            futures: list[Future] = []
+            futures: list[Future[list[str | dict[Any, Any]]]] = []
             for idx, macro_chunk in enumerate(chunk_requests):
-                atomic_chunks, mutated_chunk_info = split_chunks(macro_chunk, chunk_requests, idx)
-            assert mutated_chunk_info
+                _, mutated_chunk_info = split_chunks(macro_chunk, chunk_requests, idx)
             for chunk in mutated_chunk_info:
                 request_ids: list[int] = []
                 batch_payload: list[Any] = []
                 for method, params in chunk.batch_requests:
-                    #for method, params in micro_chunk:
+                    # for method, params in micro_chunk:
                     request_id += 1
                     request_ids.append(request_id)
                     batch_payload.append({
@@ -441,11 +416,11 @@ class CommuneClient:
                 futures.append(
                     executor.submit(
                         self._send_batch,
-                        batch_payload=batch_payload, 
-                        request_ids=request_ids, 
+                        batch_payload=batch_payload,
+                        request_ids=request_ids,
                         extract_result=extract_result
-                        )
                     )
+                )
             for future in futures:
                 resul = future.result()
                 chunk_results.append(resul)
@@ -457,7 +432,7 @@ class CommuneClient:
         function_parameters: list[tuple[Any, Any, Any, Any, str]],
         prefix_list: list[Any],
         block_hash: str,
-) -> dict[str, dict[Any, Any]]:
+    ) -> dict[str, dict[Any, Any]]:
         """
         Decodes a response from the substrate interface and organizes the data into a dictionary.
 
@@ -557,12 +532,11 @@ class CommuneClient:
                     result_dict[storage_function][item_key.value] = item_value.value  # type: ignore
 
         return result_dict
-    
 
     def query_batch(
-    self,
-    functions: dict[str, list[tuple[str, list[Any]]]]
-) -> dict[str, str]:
+        self,
+        functions: dict[str, list[tuple[str, list[Any]]]]
+    ) -> dict[str, str]:
         """
         Executes batch queries on a substrate and returns results in a dictionary format.
 
@@ -626,15 +600,17 @@ class CommuneClient:
             # Returns the combined result of the map batch query
         """
         multi_result: dict[str, dict[Any, Any]] = {}
-        
-        def recursive_update(d: dict[str, dict[T1, T2]], u: dict[str, dict[T1, T2]]) -> dict[str, T1, T2]:
+
+        def recursive_update(
+            d: dict[str, dict[T1, T2] | dict[str, Any]],
+            u: Mapping[str, dict[Any, Any] | str]
+        ) -> dict[str, dict[T1, T2]]:
             for k, v in u.items():
                 if isinstance(v, dict):
-                    d[k] = recursive_update(d.get(k, {}), v)
+                    d[k] = recursive_update(d.get(k, {}), v)  # type: ignore
                 else:
-                    d[k] = v
-            return d
-        
+                    d[k] = v  # type: ignore
+            return d  # type: ignore
 
         def get_page():
             send, prefix_list = self._get_storage_keys(storage, queries, block_hash)
@@ -649,13 +625,13 @@ class CommuneClient:
             for result_keys in res:
                 built_payload.append(("state_queryStorageAt", [result_keys, block_hash]))
             _, chunks_info = self._make_request_smaller(
-                built_payload, 
-                prefix_list, 
+                built_payload,
+                prefix_list,
                 function_parameters
             )
             chunks_response, chunks_info = self._rpc_request_batch_chunked(
                 chunks_info
-                )
+            )
             return chunks_response, chunks_info
 
         with self.get_conn(init=True) as substrate:
@@ -675,7 +651,6 @@ class CommuneClient:
                 multi_result = recursive_update(multi_result, storage_result)
 
         return multi_result
-
 
     def query(
         self,
