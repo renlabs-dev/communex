@@ -1,20 +1,17 @@
-import queue
-from contextlib import contextmanager
-from typing import Any
-from concurrent.futures import ThreadPoolExecutor, Future
 import json
-from typing import TypeVar
-import math
+import queue
+from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import dataclass
+from typing import Any, TypeVar
 
 from substrateinterface import (ExtrinsicReceipt, Keypair,  # type: ignore
                                 SubstrateInterface)
 from substrateinterface.storage import StorageKey  # type: ignore
 
-from communex.errors import ChainTransactionError
+from communex.errors import ChainTransactionError, NetworkQueryError
 from communex.types import NetworkParams, Ss58Address, SubnetParams
-
-from communex.errors import NetworkQueryError
 
 # TODO: move within
 
@@ -25,7 +22,6 @@ from communex.errors import NetworkQueryError
 
 MAX_REQUEST_SIZE = 9_000_000
 
-from dataclasses import dataclass, field
 
 
 @dataclass
