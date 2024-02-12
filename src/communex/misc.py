@@ -97,6 +97,7 @@ def get_map_modules(
 
 def get_map_subnets_params(
     client: CommuneClient,
+    block_hash: str | None=None
 ) -> dict[int, SubnetParamsWithEmission]:
     """
     Gets all subnets info on the network
@@ -123,7 +124,8 @@ def get_map_subnets_params(
                                              ('SubnetNames', []),
                                              ('MaxWeightAge', [])
                                          ],
-                                     }
+                                     },
+                                     block_hash
                                      )
 
     (
