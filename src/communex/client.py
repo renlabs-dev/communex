@@ -583,7 +583,8 @@ class CommuneClient:
 
     def query_batch_map(
         self,
-        functions: dict[str, list[tuple[str, list[Any]]]]
+        functions: dict[str, list[tuple[str, list[Any]]]],
+        block_hash: str | None = None
     ) -> dict[str, dict[Any, Any]]:
         """
         Queries multiple storage functions using a map batch approach and returns the combined result.
@@ -634,8 +635,9 @@ class CommuneClient:
             )
             return chunks_response, chunks_info
 
-        with self.get_conn(init=True) as substrate:
-            block_hash = substrate.get_block_hash()
+        if not block_hash:
+            with self.get_conn(init=True) as substrate:
+                block_hash = substrate.get_block_hash()
         for storage, queries in functions.items():
             chunks, chunks_info = get_page()
             # if this doesn't happen something is wrong on the code
