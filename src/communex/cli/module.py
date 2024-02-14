@@ -16,7 +16,7 @@ module_app = typer.Typer()
 
 
 @module_app.command()
-def register(name: str, ip: str, port: int, key: Optional[str] = None, subnet: str = "commune", stake: float = 100):
+def register(name: str, ip: str, port: int, key: Optional[str] = None, subnet: str = "commune", stake: Optional[float] = None, netuid: int = 0):
     """
     Registers a module.
 
@@ -25,6 +25,9 @@ def register(name: str, ip: str, port: int, key: Optional[str] = None, subnet: s
 
     console = Console()
     client = make_client()
+
+    if stake is None:
+        stake = client.get_min_stake(netuid)
 
     stake_nano = c_balance.to_nano(stake)
 
