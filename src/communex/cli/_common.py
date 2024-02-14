@@ -48,7 +48,7 @@ def make_custom_context(ctx: typer.Context) -> CustomCtx:
 # Client
 
 def get_node_url() -> str:
-    return "commune-api-node-2.communeai.net"
+    return "wss://commune-api-node-1.communeai.net"
 
 
 def make_client():
