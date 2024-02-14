@@ -8,7 +8,7 @@
 
 ### Spec file
 
-[github.com/agicommies/subspace/blob/current/specs/main.json](github.com/agicommies/subspace/blob/current/specs/main.json)
+[github.com/agicommies/subspace/blob/current/specs/main.json](https://github.com/agicommies/subspace/blob/current/specs/main.json)
 
 ```sh
 wget https://github.com/agicommies/subspace/raw/current/specs/main.json
