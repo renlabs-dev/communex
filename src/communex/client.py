@@ -319,13 +319,11 @@ class CommuneClient:
         # smaller_requests = self._make_request_smaller(batch_requests)
         request_id = 0
         with ThreadPoolExecutor() as executor:
-            futures: list[Future[list[str | dict[Any, Any]]]] = []
-            chunks_iterator = [batch_requests]
-            for chunk in chunks_iterator:
+            futures: list[Future] = []
+            for chunk in [batch_requests]:
                 request_ids: list[int] = []
                 batch_payload: list[Any] = []
-                queries_iterator = chunk
-                for method, params in queries_iterator:
+                for method, params in chunk:
                     request_id += 1
                     request_ids.append(request_id)
                     batch_payload.append({
