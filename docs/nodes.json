@@ -1,0 +1,167 @@
+{
+  "commune-api-node-0": {
+    "dns_name": "commune-api-node-0.communeai.net",
+    "ipv4_address": "5.161.43.101",
+    "ipv6_address": "2a01:4ff:f0:a53b::1"
+  },
+  "commune-api-node-1": {
+    "dns_name": "commune-api-node-1.communeai.net",
+    "ipv4_address": "5.78.87.113",
+    "ipv6_address": "2a01:4ff:1f0:8e9f::1"
+  },
+  "commune-api-node-2": {
+    "dns_name": "commune-api-node-2.communeai.net",
+    "ipv4_address": "49.13.88.158",
+    "ipv6_address": "2a01:4f8:c013:1624::1"
+  },
+  "commune-archive-node-0": {
+    "dns_name": "commune-archive-node-0.communeai.net",
+    "ipv4_address": "5.161.188.122",
+    "ipv6_address": "2a01:4ff:f0:a1b8::1"
+  },
+  "commune-archive-node-1": {
+    "dns_name": "commune-archive-node-1.communeai.net",
+    "ipv4_address": "5.78.110.22",
+    "ipv6_address": "2a01:4ff:1f0:c975::1"
+  },
+  "commune-archive-node-2": {
+    "dns_name": "commune-archive-node-2.communeai.net",
+    "ipv4_address": "91.107.206.141",
+    "ipv6_address": "2a01:4f8:c010:ae18::1"
+  },
+  "commune-archive-node-3": {
+    "dns_name": "commune-archive-node-3.communeai.net",
+    "ipv4_address": "5.161.49.101",
+    "ipv6_address": "2a01:4ff:f0:b50::1"
+  },
+  "commune-archive-node-4": {
+    "dns_name": "commune-archive-node-4.communeai.net",
+    "ipv4_address": "5.78.114.5",
+    "ipv6_address": "2a01:4ff:1f0:e61c::1"
+  },
+  "commune-archive-node-5": {
+    "dns_name": "commune-archive-node-5.communeai.net",
+    "ipv4_address": "167.235.69.139",
+    "ipv6_address": "2a01:4f8:1c1c:ef1::1"
+  },
+  "commune-archive-node-6": {
+    "dns_name": "commune-archive-node-6.communeai.net",
+    "ipv4_address": "5.161.124.102",
+    "ipv6_address": "2a01:4ff:f0:30fc::1"
+  },
+  "commune-archive-node-7": {
+    "dns_name": "commune-archive-node-7.communeai.net",
+    "ipv4_address": "5.78.72.248",
+    "ipv6_address": "2a01:4ff:1f0:cdcd::1"
+  },
+  "commune-archive-node-8": {
+    "dns_name": "commune-archive-node-8.communeai.net",
+    "ipv4_address": "65.109.134.76",
+    "ipv6_address": "2a01:4f9:c012:c6ed::1"
+  },
+  "commune-validator-node-0": {
+    "dns_name": "commune-validator-node-0.communeai.net",
+    "ipv4_address": "5.161.196.73",
+    "ipv6_address": "2a01:4ff:f0:bbf0::1"
+  },
+  "commune-validator-node-1": {
+    "dns_name": "commune-validator-node-1.communeai.net",
+    "ipv4_address": "5.161.89.59",
+    "ipv6_address": "2a01:4ff:f0:d980::1"
+  },
+  "commune-validator-node-10": {
+    "dns_name": "commune-validator-node-10.communeai.net",
+    "ipv4_address": "5.161.95.116",
+    "ipv6_address": "2a01:4ff:f0:47a8::1"
+  },
+  "commune-validator-node-11": {
+    "dns_name": "commune-validator-node-11.communeai.net",
+    "ipv4_address": "5.161.83.219",
+    "ipv6_address": "2a01:4ff:f0:2d2b::1"
+  },
+  "commune-validator-node-12": {
+    "dns_name": "commune-validator-node-12.communeai.net",
+    "ipv4_address": "5.161.192.155",
+    "ipv6_address": "2a01:4ff:f0:e0ec::1"
+  },
+  "commune-validator-node-13": {
+    "dns_name": "commune-validator-node-13.communeai.net",
+    "ipv4_address": "5.161.199.79",
+    "ipv6_address": "2a01:4ff:f0:2a92::1"
+  },
+  "commune-validator-node-14": {
+    "dns_name": "commune-validator-node-14.communeai.net",
+    "ipv4_address": "5.161.232.118",
+    "ipv6_address": "2a01:4ff:f0:8bb5::1"
+  },
+  "commune-validator-node-15": {
+    "dns_name": "commune-validator-node-15.communeai.net",
+    "ipv4_address": "5.161.180.129",
+    "ipv6_address": "2a01:4ff:f0:3ddc::1"
+  },
+  "commune-validator-node-16": {
+    "dns_name": "commune-validator-node-16.communeai.net",
+    "ipv4_address": "5.161.76.94",
+    "ipv6_address": "2a01:4ff:f0:8228::1"
+  },
+  "commune-validator-node-17": {
+    "dns_name": "commune-validator-node-17.communeai.net",
+    "ipv4_address": "5.161.89.230",
+    "ipv6_address": "2a01:4ff:f0:a661::1"
+  },
+  "commune-validator-node-18": {
+    "dns_name": "commune-validator-node-18.communeai.net",
+    "ipv4_address": "5.161.79.217",
+    "ipv6_address": "2a01:4ff:f0:210d::1"
+  },
+  "commune-validator-node-19": {
+    "dns_name": "commune-validator-node-19.communeai.net",
+    "ipv4_address": "5.161.234.111",
+    "ipv6_address": "2a01:4ff:f0:33bc::1"
+  },
+  "commune-validator-node-2": {
+    "dns_name": "commune-validator-node-2.communeai.net",
+    "ipv4_address": "5.161.79.251",
+    "ipv6_address": "2a01:4ff:f0:b525::1"
+  },
+  "commune-validator-node-20": {
+    "dns_name": "commune-validator-node-20.communeai.net",
+    "ipv4_address": "5.161.99.248",
+    "ipv6_address": "2a01:4ff:f0:e87f::1"
+  },
+  "commune-validator-node-3": {
+    "dns_name": "commune-validator-node-3.communeai.net",
+    "ipv4_address": "5.161.47.29",
+    "ipv6_address": "2a01:4ff:f0:cd42::1"
+  },
+  "commune-validator-node-4": {
+    "dns_name": "commune-validator-node-4.communeai.net",
+    "ipv4_address": "5.161.208.207",
+    "ipv6_address": "2a01:4ff:f0:9176::1"
+  },
+  "commune-validator-node-5": {
+    "dns_name": "commune-validator-node-5.communeai.net",
+    "ipv4_address": "5.161.234.63",
+    "ipv6_address": "2a01:4ff:f0:8cc9::1"
+  },
+  "commune-validator-node-6": {
+    "dns_name": "commune-validator-node-6.communeai.net",
+    "ipv4_address": "5.161.68.119",
+    "ipv6_address": "2a01:4ff:f0:27ed::1"
+  },
+  "commune-validator-node-7": {
+    "dns_name": "commune-validator-node-7.communeai.net",
+    "ipv4_address": "5.161.233.105",
+    "ipv6_address": "2a01:4ff:f0:85e::1"
+  },
+  "commune-validator-node-8": {
+    "dns_name": "commune-validator-node-8.communeai.net",
+    "ipv4_address": "5.161.45.158",
+    "ipv6_address": "2a01:4ff:f0:e123::1"
+  },
+  "commune-validator-node-9": {
+    "dns_name": "commune-validator-node-9.communeai.net",
+    "ipv4_address": "5.161.59.216",
+    "ipv6_address": "2a01:4ff:f0:98d8::1"
+  }
+}
