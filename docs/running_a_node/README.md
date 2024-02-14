@@ -27,28 +27,24 @@ package][docker-package] at the [`latest` tag][docker-image]. You can pull the
 image with the command:
 
 ```sh
-docker pull ghcr.io/agicommies/subspace:latest
+docker pull ghcr.io/agicommies/subspace:dd5a1e5
 ```
 
 ## Chain specs
 
 You can get the chain specs file from the [`main/specs/main.json` file] at
-`github.com/commune-ai/subspace`:
+[github.com/agicommies/subspace/blob/current/specs/main.json](https://github.com/agicommies/subspace/blob/current/specs/main.json):
 
 ```sh
-wget https://raw.githubusercontent.com/commune-ai/subspace/main/specs/main.json
+wget https://github.com/agicommies/subspace/raw/current/specs/main.json
 ```
 
 ## Getting bootnodes
 
-You can get the bootnodes list from the `bootnodes` field at the
-[`commune/modules/subspace/chain/chain.yaml` file] in
-`github.com/commune-ai/commune`.
+You can currently get the bootnode through running
 
 ```sh
-wget https://raw.githubusercontent.com/commune-ai/commune/main/commune/modules/subspace/chain/chain.yaml
-
-yq '.chain_info.main.boot_nodes[]' chain.yaml -r > bootnodes.txt
+echo /dns4/commune-validator-node-0.communeai.net/tcp/30333/p2p/12D3KooWFudZntfhHb9iyF1AKVvsN6bmC4HdbbmwEQ7XPaCQrvZo > bootnodes.txt
 ```
 
 ## Deploying the config
