@@ -17,7 +17,7 @@ wget https://github.com/agicommies/subspace/raw/current/specs/main.json
 ### Bootnodes
 
 ```txt
-/dns4/commune-validator-node-0.communeai.net/tcp/30333/p2p/12D3KooWGg9QGbEimKCzxCQKWG4gZBuavb5x3r3emUFk4u8rd1AC
+/dns4/commune-validator-node-0.communeai.net/tcp/30333/p2p/12D3KooWFudZntfhHb9iyF1AKVvsN6bmC4HdbbmwEQ7XPaCQrvZo
 ```
 
 ### Telemetry server
