@@ -14,7 +14,9 @@ def module_list_result():
     
     runner = CliRunner()
     try:
-        yield runner.invoke(app, ["module", "list"], env={"COLUMNS": "200"})
+        result = runner.invoke(app, ["module", "list"], env={"COLUMNS": "200"})
+        assert result.exception is None
+        yield result
     finally:
         pass
 
@@ -31,6 +33,9 @@ def test_cli_module_info_no_balance_slow(module_list_result, invoke_cli: InvokeC
     assert a_module_name
     
     result = invoke_cli(["module", "info", a_module_name])
+    
+    assert result.exception is None
+    assert result.exit_code == 0
     
     output = clean(result.stdout)
     
@@ -59,7 +64,8 @@ def test_cli_module_info_with_balance_slow(module_list_result, invoke_cli: Invok
     assert a_module_name
     
     result = invoke_cli(["module", "info", a_module_name, "--balance"])
-
+    
+    assert result.exception is None
     assert result.exit_code == 0
     
     output = clean(result.stdout)
@@ -102,6 +108,7 @@ def test_cli_module_list_no_balance_slow(module_list_result):
 def test_cli_module_list_with_balance_slow(invoke_cli: InvokeCli):
     result = invoke_cli(["module", "list", "--balances"])
     
+    assert result.exception is None
     assert result.exit_code == 0
     
     output = clean(result.stdout)

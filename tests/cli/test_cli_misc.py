@@ -32,6 +32,8 @@ def test_cli_misc_circulating_supply_slow(invoke_cli: InvokeCli):
     
     result = invoke_cli(cmd)
     
+    assert result.exception is None
+    
     assert result.exit_code == 0
     assert re.match(balance_pattern[unit], result.stdout)
 
