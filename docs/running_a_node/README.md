@@ -52,6 +52,12 @@ echo /dns4/commune-validator-node-0.communeai.net/tcp/30333/p2p/12D3KooWFudZntfh
 Pick a directory to store the node data, and copy the chain specs and bootnodes:
 
 ```sh
+# cd into the tutorial directory if you haven't already
+cd docs/running_a_node/
+```
+
+Then run:
+```sh
 export COMMUNE_NODE_DIR="/commune-node"
 
 mkdir -p "$COMMUNE_NODE_DIR/specs"
