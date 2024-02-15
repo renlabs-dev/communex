@@ -13,7 +13,7 @@ unit_options = ["default", "joule", "j", "nano", "n"]
 
 
 def test_cli_misc_circulating_supply_slow(invoke_cli: InvokeCli):
-    joule_pattern = r'^\d+,^\d{3},\d{3}\.\d+ J\n$'
+    joule_pattern = r'^\d+,\d{3},\d{3}\.\d+ J\b'
     nano_pattern = r'\d+'
 
     balance_pattern = {
