@@ -6,8 +6,8 @@ from rich.console import Console
 from substrateinterface import Keypair  # type: ignore
 from typer import Context
 
-from communex.compat.key import (classic_key_path, classic_store_key,
-                                 local_key_addresses, resolve_key_ss58)
+from communex.compat.key import (classic_key_path, classic_load_key, classic_store_key,
+                                 resolve_key_ss58, local_key_paths)
 from communex.compat.storage import classic_load
 from communex.key import generate_keypair
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
@@ -90,6 +90,35 @@ def show(ctx: Context, key: str, show_private: bool = False):
     print_table_from_plain_dict(key_dict, ["Key", "Value"], context.console)
 
 
+def _load_all_keys() -> dict[str, Keypair]:
+    key_paths = local_key_paths()
+    name_to_key: dict[str, Keypair] = {}
+    for path in key_paths:
+        key_name = path.stem
+        try:
+            key = classic_load_key(path.stem)
+        except Exception as e:
+            context.warn(f"Failed to load key from `{path}`: {e}")
+            continue
+        else:
+            name_to_key[key_name] = key
+    return name_to_key
+
+@key_app.command(name='list')
+def inventory(
+    ctx: Context,
+):
+    """
+    Lists all keys stored on disk, optionally with balances.
+    """
+    context = make_custom_context(ctx)
+
+    name_to_key = _load_all_keys()
+
+    name_to_address = {k: v.ss58_address for k, v in name_to_key.items()}
+    print_table_from_plain_dict(name_to_address, ["Key", "Address"], context.console)
+
+
 @key_app.command()
 def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule, sort_balance: SortBalance = SortBalance.all,):
     """
@@ -99,8 +128,11 @@ def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joul
     context = make_custom_context(ctx)
     client = make_client()
 
+    key_paths = _load_all_keys()  # TODO
+
     with context.console.status("Getting balances of all keys, this might take a while..."):
         key2freebalance, key2stake = local_keys_allbalance(client, netuid)
+
     key_to_freebalance = {k: format_balance(v, unit) for k, v in key2freebalance.items()}
     key_to_stake = {k: format_balance(v, unit) for k, v in key2stake.items()}
 
@@ -139,20 +171,6 @@ def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joul
 
     general_dict: dict[str, list[Any]] = cast(dict[str, list[Any]], pretty_dict)
     print_table_standardize(general_dict, context.console)
-
-
-@key_app.command(name='list')
-def inventory(
-    ctx: Context,
-):
-    """
-    Lists all keys stored on disk, optionally with balances.
-    """
-    context = make_custom_context(ctx)
-
-    key_to_address = local_key_addresses()
-    general_key_to_address: dict[str, str] = cast(dict[str, str], key_to_address)
-    print_table_from_plain_dict(general_key_to_address, ["Key", "Address"], context.console)
 
 
 @key_app.command()

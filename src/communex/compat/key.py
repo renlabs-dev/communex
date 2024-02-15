@@ -6,7 +6,7 @@ WIP
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Generator, cast
 
 from substrateinterface import Keypair  # type: ignore
 
@@ -128,6 +128,15 @@ def classic_store_key(keypair: Keypair, name: str) -> None:
     key_dict_json = json.dumps(key_dict)
     path = classic_key_path(name)
     classic_put(path, key_dict_json)
+
+
+def local_key_paths() -> Generator[Path, None, None]:
+    """Outputs the paths of all local key files."""
+    home = Path.home()
+    key_dir = home / '.commune' / "key"
+    for f in key_dir.iterdir():
+        if f.is_file():
+            yield f
 
 
 def local_key_addresses() -> dict[str, Ss58Address]:
