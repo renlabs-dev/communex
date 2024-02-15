@@ -37,6 +37,9 @@ def temporary_key_from_mnemonic(invoke_cli: InvokeCli):
 def test_cli_key_create(temporary_key):
     key, name, result = temporary_key
     
+    # faiing: query system account
+    
+    assert result.exception is None
     assert result.exit_code == 0
     
     assert "Generated key with public address" in result.stdout
@@ -51,6 +54,7 @@ def test_cli_key_balances_slow(invoke_cli: InvokeCli, temporary_key):
     
     result = invoke_cli(["key", "balances"])
     
+    assert result.exception is None
     assert result.exit_code == 0
 
     stdout = clean(result.stdout)
