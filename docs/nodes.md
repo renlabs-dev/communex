@@ -18,6 +18,26 @@ wget https://github.com/agicommies/subspace/raw/current/specs/main.json
 
 ```txt
 /dns4/commune-validator-node-0.communeai.net/tcp/30333/p2p/12D3KooWFudZntfhHb9iyF1AKVvsN6bmC4HdbbmwEQ7XPaCQrvZo
+/dns4/commune-validator-node-1.communeai.net/tcp/30333/p2p/12D3KooWRw72cfCX8x4pzFBH59ttDRsbaDRqizPWP2BsetDhRiHL
+/dns4/commune-validator-node-2.communeai.net/tcp/30333/p2p/12D3KooWS92rciDcccTV8AyLXSKPhNqY9BjFmjzSfezpfnBPCECq
+/dns4/commune-validator-node-3.communeai.net/tcp/30333/p2p/12D3KooWR2QTgFyi5gnzaTu1i6arrvZo4EhrHxCpfS2Pr4eo1pDE
+/dns4/commune-validator-node-4.communeai.net/tcp/30333/p2p/12D3KooWNM4C4Kv1g5HXUZKTTZeCTZeQenBEEieWUfTtDjcVTt38
+/dns4/commune-validator-node-5.communeai.net/tcp/30333/p2p/12D3KooWM7A7DqxQnHodKYxYRibiGbY4EVYiAoaQWCuA3Bm1Q2nL
+/dns4/commune-validator-node-6.communeai.net/tcp/30333/p2p/12D3KooWRA1DmuPLPYjLjvKkfqNAum2A2Vwy8X14mULD3uZBADRz
+/dns4/commune-validator-node-7.communeai.net/tcp/30333/p2p/12D3KooWHgKAQsBQdELnf33zMghwYjYRDGSHZrRgQ3pY45rmqk2z
+/dns4/commune-validator-node-8.communeai.net/tcp/30333/p2p/12D3KooWFMebiWwcCdgV1Eb1wN46sXRvqfHW7NbkqLhYyTeNzbUr
+/dns4/commune-validator-node-9.communeai.net/tcp/30333/p2p/12D3KooWKPTQFdXhqH9JukmcmRxJdKs65GgWeW6W4MRSa3z1XFXC
+/dns4/commune-validator-node-10.communeai.net/tcp/30333/p2p/12D3KooWLFFkY4WkgK9MAn9WnfNaDMJyZHRtQQ9MLQFeQwejRy7P
+/dns4/commune-validator-node-11.communeai.net/tcp/30333/p2p/12D3KooWEAMe9hMwhc125W4De7dtMi12sXo3TCQcSs63TH89Xy3E
+/dns4/commune-validator-node-12.communeai.net/tcp/30333/p2p/12D3KooWLXtBGncLLCZEUMiDesLVwWaEEx1BkX8w3ZaGAXDGZ7kJ
+/dns4/commune-validator-node-13.communeai.net/tcp/30333/p2p/12D3KooWHE8NZyMmgsz47Kuia96rP1psM8Enc9VUVRyTigN5km9j
+/dns4/commune-validator-node-14.communeai.net/tcp/30333/p2p/12D3KooWCU5LT8mmEZ94WYhThEtu3P4TdDkF1hrq7CUhvBheFUE1
+/dns4/commune-validator-node-15.communeai.net/tcp/30333/p2p/12D3KooWEjPKSqo6PcjB4HxebqNheN6CwJcJmxJZ14pDjqiCy3bM
+/dns4/commune-validator-node-16.communeai.net/tcp/30333/p2p/12D3KooWA1jP9unSF5ef9DBYJxGsUr6xJ4xpMYJLoCZ8J5udrfbz
+/dns4/commune-validator-node-17.communeai.net/tcp/30333/p2p/12D3KooWFgG7Vif64K7gXo6FJpLJrBp3jQE3r7d4nmqBgnxSQrDy
+/dns4/commune-validator-node-18.communeai.net/tcp/30333/p2p/12D3KooWNyowYzRFHDxa2MPyoDH4dqs1ic5XLkzGpK9rTwZL99Ns
+/dns4/commune-validator-node-19.communeai.net/tcp/30333/p2p/12D3KooWBVN62Zes564vPyQFShLEAzSSQPjfA3yDRS1DhvtitCU4
+/dns4/commune-validator-node-20.communeai.net/tcp/30333/p2p/12D3KooWQwfyFpn18ok9YmaJLaARtWr6Zh86ExgPmRHyuhczQnjK
 ```
 
 ### Telemetry server
