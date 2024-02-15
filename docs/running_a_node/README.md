@@ -67,6 +67,12 @@ cp bootnodes.txt "$COMMUNE_NODE_DIR/bootnodes.txt"
 cp node-start.sh "$COMMUNE_NODE_DIR/node-start.sh"
 ```
 
+### Note
+
+- Make sure that the `COMMUNE_NODE_DIR` is correctly set.
+- Make sure you haven't mounted the node there previously, 
+as f.e `/commune-node/chains/` is designed to be used for the chain data storage, it should not be present when running the node fresh !
+
 ## Running the node
 
 The provided [`./docker-compose.yaml` file] expects the environment variable
@@ -81,6 +87,8 @@ docker-compose up -d
 By default the node will work in archive mode, which means it will store all the
 chain data (gigabytes). This can be changed by replacing the `--pruning=archive`
 and `--sync=full` flags with `--sync=warp` in the `docker-compose.yaml` script.
+
+Now you can track the telemetry using [this link](http://telemetry.communeai.net/#/0xbc6eb9753e2417476601485f9f8ef8474701ec199d456f989bd397682c9425c5)
 
 ---
 
