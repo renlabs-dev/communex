@@ -11,3 +11,4 @@ services:
       - 9944:9944 # RPC
     restart: always
     command: ["bash", "/node-data/node-start.sh", "--sync=full", "--pruning=archive"]
+    # command: ["bash", "/node-data/node-start.sh", "--sync=warp"]
