@@ -171,7 +171,7 @@ To contribute to the codebase, using Poetry you can install the development depe
 poetry install --with dev
 ```
 
-we use [ruff] to lint the codebase, it can [require some enviroment-specific binaries to be installed]. 
+it can [require some enviroment-specific binaries to be installed][ruff-installation]
 
 ## Commune compatibility
 
@@ -187,5 +187,4 @@ directory.
 [open an issue on GitHub]: https://github.com/agicommies/communex/issues/new/choose
 [CommuneX Discord channel]: https://go.agicommies.org/communex-channel
 [GitHub discussions page]: https://github.com/agicommies/communex/discussions
-[ruff]: https://github.com/astral-sh/ruff
-[require some enviroment-specific binaries to be installed]: https://docs.astral.sh/ruff/installation/
+[ruff-installation]: https://docs.astral.sh/ruff/installation/
