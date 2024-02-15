@@ -53,7 +53,11 @@ def list_proposals():
     client = make_client()
 
     with console.status("Getting proposals..."):
-        proposals = client.query_map_proposals()
+        try:
+            proposals = client.query_map_proposals()
+        except IndexError:
+            console.print("No proposals found.")
+            return
 
     for _, batch_proposal in proposals.items():
         for proposal_id, proposal in batch_proposal.items():
@@ -177,3 +181,8 @@ def unvote_proposal(key: str, proposal_id: int):
     resolved_key = classic_load_key(key)
     with console.status(f"Unvoting on a proposal {proposal_id}..."):
         client.unvote_on_proposal(resolved_key, proposal_id)
+
+
+if __name__ == "__main__":
+    client = make_client()
+    proposals = client.query_map_proposals()
