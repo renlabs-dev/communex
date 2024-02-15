@@ -3,7 +3,7 @@ version: "3.8"
 services:
   commune-node:
     container_name: commune-node
-    image: ghcr.io/agicommies/subspace:latest
+    image: ghcr.io/agicommies/subspace:dd5a1e5
     volumes:
       - ${COMMUNE_NODE_DIR}:/node-data
     ports:
