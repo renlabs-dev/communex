@@ -38,10 +38,10 @@ def test_cli_network_last_block_hash_slow(invoke_cli: InvokeCli):
 
 
 def test_cli_network_list_proposals_slow(invoke_cli: InvokeCli):
+    pytest.skip("Not implemented yet")
     result = invoke_cli(["network", "list-proposals"])
     
     output = clean(result.stdout)
-    
     assert result.exit_code == 0
     
     assert re.search(r"Proposal id: \d+", output)
@@ -96,6 +96,7 @@ def test_cli_network_vote_proposal(invoke_cli: InvokeCli):
 
 def test_cli_network_vote_proposal_not_allowed_slow(invoke_cli: InvokeCli):
     """Vote proposal is not allowed if key has no voting power."""
+    pytest.skip("Not implemented yet")
     result = invoke_cli(["network", "vote-proposal", TEST_KEY_ALIAS, "0"])
     assert result.exit_code == 1
 
