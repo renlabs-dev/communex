@@ -1,1 +1,0 @@
-/dns4/commune-validator-node-0.communeai.net/tcp/30333/p2p/12D3KooWFudZntfhHb9iyF1AKVvsN6bmC4HdbbmwEQ7XPaCQrvZo

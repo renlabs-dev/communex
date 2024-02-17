@@ -41,10 +41,10 @@ wget https://github.com/agicommies/subspace/raw/current/specs/main.json
 
 ## Getting bootnodes
 
-You can currently get the bootnode through running
+You can currently get the bootnodes list with:
 
 ```sh
-echo /dns4/commune-validator-node-0.communeai.net/tcp/30333/p2p/12D3KooWFudZntfhHb9iyF1AKVvsN6bmC4HdbbmwEQ7XPaCQrvZo > bootnodes.txt
+wget https://github.com/agicommies/communex/raw/current/docs/bootnodes.txt
 ```
 
 ## Deploying the config
