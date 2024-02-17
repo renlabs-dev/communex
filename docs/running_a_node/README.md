@@ -44,7 +44,7 @@ wget https://github.com/agicommies/subspace/raw/current/specs/main.json
 You can currently get the bootnodes list with:
 
 ```sh
-wget https://github.com/agicommies/communex/raw/current/docs/bootnodes.txt
+wget https://github.com/agicommies/communex/raw/main/docs/bootnodes.txt
 ```
 
 ## Deploying the config
