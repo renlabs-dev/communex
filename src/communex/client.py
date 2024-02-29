@@ -1509,6 +1509,25 @@ class CommuneClient:
 
         return self.query_map('Proposals', extract_value=False)
 
+    def query_map_weights(self, netuid: int = 0) -> dict[int, list[int]]:
+        """
+        Retrieves a mapping of weights for keys on the network.
+
+        Queries the network and returns a mapping of key UIDs to
+        their respective weights.
+
+        Args:
+            netuid: The network UID from which to get the weights.
+
+        Returns:
+            A dictionary mapping key UIDs to lists of their weights.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query_map('Weights', [netuid])
+
     def query_map_key(
             self,
             netuid: int = 0
