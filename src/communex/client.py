@@ -1530,7 +1530,8 @@ class CommuneClient:
 
     def query_map_key(
             self,
-            netuid: int = 0
+            netuid: int = 0,
+            extract_value: bool = False,
     ) -> dict[int, Ss58Address]:
         """
         Retrieves a map of keys from the network.
@@ -1548,7 +1549,7 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-        return self.query_map('Keys', [netuid])
+        return self.query_map('Keys', [netuid], extract_value=extract_value)
 
     def query_map_address(self, netuid: int = 0) -> dict[int, str]:
         """
@@ -1650,7 +1651,7 @@ class CommuneClient:
 
         return self.query_map('LastUpdate',)
 
-    def query_map_stakefrom(self, netuid: int = 0) -> \
+    def query_map_stakefrom(self, netuid: int = 0, extract_value: bool = False) -> \
             dict[str, list[tuple[str, int]]]:
         """
         Retrieves a mapping of stakes from various sources for keys on the network.
@@ -1669,7 +1670,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('StakeFrom', [netuid])
+        return self.query_map('StakeFrom', [netuid], extract_value=extract_value)
 
     def query_map_staketo(self, netuid: int = 0) -> \
             dict[str, list[tuple[str, int]]]:
