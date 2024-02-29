@@ -114,7 +114,7 @@ class CommuneClient:
             self,
             storage: str,
             queries: list[tuple[str, list[Any]]],
-            block_hash: str,
+            block_hash: str | None,
     ):
 
         send: list[tuple[str, list[Any]]] = []

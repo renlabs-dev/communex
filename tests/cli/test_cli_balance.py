@@ -85,9 +85,10 @@ def test_cli_balance_show_slow(invoke_cli: InvokeCli):
         
         assert result.exit_code == 0
         
-        output = clean(result.stdout)
+        output  = clean(result.stdout)
         
-        ss58_key = re.match(r"Balances of key (\w+)", output).group(1)
+        
+        ss58_key = re.match(r"Balances of key (\w+)", output).group(1) # type: ignore
         
         assert is_ss58_address(ss58_key)
         

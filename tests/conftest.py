@@ -1,5 +1,5 @@
 import pytest
-from typer.testing import CliRunner, Result
+from typer.testing import CliRunner, Result # type: ignore
 
 from communex.cli import app
 
