@@ -38,7 +38,7 @@ def create(ctx: Context, name: str):
 
 
 @key_app.command()
-def save(ctx: Context, name: str, mnemonic: str):
+def regen(ctx: Context, name: str, mnemonic: str):
     """
     Stores the given key on a disk. Works with private key or mnemonic.
     """
