@@ -2265,7 +2265,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query("UnitEmission",)
+        return self.query("UnitEmission")
 
     def get_tx_rate_limit(self) -> int:
         """

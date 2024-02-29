@@ -307,23 +307,3 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dic
         key2stake.items(), key=lambda item: item[1], reverse=True)}
 
     return key2balance, key2stake
-
-# if __name__ == "__main__":
-#     from communex.cli._common import make_client
-#     client = make_client()
-#     with client.get_conn(init=True) as substrate:
-#         bh = substrate.get_block_hash()
-#         print(bh)
-#         print(type(bh))
-#     exit(0)
-#     def my_test(x: Any):
-#         client = make_client()
-#         print("Sending to function")
-#         result = local_keys_allbalance(client)
-#         return result
-    
-#     # threads = 3
-#     # with ThreadPoolExecutor(threads) as pool:
-#     #     it = pool.map(my_test, repeat(None, threads))
-#     #     _ = list(it)
-#     my_test(None)
