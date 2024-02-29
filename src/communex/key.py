@@ -1,5 +1,3 @@
-# TODO: move `is_valid_ss58_address` and `check_ss58_address`
-
 from typing import TypeGuard
 
 from substrateinterface import Keypair  # type: ignore

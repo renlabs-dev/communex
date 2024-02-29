@@ -13,11 +13,6 @@ from substrateinterface.storage import StorageKey  # type: ignore
 from communex.errors import ChainTransactionError, NetworkQueryError
 from communex.types import NetworkParams, Ss58Address, SubnetParams
 
-# TODO: move within
-
-# from communex.raw_ws_ops import query_batch, query_batch_map
-
-
 # TODO: InsufficientBalanceError, MismatchedLengthError etc
 
 MAX_REQUEST_SIZE = 9_000_000
