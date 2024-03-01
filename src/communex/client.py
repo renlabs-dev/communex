@@ -1509,7 +1509,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Proposals', extract_value=False)
+        return self.query_map('Proposals', extract_value=False)["Proposals"]
 
     def query_map_weights(self, netuid: int = 0) -> dict[int, list[int]]:
         """
@@ -1528,7 +1528,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Weights', [netuid])
+        return self.query_map('Weights', [netuid], extract_value=False)["Weights"]
 
     def query_map_key(
             self,
@@ -1551,7 +1551,7 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-        return self.query_map('Keys', [netuid], extract_value=extract_value)
+        return self.query_map('Keys', [netuid], extract_value=extract_value)["Keys"]
 
     def query_map_address(self, netuid: int = 0) -> dict[int, str]:
         """
@@ -1569,7 +1569,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Address', [netuid])
+        return self.query_map('Address', [netuid], extract_value=False)["Address"]
 
     def query_map_emission(self) -> dict[int, list[int]]:
         """
@@ -1585,7 +1585,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Emission',)
+        return self.query_map('Emission', extract_value=False)["Emission"]
 
     def query_map_incentive(self) -> dict[int, list[int]]:
         """
@@ -1601,7 +1601,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Incentive',)
+        return self.query_map('Incentive', extract_value=False)["Incentive"]
 
     def query_map_dividend(self) -> dict[int, list[int]]:
         """
@@ -1617,7 +1617,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Dividends',)
+        return self.query_map('Dividends', extract_value=False)["Dividends"]
 
     def query_map_regblock(self, netuid: int = 0) -> dict[int, int]:
         """
@@ -1636,7 +1636,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('RegistrationBlock', [netuid])
+        return self.query_map('RegistrationBlock', [netuid], extract_value=False)["RegistrationBlock"]
 
     def query_map_lastupdate(self) -> dict[int, list[int]]:
         """
@@ -1651,7 +1651,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('LastUpdate',)
+        return self.query_map('LastUpdate', extract_value=False)["LastUpdate"]
 
     def query_map_total_stake(self, extract_value: bool = False) -> dict[int, int]:
         """
@@ -1687,7 +1687,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('StakeFrom', [netuid], extract_value=extract_value)
+        return self.query_map('StakeFrom', [netuid], extract_value=extract_value)["StakeFrom"]
 
     def query_map_staketo(self, netuid: int = 0, extract_value: bool = False) -> \
             dict[str, list[tuple[str, int]]]:
@@ -1728,7 +1728,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Stake', [netuid], extract_value=False)
+        return self.query_map('Stake', [netuid], extract_value=False)["Stake"]
 
     def query_map_delegationfee(self, netuid: int = 0) -> dict[str, int]:
         """
@@ -1747,7 +1747,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('DelegationFee', [netuid])
+        return self.query_map('DelegationFee', [netuid], extract_value=False)["DelegationFee"]
 
     def query_map_tempo(self) -> dict[int, int]:
         """
@@ -1763,7 +1763,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Tempo",)
+        return self.query_map("Tempo", extract_value=False)["Tempo"]
 
     def query_map_immunity_period(self) -> dict[int, int]:
         """
@@ -1780,7 +1780,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("ImmunityPeriod",)
+        return self.query_map("ImmunityPeriod", extract_value=False)["ImmunityPeriod"]
 
     def query_map_min_allowed_weights(self) -> dict[int, int]:
         """
@@ -1798,7 +1798,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("MinAllowedWeights",)
+        return self.query_map("MinAllowedWeights", extract_value=False)["MinAllowedWeights"]
 
     def query_map_max_allowed_weights(self) -> dict[int, int]:
         """
@@ -1816,7 +1816,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("MaxAllowedWeights",)
+        return self.query_map("MaxAllowedWeights", extract_value=False)["MaxAllowedWeights"]
 
     def query_map_max_allowed_uids(self) -> dict[int, int]:
         """
@@ -1836,7 +1836,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("MaxAllowedUids",)
+        return self.query_map("MaxAllowedUids", extract_value=False)["MaxAllowedUids"]
 
     def query_map_min_stake(self) -> dict[int, int]:
         """
@@ -1853,7 +1853,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("MinStake",)
+        return self.query_map("MinStake", extract_value=False)["MinStake"]
 
     def query_map_max_stake(self) -> dict[int, int]:
         """
@@ -1869,7 +1869,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("MaxStake",)
+        return self.query_map("MaxStake", extract_value=False)["MaxStake"]
 
     def query_map_founder(self) -> dict[int, str]:
         """
@@ -1885,7 +1885,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Founder",)
+        return self.query_map("Founder", extract_value=False)["Founder"]
 
     def query_map_founder_share(self) -> dict[int, int]:
         """
@@ -1901,7 +1901,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("FounderShare",)
+        return self.query_map("FounderShare", extract_value=False)["FounderShare"]
 
     def query_map_incentive_ratio(self) -> dict[int, int]:
         """
@@ -1918,7 +1918,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("IncentiveRatio",)
+        return self.query_map("IncentiveRatio", extract_value=False)["IncentiveRatio"]
 
     def query_map_trust_ratio(self) -> dict[int, int]:
         """
@@ -1935,7 +1935,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("TrustRatio",)
+        return self.query_map("TrustRatio", extract_value=False)["TrustRatio"]
 
     def query_map_vote_threshold_subnet(self) -> dict[int, int]:
         """
@@ -1952,7 +1952,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("VoteThresholdSubnet",)
+        return self.query_map("VoteThresholdSubnet", extract_value=False)["VoteThresholdSubnet"]
 
     def query_map_vote_mode_subnet(self) -> dict[int, str]:
         """
@@ -1970,7 +1970,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("VoteModeSubnet",)
+        return self.query_map("VoteModeSubnet", extract_value=False)["VoteModeSubnet"]
 
     def query_map_self_vote(self) -> dict[int, bool]:
         """
@@ -1987,7 +1987,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("SelfVote",)
+        return self.query_map("SelfVote", extract_value=False)["SelfVote"]
 
     def query_map_subnet_names(self, extract_value: bool = False) -> dict[int, str]:
         """
@@ -2004,7 +2004,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("SubnetNames", extract_value=extract_value)["SubnetNames"]
+        return self.query_map("SubnetNames", extract_value=False)["SubnetNames"]
 
     def query_map_balances(self) -> \
             dict[str, dict['str', int | dict[str, int]]]:
@@ -2022,7 +2022,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Account', module='System')
+        return self.query_map('Account', module='System', extract_value=False)["Account"]
 
     def query_map_registration_blocks(self, netuid: int = 0) -> dict[int, int]:
         """
@@ -2041,7 +2041,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("RegistrationBlock", [netuid])
+        return self.query_map("RegistrationBlock", [netuid], extract_value=False)["RegistrationBlock"]
 
     def query_map_name(self, netuid: int = 0) -> dict[int, str]:
         """
@@ -2060,7 +2060,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('Name', [netuid])
+        return self.query_map('Name', [netuid], extract_value=False)["Name  "]
 
     #  == QUERY FUNCTIONS == #
 
