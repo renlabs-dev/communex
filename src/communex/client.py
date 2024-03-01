@@ -488,6 +488,8 @@ class CommuneClient:
         for res, fun_params_tuple, prefix in zip(
             response, function_parameters, prefix_list
         ):
+            if not res:
+                return {}
             res = res[0]
             changes = res["changes"]  # type: ignore
             value_type, param_types, key_hashers, params, storage_function = fun_params_tuple
@@ -1651,6 +1653,21 @@ class CommuneClient:
 
         return self.query_map('LastUpdate',)
 
+    def query_map_total_stake(self, extract_value: bool = False) -> dict[int, int]:
+        """
+        Retrieves a mapping of total stakes for keys on the network.
+
+        Queries the network for a mapping of key UIDs to their total stake amounts.
+
+        Returns:
+            A dictionary mapping key UIDs to their total stake amounts.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query_map('TotalStake', extract_value=extract_value)["TotalStake"]
+
     def query_map_stakefrom(self, netuid: int = 0, extract_value: bool = False) -> \
             dict[str, list[tuple[str, int]]]:
         """
@@ -1672,7 +1689,7 @@ class CommuneClient:
 
         return self.query_map('StakeFrom', [netuid], extract_value=extract_value)
 
-    def query_map_staketo(self, netuid: int = 0) -> \
+    def query_map_staketo(self, netuid: int = 0, extract_value: bool = False) -> \
             dict[str, list[tuple[str, int]]]:
         """
         Retrieves a mapping of stakes to destinations for keys on the network.
@@ -1691,7 +1708,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map('StakeTo', [netuid])
+        return self.query_map('StakeTo', [netuid], extract_value=extract_value)
 
     def query_map_stake(self, netuid: int = 0) -> dict[str, int]:
         """
@@ -1972,7 +1989,7 @@ class CommuneClient:
 
         return self.query_map("SelfVote",)
 
-    def query_map_subnet_names(self) -> dict[int, str]:
+    def query_map_subnet_names(self, extract_value: bool = False) -> dict[int, str]:
         """
         Retrieves a mapping of subnet names within the network.
 
@@ -1987,7 +2004,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("SubnetNames",)
+        return self.query_map("SubnetNames", extract_value=extract_value)["SubnetNames"]
 
     def query_map_balances(self) -> \
             dict[str, dict['str', int | dict[str, int]]]:

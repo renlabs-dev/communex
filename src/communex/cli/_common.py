@@ -86,7 +86,7 @@ def format_balance(balance: int, unit: BalanceUnit = BalanceUnit.nano) -> str:
             return f"{round_joules:,} J"
 
 
-def print_table_from_plain_dict(result: Mapping[str, str | int], column_names: list[str], console: Console) -> None:
+def print_table_from_plain_dict(result: Mapping[str, str | int | float], column_names: list[str], console: Console) -> None:
     """
     Creates a table for a plain dictionary.
     """
@@ -94,7 +94,7 @@ def print_table_from_plain_dict(result: Mapping[str, str | int], column_names: l
     table = Table(show_header=True, header_style="bold magenta")
 
     for name in column_names:
-        table.add_column(name, style="dim")
+        table.add_column(name, style="white")
 
     # Add rows to the table
     for key, value in result.items():
@@ -110,10 +110,10 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
     table = Table(show_header=True, header_style="bold magenta")
 
     for key in result.keys():
-        table.add_column(key, style="dim")
+        table.add_column(key, style="white")
     rows = [*result.values()]
     zipped_rows = [list(column) for column in zip(*rows)]
     for row in zipped_rows:
-        table.add_row(*row, style="dim")
+        table.add_row(*row, style="white")
 
     console.print(table)

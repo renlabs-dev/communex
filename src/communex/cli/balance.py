@@ -5,13 +5,13 @@ from communex.balance import to_nano
 from communex.compat.key import resolve_key_ss58, classic_load_key
 from communex.errors import ChainTransactionError
 
-from ._common import BalanceUnit, format_balance, make_client
+from ._common import BalanceUnit, format_balance, make_client, print_table_from_plain_dict
 
 balance_app = typer.Typer()
 
 
 @balance_app.command()
-def show(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
+def show(key: str, unit: BalanceUnit = BalanceUnit.joule):
     """
     Gets the balances of a key.
     """
@@ -22,17 +22,24 @@ def show(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
     key_address = resolve_key_ss58(key)  # TODO: commune.compat.key.classic_resolve_key_ss58
 
     with console.status(f"Getting balance of key {key_address}..."):
+        subnets = client.query_map_subnet_names()
+        netuids = list(subnets.keys())
         balance = client.get_balance(key_address)
-        staketo = client.get_staketo(key_addr=key_address, netuid=netuid)
 
-    staketo_sum = sum(staketo.values())
+    stakes: list[int] = []
+    for uid in netuids:
+        staketo = client.get_staketo(key_addr=key_address, netuid=uid)
+        stakes.append(sum(staketo.values()))
 
-    total = balance + staketo_sum
+    string_stakes = [format_balance(stake, unit) for stake in stakes]
+    netuids = [str(uid) for uid in netuids]
+    stake_dict = dict(zip(netuids, string_stakes))
 
-    console.print(f"Balances of key {key_address}")
-    console.print("Free:  ", format_balance(balance, unit))
-    console.print("Staked:", format_balance(staketo_sum, unit))
-    console.print("Total: ", format_balance(total, unit))
+    total = balance + sum(stakes)
+    free, total = format_balance(balance, unit), format_balance(total, unit)
+
+    print_table_from_plain_dict(stake_dict, ["Netuid", "Staked"], console)
+    print_table_from_plain_dict({"Free": free, "Total": total}, ["Result", "Amount"], console)
 
 
 @balance_app.command()
@@ -108,6 +115,7 @@ def get_staked(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule)
     console.print(format_balance(result, unit))
 
 
+# TODO, add all flag
 @balance_app.command()
 def transfer(key: str, amount: float, dest: str):
     """
