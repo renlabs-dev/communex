@@ -297,8 +297,13 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[di
     # update for all subnets
     for uid in netuids:
         if uid != root_netuid:
-            query_result = c_client.query_map_staketo(uid)
-            staketo_map.update(query_result["StakeTo"])
+            query_result = c_client.query_batch_map(
+                {
+                    "SubspaceModule": [
+                        ("StakeTo", [uid]),
+                    ],
+                })
+            staketo_map.update(query_result.get("StakeTo", {}))
 
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
