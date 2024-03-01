@@ -22,7 +22,7 @@ def temporary_key(invoke_cli: InvokeCli):
 @pytest.fixture()
 def temporary_key_from_mnemonic(invoke_cli: InvokeCli):
     try:
-        result = invoke_cli(["key", "save", TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS])
+        result = invoke_cli(["key", "regen", TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS])
         
         print(result.stdout)
         
@@ -78,7 +78,7 @@ def test_cli_key_list(invoke_cli: InvokeCli, temporary_key):
 
 def test_cli_key_save(invoke_cli: InvokeCli):
     try:
-        result = invoke_cli(["key", "save", TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS])
+        result = invoke_cli(["key", "regen", TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS])
         
         assert result.exit_code == 0
 
