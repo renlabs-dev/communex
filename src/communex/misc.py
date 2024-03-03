@@ -281,6 +281,7 @@ def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dic
 
 def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[dict[str, int], dict[str, int]]:
     
+    staketo_maps : list[Any] = []
     root_netuid = netuid
     query_result = c_client.query_batch_map(
         {
@@ -292,6 +293,7 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[di
         })
     balance_map = query_result["Account"]
     staketo_map = query_result["StakeTo"]
+    staketo_maps.append(staketo_map)
     netuids = list(query_result["SubnetNames"].keys())
 
     # update for all subnets
@@ -303,7 +305,8 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[di
                         ("StakeTo", [uid]),
                     ],
                 })
-            staketo_map.update(query_result.get("StakeTo", {}))
+            staketo_map = query_result.get("StakeTo", {})
+            staketo_maps.append(staketo_map)
 
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
@@ -311,8 +314,21 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[di
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances)
 
+    merged_staketo_map : dict[Any, Any] = {}
+
+    # Iterate through each staketo_map in the staketo_maps list
+    for staketo_map in staketo_maps:
+        # Iterate through key-value pairs in the current staketo_map
+        for key, value in staketo_map.items():
+            # If the key is not present in the merged dictionary, add it
+            if key not in merged_staketo_map:
+                merged_staketo_map[key] = value
+            else:
+                # If the key exists, extend the existing list with the new values
+                merged_staketo_map[key].extend(value)
+
     format_stake: dict[str, int] = {
-        key: sum(stake for _, stake in value) for key, value in staketo_map.items()}
+        key: sum(stake for _, stake in value) for key, value in merged_staketo_map.items()}
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake)
 
