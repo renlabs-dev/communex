@@ -26,10 +26,10 @@ class EndpointDefinition(Generic[T, P]):
 
 def endpoint(fn: Callable[P, T]) -> Callable[P, T]:
     sig = inspect.signature(fn)
-    model = function_params_to_model(sig)
+    params_model = function_params_to_model(sig)
     name = fn.__name__
 
-    endpoint_def = EndpointDefinition(name, fn, model)
+    endpoint_def = EndpointDefinition(name, fn, params_model)
 
     # @wraps(fn)
     # def wrapper(*args: P.args, **kwargs: P.kwargs):
@@ -65,7 +65,11 @@ def function_params_to_model(signature: inspect.Signature) -> type[BaseModel]:
 
 class Module:
     def __init__(self) -> None:
-        self.endpoints = self.extract_endpoints()
+        # TODO: is it possible to get this at class creation instead of object instantiation?
+        self.__endpoints = self.extract_endpoints()
+
+    def get_endpoints(self):
+        return self.__endpoints
 
     def extract_endpoints(self):
         endpoints: dict[str, EndpointDefinition[Any, Any]] = {}
@@ -86,12 +90,13 @@ class ModuleServer:
         return self._app
 
     def register_endpoints(self):
-        for name, endpoint_def in self._module.endpoints.items():
+        endpoints = self._module.get_endpoints()
+        for name, endpoint_def in endpoints.items():
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
             def handler(body: Body):
                 return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
-            self._app.post(f"/{name}")(handler)
+            self._app.post(f"/method/{name}")(handler)
 
 
 
