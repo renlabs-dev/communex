@@ -298,7 +298,8 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[di
     for uid in netuids:
         if uid != root_netuid:
             query_result = c_client.query_map_staketo(uid)
-            staketo_map.update(query_result["StakeTo"])
+            if query_result:
+                staketo_map.update(query_result["StakeTo"])
 
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
