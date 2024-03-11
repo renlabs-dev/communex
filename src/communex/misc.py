@@ -279,15 +279,27 @@ def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dic
     return key2stake
 
 
-def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dict[str, int], dict[str, int]]:
+def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[dict[str, int], dict[str, int]]:
+    
+    root_netuid = netuid
     query_result = c_client.query_batch_map(
         {
-            "SubspaceModule": [("StakeTo", [netuid])],
-            "System": [("Account", [])],
-        }
-    )
+            "SubspaceModule": [
+                ("StakeTo", [root_netuid]),
+                ('SubnetNames', [])
+                                ],
+            "System": [("Account", [])],    
+        })
     balance_map = query_result["Account"]
     staketo_map = query_result["StakeTo"]
+    netuids = list(query_result["SubnetNames"].keys())
+
+    # update for all subnets
+    for uid in netuids:
+        if uid != root_netuid:
+            query_result = c_client.query_map_staketo(uid)
+            if query_result:
+                staketo_map.update(query_result["StakeTo"])
 
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()

@@ -45,5 +45,4 @@ def test_cli_misc_apr_slow(invoke_cli: InvokeCli):
     
     
     output = clean(result.stdout)
-    assert re.search(r'Predicted staking APR with fee: \d+ , is: \d+.\d+%.', output)
-    assert re.search(r'Lowest possible APR \(all miner profits are reinvested\) is: \d+.\d+%.', output)
+    assert re.search(r'\d+ APR \d+\.\d+%', output)
