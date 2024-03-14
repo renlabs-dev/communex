@@ -12,6 +12,8 @@ from substrateinterface import Keypair, KeypairType  # type: ignore
 
 import sr25519  # type: ignore
 
+from ._signer import sign_to_dict, sign, TESTING_MNEMONIC
+
 
 def iso_timestamp_now() -> str:
     now = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -36,17 +38,24 @@ class ModuleClient:
 
     async def request(self, fn: str, params: Any = None) -> Any:
         timeout = 60
-
         request_data = {
             "params": params,
-            "timestamp": iso_timestamp_now(),
         }
 
         serialized_data = serialize(request_data)
-        signed_data = sign(self.key, serialized_data)
-
+        signature = sign(self.key, serialized_data)
+        # signed_data = sign_to_dict(self.key, serialized_data)
+        headers = {
+            "Content-Type": "application/json",
+            "X-Signature": signature.hex(),
+            "X-Timestamp": iso_timestamp_now(),
+        }
         async with aiohttp.ClientSession() as session:
-            async with session.post(f"http://{self.host}:{self.port}/{fn}", json=signed_data) as response:
+            async with session.post(
+                f"http://{self.host}:{self.port}/{fn}", 
+                json=json.loads(serialized_data),
+                headers=headers,
+                ) as response:
                 match response.status:
                     case 200:
                         pass
@@ -69,23 +78,11 @@ class ModuleClient:
         return result
 
 
-def sign(keypair: Keypair, data: bytes) -> bytes:
-    match keypair.crypto_type:
-        case KeypairType.SR25519:
-            signature: bytes = sr25519.sign(  # type: ignore
-                (keypair.public_key, keypair.private_key), data)  # type: ignore
-        case _:
-            raise Exception(f"Crypto type {keypair.crypto_type} not supported")
 
-    return signature  # type: ignore
-
-
-def sign_with_metadate(keypair: Keypair, data: bytes):
-    signature = sign(keypair, data)
-    sig_hex: str = signature.hex()
-    return {
-        'address': keypair.ss58_address,
-        'crypto_type': keypair.crypto_type,
-        'data': data.decode(),  # TODO: this might fail depending on the string? use b64?
-        'signature': sig_hex,
-    }
+if __name__ == "__main__":
+    keypair = Keypair.create_from_mnemonic(
+        TESTING_MNEMONIC
+        )
+    client = ModuleClient("localhost", 8000, keypair)
+    resul = asyncio.run(client.request("method/do_the_thing", {"awesomness": 45}))
+    print(resul)
