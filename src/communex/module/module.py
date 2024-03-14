@@ -119,7 +119,7 @@ class ModuleServer:
     def _verify(
             self,
             keypair: Keypair,
-            data: ScaleBytes | bytes | str | SignDict,
+            data:  bytes,
             signature: bytes | str,
     ) -> bool:
         # TODO: simplify this function
@@ -137,57 +137,22 @@ class ModuleServer:
         -------
         True if data is signed with this Keypair, otherwise False
         """
-        data = deepcopy(data)
+        public_key = keypair.public_key
+        crypto_type = keypair.crypto_type
 
-
-        public_key = None
-        crypto_type = None
-
-        if isinstance(data, dict):
-            # TODO: Check if this asserts makes sense as below the code is accessing those keys
-            assert "address" in data, "address not included"
-            assert "signature" in data, "signature not included"
-            assert "crypto_type" in data, "crypto_type type not included"
-
-            public_key = ss58_decode(data['address'])
-            crypto_type = int(data['crypto_type'])
-            signature = data['signature']
-            if 'data' in data:
-                data = data['data']
-
-        if public_key is None:
-            public_key = keypair.public_key
-        if crypto_type is None:
-            crypto_type = keypair.crypto_type
-
-        if isinstance(public_key, str):
-            public_key = bytes.fromhex(public_key.replace('0x', ''))
-
-        if isinstance(data, ScaleBytes):
-            data = bytes(data.data)
-        elif isinstance(data, str) and data[0:2] == '0x':
-            data = bytes.fromhex(data[2:])  # type: ignore
-        elif isinstance(data, str):
-            data = data.encode()
-
-        if isinstance(signature, str) and signature[0:2] == '0x':
-            signature = bytes.fromhex(signature[2:])
-        elif isinstance(signature, str):
-            signature = bytes.fromhex(signature)
-
-        if not isinstance(signature, bytes):
-            raise TypeError("Signature should be of type bytes or a hex-string")
-
-        if crypto_type == KeypairType.SR25519:
-            crypto_verify_fn = sr25519.verify  # type: ignore
-        elif crypto_type == KeypairType.ED25519:
-            crypto_verify_fn = ed25519_zebra.ed_verify  # type: ignore
-        elif crypto_type == KeypairType.ECDSA:
-            crypto_verify_fn = ecdsa_verify  # type: ignore
+        if isinstance(signature, str):
+            if signature[0:2] == '0x':
+                signature = bytes.fromhex(signature[2:])
+            else:
+                signature = bytes.fromhex(signature)
         else:
-            raise ConfigurationError("Crypto type not supported")
+            raise Exception("Signature must be a hex string or bytes")
 
-        print(public_key, type(public_key))
+        match crypto_type:
+            case KeypairType.SR25519:
+                crypto_verify_fn = sr25519.verify  # type: ignore                   
+            case _:
+                raise ConfigurationError("Crypto type not supported")
 
         verified: bool = crypto_verify_fn(signature, data, public_key)  # type: ignore
 
@@ -220,7 +185,6 @@ class ModuleServer:
                     status_code=400, 
                     detail="Field 'X-Signature' not included in headers"
                     )
-            
             verified = self._verify(self.key, body, sig)
             if not verified:
                 raise HTTPException(
