@@ -1,3 +1,5 @@
+from os import getenv
+
 from openai import OpenAI
 from fastapi import HTTPException
 from enum import Enum
@@ -6,6 +8,8 @@ import json
 from ..module import Module, endpoint, ModuleServer
 
 
+OPENAI_API_KEY = getenv("OPENAI_API_KEY")
+
 class OpenAIModels(str, Enum):
     three = "gpt-3.5-turbo"
 
@@ -13,7 +17,7 @@ class OpenAIModels(str, Enum):
 class OpenAIModule(Module):
     def __init__(self) -> None:
         super().__init__()
-        self.client = OpenAI()
+        self.client = OpenAI(api_key=OPENAI_API_KEY)
 
 
     @endpoint
