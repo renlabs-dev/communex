@@ -26,20 +26,20 @@ def show(key: str, unit: BalanceUnit = BalanceUnit.joule):
         netuids = list(subnets.keys())
         balance = client.get_balance(key_address)
 
-    stakes: list[int] = []
-    for uid in netuids:
-        staketo = client.get_staketo(key_addr=key_address, netuid=uid)
-        stakes.append(sum(staketo.values()))
+        stakes: list[int] = []
+        for uid in netuids:
+            staketo = client.get_staketo(key_addr=key_address, netuid=uid)
+            stakes.append(sum(staketo.values()))
 
-    string_stakes = [format_balance(stake, unit) for stake in stakes]
-    netuids = [str(uid) for uid in netuids]
-    stake_dict = dict(zip(netuids, string_stakes))
+        string_stakes = [format_balance(stake, unit) for stake in stakes]
+        netuids = [str(uid) for uid in netuids]
+        stake_dict = dict(zip(netuids, string_stakes))
 
-    total = balance + sum(stakes)
-    free, total = format_balance(balance, unit), format_balance(total, unit)
+        total = balance + sum(stakes)
+        free, total = format_balance(balance, unit), format_balance(total, unit)
 
-    print_table_from_plain_dict(stake_dict, ["Netuid", "Staked"], console)
-    print_table_from_plain_dict({"Free": free, "Total": total}, ["Result", "Amount"], console)
+        print_table_from_plain_dict(stake_dict, ["Netuid", "Staked"], console)
+        print_table_from_plain_dict({"Free": free, "Total": total}, ["Result", "Amount"], console)
 
 
 @balance_app.command()

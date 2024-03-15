@@ -23,6 +23,8 @@ class NetworkParams(TypedDict):
     max_allowed_subnets: int
     max_allowed_modules: int
     max_registrations_per_block: int
+    target_registrations_interval: int  #  in blocks
+    target_registrations_per_interval: int
     unit_emission: int
     tx_rate_limit: int
     vote_threshold: int
@@ -30,9 +32,13 @@ class NetworkParams(TypedDict):
     max_proposals: int
     max_name_length: int
     burn_rate: int
-    min_burn: int
+    min_burn: int  # min burn to register
+    max_burn: int  # max burn to register
+    burn: int  # this is the actual burn to register
     min_stake: int
     min_weight_stake: int
+    adjustment_alpha: int
+    floor_delegation_fee: int
 
 
 class SubnetParams(TypedDict):

@@ -97,36 +97,36 @@ def get_map_modules(
 
 def get_map_subnets_params(
     client: CommuneClient,
-    block_hash: str | None=None
+    block_hash: str | None = None
 ) -> dict[int, SubnetParamsWithEmission]:
     """
     Gets all subnets info on the network
     """
 
     bulk_query = client.query_batch_map(
-                                     {
-                                         "SubspaceModule": [
-                                             ("ImmunityPeriod", []),
-                                             ("MinAllowedWeights", []),
-                                             ("MaxAllowedWeights", []),
-                                             ('MinStake', []),
-                                             ("Emission", []),
-                                             ('MaxStake', []),
-                                             ("Tempo", []),
-                                             ("MaxAllowedUids", []),
-                                             ('Founder', []),
-                                             ("FounderShare", []),
-                                             ('IncentiveRatio', []),
-                                             ('TrustRatio', []),
-                                             ('VoteThresholdSubnet', []),
-                                             ('VoteModeSubnet', []),
-                                             ('SelfVote', []),
-                                             ('SubnetNames', []),
-                                             ('MaxWeightAge', [])
-                                         ],
-                                     },
-                                     block_hash
-                                     )
+        {
+            "SubspaceModule": [
+                ("ImmunityPeriod", []),
+                ("MinAllowedWeights", []),
+                ("MaxAllowedWeights", []),
+                ('MinStake', []),
+                ("Emission", []),
+                ('MaxStake', []),
+                ("Tempo", []),
+                ("MaxAllowedUids", []),
+                ('Founder', []),
+                ("FounderShare", []),
+                ('IncentiveRatio', []),
+                ('TrustRatio', []),
+                ('VoteThresholdSubnet', []),
+                ('VoteModeSubnet', []),
+                ('SelfVote', []),
+                ('SubnetNames', []),
+                ('MaxWeightAge', [])
+            ],
+        },
+        block_hash
+    )
 
     (
         netuid_to_emission, netuid_to_tempo, netuid_to_immunity_period,
@@ -200,12 +200,13 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
     Returns global parameters of the whole commune ecosystem
     """
 
-
     query_all = c_client.query_batch({
         "SubspaceModule": [
             ("MaxAllowedSubnets", []),
             ("MaxAllowedModules", []),
             ("MaxRegistrationsPerBlock", []),
+            ("TargetRegistrationsInterval", []),
+            ("TargetRegistrationsPerInterval", []),
             ("UnitEmission", []),
             ("TxRateLimit", []),
             ("GlobalVoteThreshold", []),
@@ -214,8 +215,12 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("MaxNameLength", []),
             ("BurnRate", []),
             ("MinBurn", []),
+            ("MaxBurn", []),
+            ("Burn", []),
             ("MinStake", []),
             ("MinWeightStake", []),
+            ("AdjustmentAlpha", []),
+            ("FloorDelegationFee", []),
         ],
     })
 
@@ -223,6 +228,8 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
+        "target_registrations_interval": int(query_all["TargetRegistrationsInterval"]),
+        "target_registrations_per_interval": int(query_all["TargetRegistrationsPerInterval"]),
         "unit_emission": int(query_all["UnitEmission"]),
         "tx_rate_limit": int(query_all["TxRateLimit"]),
         "vote_threshold": int(query_all["GlobalVoteThreshold"]),
@@ -231,8 +238,12 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "max_name_length": int(query_all["MaxNameLength"]),
         "burn_rate": int(query_all["BurnRate"]),
         "min_burn": int(query_all["MinBurn"]),
+        "max_burn": int(query_all["MaxBurn"]),
+        "burn": int(query_all["Burn"]),
         "min_stake": int(query_all["MinStake"]),
         "min_weight_stake": int(query_all["MinWeightStake"]),
+        "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
+        "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
     }
 
     return global_params
@@ -249,8 +260,8 @@ def concat_to_local_keys(balance: dict[str, int]) -> dict[str, int]:
 
 def local_keys_to_freebalance(c_client: CommuneClient) -> dict[str, int]:
     query_all = c_client.query_batch_map(
-                                {
-                                    "System": [("Account", [])], })
+        {
+            "System": [("Account", [])], })
     balance_map = query_all["Account"]
 
     format_balances: dict[str, int] = {key: value['data']['free']
@@ -265,9 +276,9 @@ def local_keys_to_freebalance(c_client: CommuneClient) -> dict[str, int]:
 def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dict[str, int]:
 
     query_all = c_client.query_batch_map(
-                                {
-                                    "SubspaceModule": [("StakeTo", [netuid])],
-                                })
+        {
+            "SubspaceModule": [("StakeTo", [netuid])],
+        })
 
     staketo_map = query_all["StakeTo"]
 
@@ -279,17 +290,17 @@ def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dic
     return key2stake
 
 
-def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[dict[str, int], dict[str, int]]:
-    
-    staketo_maps : list[Any] = []
+def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dict[str, int], dict[str, int]]:
+
+    staketo_maps: list[Any] = []
     root_netuid = netuid
     query_result = c_client.query_batch_map(
         {
             "SubspaceModule": [
                 ("StakeTo", [root_netuid]),
                 ('SubnetNames', [])
-                                ],
-            "System": [("Account", [])],    
+            ],
+            "System": [("Account", [])],
         })
     balance_map = query_result["Account"]
     staketo_map = query_result["StakeTo"]
@@ -314,7 +325,7 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int =  0) -> tuple[di
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances)
 
-    merged_staketo_map : dict[Any, Any] = {}
+    merged_staketo_map: dict[Any, Any] = {}
 
     # Iterate through each staketo_map in the staketo_maps list
     for staketo_map in staketo_maps:
