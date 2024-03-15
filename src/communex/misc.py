@@ -316,8 +316,12 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dic
                         ("StakeTo", [uid]),
                     ],
                 })
+<<<<<<< HEAD
             staketo_map = query_result.get("StakeTo", {})
             staketo_maps.append(staketo_map)
+=======
+            staketo_map.update(query_result.get("StakeTo", {}))
+>>>>>>> b653998 (fixed subnet query)
 
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
