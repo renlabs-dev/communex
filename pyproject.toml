@@ -32,6 +32,11 @@ pytest = "^7.4.2"
 # linter
 ruff = "^0.1.15"
 
+[tool.poetry.group.examples]
+optional = true
+[tool.poetry.group.examples.dependencies]
+openai = "^1.13.3"
+
 [tool.poetry.group.docs]
 optional = true
 
