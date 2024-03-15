@@ -319,6 +319,7 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dic
             staketo_map = query_result.get("StakeTo", {})
             staketo_maps.append(staketo_map)
 
+
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
                                        if 'data' in value and 'free' in value['data']}
