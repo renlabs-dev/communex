@@ -11,6 +11,7 @@ import time
 
 import fastapi
 from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
 import pydantic
 import uvicorn
 from pydantic import BaseModel
@@ -100,6 +101,7 @@ class ModuleServer:
             ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
+        self._endpoint_prefix = "/method/"
         self.register_endpoints()
         self.register_middleware()
         self.key = key
@@ -173,23 +175,28 @@ class ModuleServer:
                 params: endpoint_def.params_model  # type: ignore
             def handler(body: Body):
                 return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
-            self._app.post(f"/method/{name}")(handler)
+            self._app.post(f"{self._endpoint_prefix}{name}")(handler)
     
     def register_middleware(self):
         @self._app.middleware('http')
         async def input_middleware(request: Request, call_next: Callable[[Any], Any]):
+            endpoint = request.url.path
+            if not endpoint.startswith(self._endpoint_prefix):
+                return await call_next(request)
             body = await self._get_body(request)
             sig = request.headers.get('X-Signature')
             if not sig:
-                raise HTTPException(
+                return JSONResponse(
                     status_code=400, 
-                    detail="Field 'X-Signature' not included in headers"
+                    content={
+                        "error": "Field 'X-Signature' not included in headers"
+                        }
                     )
             verified = self._verify(self.key, body, sig)
             if not verified:
-                raise HTTPException(
+                return JSONResponse(
                     status_code=401, 
-                    detail="Signatures doesn't match"
+                    content={"error": "Signatures doesn't match"}
                     )
             
             response = await call_next(request)
