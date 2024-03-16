@@ -5,8 +5,8 @@ from fastapi import HTTPException
 from enum import Enum
 import json
 
-from ..module import Module, endpoint, ModuleServer
-
+#from ..module import Module, endpoint, ModuleServer
+from communex.module.module import Module, endpoint, ModuleServer
 
 OPENAI_API_KEY = getenv("OPENAI_API_KEY")
 
