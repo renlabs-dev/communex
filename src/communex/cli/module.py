@@ -3,7 +3,6 @@ import importlib.util
 from pathlib import Path
 
 
-import daemon #type: ignore
 import uvicorn
 import typer
 from rich.console import Console
@@ -121,8 +120,7 @@ def serve(name: str, ip: str, port: int, key: str):
     keypair = classic_load_key(key)
     server = ModuleServer(class_obj(), keypair)
     app = server.get_fastapi_app()
-    with daemon.DaemonContext():
-        uvicorn.run(app, host=ip, port=port) #type: ignore
+    uvicorn.run(app, host=ip, port=port) #type: ignore
 
 
 @module_app.command()
