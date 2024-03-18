@@ -7,8 +7,10 @@ from typing import Any, Callable
 
 import fastapi
 from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from substrateinterface import Keypair  # type: ignore
+
 
 # from scalecodec.base import ScaleBytes  # type: ignore
 # from scalecodec.utils.ss58 import ss58_decode  # type: ignore
@@ -19,7 +21,7 @@ from substrateinterface import Keypair  # type: ignore
 
 from communex.module import _signer as signer
 from communex.module.module import Module, endpoint
-
+from communex.key import check_ss58_address
 
 def parse_hex(hex_str: str) -> bytes:
     if hex_str[0:2] == '0x':
@@ -39,6 +41,13 @@ async def peek_body(request: Request) -> bytes:
         return {"type": "http.request", "body": body}
     request._receive = receive  # pyright: ignore [reportPrivateUsage]
     return body
+
+
+def get_or_raise(headers: dict[str, str], required: list[str]):
+    for header in required:
+        if header not in headers:
+            raise HTTPException(status_code=400, detail=f"Missing header {header}")
+    return headers
 
 
 class ModuleServer:
@@ -70,18 +79,33 @@ class ModuleServer:
     def register_middleware(self):
         async def input_middleware(request: Request, call_next: Callable[[Any], Any]):
             body = await peek_body(request)
-            signature = request.headers.get('X-Signature')
-            if not signature:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Field 'X-Signature' not included in headers"
+            headers_dict: dict[str, str] = {}
+            for required_header in ['x-signature', 'x-key', 'x-crypto']:
+                breakpoint()
+                value = request.headers.get(required_header)
+                if not value:
+                    code = 400
+                    return JSONResponse(
+                        status_code=code, content={
+                        "error": {
+                            "code": code,
+                            "message": f"Missing header {required_header}"
+                            }
+                        }
                     )
+                headers_dict[required_header] = value
+            
+            signature = headers_dict['x-signature']
+            key = headers_dict['x-key']
+            crypto = headers_dict['x-crypto']
+            breakpoint()
             signature = parse_hex(signature)
-            verified = signer.verify(self.key, body, signature)
+            key = check_ss58_address(key)
+            verified = signer.verify(key, crypto, body, signature)
             if not verified:
-                raise HTTPException(
+                return JSONResponse(
                     status_code=401,
-                    detail="Signatures doesn't match"
+                    content="Signatures doesn't match"
                     )
 
             response = await call_next(request)

@@ -3,6 +3,8 @@ from typing import TypedDict
 import sr25519  # type: ignore
 from substrateinterface import Keypair, KeypairType  # type: ignore
 from substrateinterface.exceptions import ConfigurationError  # type: ignore
+from communex.types import Ss58Address
+
 
 # Random key mnemonic for testing
 TESTING_MNEMONIC = "electric suffer nephew rough gentle decline fun body tray account vital clinic"
@@ -20,20 +22,18 @@ def sign(keypair: Keypair, data: bytes) -> bytes:
 
 
 def verify(
-        keypair: Keypair,
+        pubkey: Ss58Address,
+        crypto_type: KeypairType,
         data: bytes,
         signature: bytes,
 ) -> bool:
-    public_key = keypair.public_key
-    crypto_type = keypair.crypto_type
-
     match crypto_type:
         case KeypairType.SR25519:
             crypto_verify_fn = sr25519.verify  # type: ignore
         case _:
             raise ConfigurationError("Crypto type not supported")
 
-    verified: bool = crypto_verify_fn(signature, data, public_key)  # type: ignore
+    verified: bool = crypto_verify_fn(signature, data, pubkey)  # type: ignore
 
     if not verified:
         # Another attempt with the data wrapped, as discussed in https://github.com/polkadot-js/extension/pull/743

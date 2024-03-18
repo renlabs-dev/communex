@@ -47,6 +47,8 @@ class ModuleClient:
             "Content-Type": "application/json",
             "X-Signature": signature.hex(),
             "X-Timestamp": iso_timestamp_now(),
+            "X-Key": self.key.ss58_address,
+            "X-Crypto": str(self.key.crypto_type),
         }
         async with aiohttp.ClientSession() as session:
             async with session.post(
@@ -58,8 +60,9 @@ class ModuleClient:
                     case 200:
                         pass
                     case _:
+                        response_j = await response.json()
                         raise Exception(
-                            f"Unexpected status code: {response.status} {response.reason}")
+                            f"Unexpected status code: {response_j['error']}")
                 match response.content_type:
                     case 'application/json':
                         result = await asyncio.wait_for(response.json(), timeout=timeout)
