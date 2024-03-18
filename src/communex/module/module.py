@@ -4,31 +4,13 @@ Tools for defining Commune modules.
 
 import inspect
 from dataclasses import dataclass
-# from functools import wraps
-from typing import Any, Callable, Generic, ParamSpec, TypeVar, cast, TypedDict
-from copy import deepcopy
-import time
+from typing import Any, Callable, Generic, ParamSpec, TypeVar, cast
 
-import fastapi
-from fastapi import Request, HTTPException
-from fastapi.responses import JSONResponse
 import pydantic
-import uvicorn
 from pydantic import BaseModel
-from substrateinterface import Keypair, KeypairType # type: ignore
-from scalecodec.base import ScaleBytes  # type: ignore
-from scalecodec.utils.ss58 import ss58_decode  # type: ignore
-from substrateinterface.exceptions import ConfigurationError # type: ignore
-import ed25519_zebra  # type: ignore
-import sr25519  # type: ignore
-from substrateinterface.utils.ecdsa_helpers import (  # type: ignore
-    ecdsa_sign, ecdsa_verify)
-
-from ._signer import SignDict, TESTING_MNEMONIC
 
 T = TypeVar('T')
 P = ParamSpec('P')
-
 
 
 @dataclass
@@ -44,12 +26,6 @@ def endpoint(fn: Callable[P, T]) -> Callable[P, T]:
     name = fn.__name__
 
     endpoint_def = EndpointDefinition(name, fn, params_model)
-
-    # @wraps(fn)
-    # def wrapper(*args: P.args, **kwargs: P.kwargs):
-    #     answer = fn(*args, **kwargs)
-    #     return answer
-
     fn._endpoint_def = endpoint_def  # type: ignore
 
     return fn
@@ -92,132 +68,3 @@ class Module:
                 endpoint_def: EndpointDefinition = method._endpoint_def  # type: ignore
                 endpoints[name] = endpoint_def  # type: ignore
         return endpoints
-
-class ModuleServer:
-    def __init__(
-            self, module: Module,
-            key: Keypair,
-            max_request_staleness: int=60,
-            ) -> None:
-        self._module = module
-        self._app = fastapi.FastAPI()
-        self._endpoint_prefix = "/method/"
-        self.register_endpoints()
-        self.register_middleware()
-        self.key = key
-        self.max_request_staleness = max_request_staleness
-
-    async def _set_body(self, request: Request, body: bytes):
-        async def receive():
-            return {"type": "http.request", "body": body}
-        request._receive = receive
- 
-    async def _get_body(self, request: Request) -> bytes:
-        body = await request.body()
-        await self._set_body(request, body)
-        return body
-
-
-    def _verify(
-            self,
-            keypair: Keypair,
-            data:  bytes,
-            signature: bytes | str,
-    ) -> bool:
-        # TODO: simplify this function
-
-        """
-        Verifies data with specified signature
-
-        Parameters
-        ----------
-        data: data to be verified in `Scalebytes`, bytes or hex string format, or commune dict format
-        signature: signature in bytes or hex string format
-        public_key: public key in bytes or hex string format
-
-        Returns
-        -------
-        True if data is signed with this Keypair, otherwise False
-        """
-        public_key = keypair.public_key
-        crypto_type = keypair.crypto_type
-
-        if isinstance(signature, str):
-            if signature[0:2] == '0x':
-                signature = bytes.fromhex(signature[2:])
-            else:
-                signature = bytes.fromhex(signature)
-        else:
-            raise Exception("Signature must be a hex string or bytes")
-
-        match crypto_type:
-            case KeypairType.SR25519:
-                crypto_verify_fn = sr25519.verify  # type: ignore                   
-            case _:
-                raise ConfigurationError("Crypto type not supported")
-
-        verified: bool = crypto_verify_fn(signature, data, public_key)  # type: ignore
-
-        if not verified:
-            # Another attempt with the data wrapped, as discussed in https://github.com/polkadot-js/extension/pull/743
-            # Note: As Python apps are trusted sources on its own, no need to wrap data when signing from this lib
-            verified: bool = crypto_verify_fn(signature, b'<Bytes>' + data + b'</Bytes>', public_key)  # type: ignore
-
-        return verified  # type: ignore
-
-    def get_fastapi_app(self):
-        return self._app
-
-    def register_endpoints(self):
-        endpoints = self._module.get_endpoints()
-        for name, endpoint_def in endpoints.items():
-            class Body(BaseModel):
-                params: endpoint_def.params_model  # type: ignore
-            def handler(body: Body):
-                return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
-            self._app.post(f"{self._endpoint_prefix}{name}")(handler)
-    
-    def register_middleware(self):
-        @self._app.middleware('http')
-        async def input_middleware(request: Request, call_next: Callable[[Any], Any]):
-            endpoint = request.url.path
-            if not endpoint.startswith(self._endpoint_prefix):
-                return await call_next(request)
-            body = await self._get_body(request)
-            sig = request.headers.get('X-Signature')
-            if not sig:
-                return JSONResponse(
-                    status_code=400, 
-                    content={
-                        "error": "Field 'X-Signature' not included in headers"
-                        }
-                    )
-            verified = self._verify(self.key, body, sig)
-            if not verified:
-                return JSONResponse(
-                    status_code=401, 
-                    content={"error": "Signatures doesn't match"}
-                    )
-            
-            response = await call_next(request)
-            return response
-
-
-
-if __name__ == "__main__":
-
-    class Amod(Module):
-        @endpoint
-        def do_the_thing(self, awesomness: int = 42):
-            if awesomness > 60:
-                msg = f"You're super awesome: {awesomness} awesomness"
-            else:
-                msg = f"You're not that awesome: {awesomness} awesomness"
-            return {"msg": msg}
-
-    a_mod = Amod()
-    keypair = Keypair.create_from_mnemonic(TESTING_MNEMONIC)
-    server = ModuleServer(a_mod, keypair)
-    app = server.get_fastapi_app()
-
-    uvicorn.run(app, host="127.0.0.1", port=8000)  # type: ignore

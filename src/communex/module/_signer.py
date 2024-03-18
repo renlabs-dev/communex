@@ -1,33 +1,12 @@
-import json
-from typing import Any, TypedDict
+from typing import TypedDict
 
+import sr25519  # type: ignore
 from substrateinterface import Keypair, KeypairType  # type: ignore
+from substrateinterface.exceptions import ConfigurationError  # type: ignore
 
-import sr25519  # type: ignore
-from scalecodec.base import ScaleBytes  # type: ignore
-from scalecodec.utils.ss58 import ss58_decode  # type: ignore
-from substrateinterface.exceptions import ConfigurationError # type: ignore
-import ed25519_zebra  # type: ignore
-import sr25519  # type: ignore
-from substrateinterface.utils.ecdsa_helpers import (  # type: ignore
-    ecdsa_sign, ecdsa_verify)
-
-
-# random mnemonic for testing
+# Random key mnemonic for testing
 TESTING_MNEMONIC = "electric suffer nephew rough gentle decline fun body tray account vital clinic"
 
-
-
-class SignDict(TypedDict):
-    data: str
-    crypto_type: int
-    signature: str
-    address: str
-
-
-def serialize(data: Any) -> bytes:
-    txt = json.dumps(data)
-    return txt.encode()
 
 def sign(keypair: Keypair, data: bytes) -> bytes:
     match keypair.crypto_type:
@@ -39,21 +18,46 @@ def sign(keypair: Keypair, data: bytes) -> bytes:
 
     return signature  # type: ignore
 
-def sign_to_dict(keypair: Keypair, data: bytes) -> SignDict:
 
-    signature = sign(keypair, data)
+def verify(
+        keypair: Keypair,
+        data: bytes,
+        signature: bytes,
+) -> bool:
+    public_key = keypair.public_key
+    crypto_type = keypair.crypto_type
 
-    sig_hex: str = signature.hex()
+    match crypto_type:
+        case KeypairType.SR25519:
+            crypto_verify_fn = sr25519.verify  # type: ignore
+        case _:
+            raise ConfigurationError("Crypto type not supported")
 
-    return {
-        'data': data.decode(),
-        'crypto_type': keypair.crypto_type,
-        'signature': sig_hex,
-        'address': keypair.ss58_address,
-    }
+    verified: bool = crypto_verify_fn(signature, data, public_key)  # type: ignore
+
+    if not verified:
+        # Another attempt with the data wrapped, as discussed in https://github.com/polkadot-js/extension/pull/743
+        # Note: As Python apps are trusted sources on its own, no need to wrap data when signing from this lib
+        verified: bool = crypto_verify_fn(  # type: ignore
+            signature, b'<Bytes>' + data + b'</Bytes>', public_key)
+
+    return verified  # type: ignore
+
+
+class SignDict(TypedDict):
+    """
+    DEPRECATED
+    """
+    data: str
+    crypto_type: int
+    signature: str
+    address: str
 
 
 def sign_with_metadate(keypair: Keypair, data: bytes):
+    """
+    DEPRECATED
+    """
     signature = sign(keypair, data)
     sig_hex: str = signature.hex()
     return {
