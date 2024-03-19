@@ -53,7 +53,6 @@ class SubnetParams(TypedDict):
     max_stake: int
     min_stake: int
     tempo: int
-    self_vote: bool
     trust_ratio: int
     vote_mode: str
     vote_threshold: int

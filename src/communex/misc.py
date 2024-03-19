@@ -120,7 +120,6 @@ def get_map_subnets_params(
                 ('TrustRatio', []),
                 ('VoteThresholdSubnet', []),
                 ('VoteModeSubnet', []),
-                ('SelfVote', []),
                 ('SubnetNames', []),
                 ('MaxWeightAge', [])
             ],
@@ -135,7 +134,7 @@ def get_map_subnets_params(
         netuid_to_max_stake, netuid_to_founder, netuid_to_founder_share,
         netuid_to_incentive_ratio, netuid_to_trust_ratio,
         netuid_to_vote_treshold_subnet, netuid_to_vote_mode_subnet,
-        netuid_to_self_vote, netuid_to_subnet_names,
+        netuid_to_subnet_names,
         netuid_to_weight_age
     ) = (
         bulk_query["Emission"], bulk_query["Tempo"],
@@ -145,8 +144,7 @@ def get_map_subnets_params(
         bulk_query["Founder"], bulk_query["FounderShare"],
         bulk_query["IncentiveRatio"], bulk_query["TrustRatio"],
         bulk_query["VoteThresholdSubnet"], bulk_query["VoteModeSubnet"],
-        bulk_query["SelfVote"], bulk_query["SubnetNames"],
-        bulk_query["MaxWeightAge"]
+        bulk_query["SubnetNames"], bulk_query["MaxWeightAge"]
     )
 
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
@@ -163,7 +161,6 @@ def get_map_subnets_params(
         max_stake = netuid_to_max_stake[netuid]
         min_stake = netuid_to_min_stake[netuid]
         tempo = netuid_to_tempo[netuid]
-        self_vote = netuid_to_self_vote[netuid]
         trust_ratio = netuid_to_trust_ratio[netuid]
         vote_mode = netuid_to_vote_mode_subnet[netuid]
         vote_threshold = netuid_to_vote_treshold_subnet[netuid]
@@ -182,7 +179,6 @@ def get_map_subnets_params(
             "max_stake": max_stake,
             "min_stake": min_stake,
             "tempo": tempo,
-            "self_vote": self_vote,
             "trust_ratio": trust_ratio,
             "vote_mode": vote_mode,
             "vote_threshold": vote_threshold,
@@ -210,7 +206,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("UnitEmission", []),
             ("TxRateLimit", []),
             ("GlobalVoteThreshold", []),
-            ("VoteModeGlobal", []),
             ("MaxProposals", []),
             ("MaxNameLength", []),
             ("BurnRate", []),

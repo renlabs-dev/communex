@@ -1972,23 +1972,6 @@ class CommuneClient:
 
         return self.query_map("VoteModeSubnet", extract_value=False)["VoteModeSubnet"]
 
-    def query_map_self_vote(self) -> dict[int, bool]:
-        """
-        Retrieves a mapping of self-vote settings for the network.
-
-        Queries the network to determine whether self-voting is allowed in 
-        different subnets of the network.
-
-        Returns:
-            A dictionary mapping network UIDs to their self-vote settings 
-            (true or false).
-
-        Raises:
-            QueryError: If the query to the network fails or is invalid.
-        """
-
-        return self.query_map("SelfVote", extract_value=False)["SelfVote"]
-
     def query_map_subnet_names(self, extract_value: bool = False) -> dict[int, str]:
         """
         Retrieves a mapping of subnet names within the network.

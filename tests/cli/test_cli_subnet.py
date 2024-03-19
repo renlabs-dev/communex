@@ -21,7 +21,6 @@ def test_cli_subnet_info_slow(invoke_cli: InvokeCli):
     assert "max_stake" in output
     assert "min_stake" in output
     assert "tempo" in output
-    assert "self_vote" in output
     assert "trust_ratio" in output
     assert "vote_mode" in output
     assert "vote_threshold" in output
@@ -47,7 +46,6 @@ def test_cli_subnet_list_slow(invoke_cli: InvokeCli):
     assert "max_stake" in output
     assert "min_stake" in output
     assert "tempo" in output
-    assert "self_vote" in output
     assert "trust_ratio" in output
     assert "vote_mode" in output
     assert "vote_threshold" in output
