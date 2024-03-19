@@ -206,6 +206,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("UnitEmission", []),
             ("TxRateLimit", []),
             ("GlobalVoteThreshold", []),
+            ("VoteModeGlobal", []),
             ("MaxProposals", []),
             ("MaxNameLength", []),
             ("BurnRate", []),
