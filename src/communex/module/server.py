@@ -4,13 +4,17 @@ Server for Commune modules.
 
 
 from typing import Any, Callable
+import re
 
 import fastapi
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from substrateinterface import Keypair  # type: ignore
+from keylimiter import KeyLimiter
+import starlette.datastructures
 
+from communex.module._ip_limiter import IpLimiterMiddleware
 from communex.module import _signer as signer
 from communex.module.module import Module, endpoint
 
@@ -34,11 +38,31 @@ async def peek_body(request: Request) -> bytes:
     return body
 
 
-def get_or_raise(headers: dict[str, str], required: list[str]):
-    for header in required:
-        if header not in headers:
-            raise HTTPException(status_code=400, detail=f"Missing header {header}")
-    return headers
+def is_hex_string(string: str):
+    # Regular expression to match a hexadecimal string
+    hex_pattern = re.compile(r'^[0-9a-fA-F]+$')
+    return bool(hex_pattern.match(string))
+
+def _return_error(code: int, message: str):
+    return JSONResponse(
+        status_code=code, content={
+        "error": {
+            "code": code,
+            "message": message
+            }
+        }
+    )
+
+
+def _get_headers_dict(headers: starlette.datastructures.Headers, required: list[str]):
+    headers_dict: dict[str, str] = {}
+    for required_header in required:
+        value = headers.get(required_header)
+        if not value:
+            code = 400
+            return False, _return_error(code, f"Missing header: {required_header}")
+        headers_dict[required_header] = value
+    return True, headers_dict
 
 
 class ModuleServer:
@@ -47,14 +71,17 @@ class ModuleServer:
             module: Module,
             key: Keypair,
             max_request_staleness: int=60,
+            ip_limiter: KeyLimiter | None=None,
             ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
         self.key = key
         self.register_endpoints()
         self.register_middleware()
+        self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
         self.max_request_staleness = max_request_staleness
-
+    
+    
     def get_fastapi_app(self):
         return self._app
 
@@ -70,24 +97,19 @@ class ModuleServer:
     def register_middleware(self):
         async def input_middleware(request: Request, call_next: Callable[[Any], Any]):
             body = await peek_body(request)
-            headers_dict: dict[str, str] = {}
-            for required_header in ['x-signature', 'x-key', 'x-crypto']:
-                value = request.headers.get(required_header)
-                if not value:
-                    code = 400
-                    return JSONResponse(
-                        status_code=code, content={
-                        "error": {
-                            "code": code,
-                            "message": f"Missing header {required_header}"
-                            }
-                        }
-                    )
-                headers_dict[required_header] = value
+            required_headers = ['x-signature', 'x-key', 'x-crypto']
+            success, headers_dict = _get_headers_dict(request.headers, required_headers)
+            if not success:
+                error = headers_dict
+                return error
+            assert isinstance(headers_dict, dict)
             
             signature = headers_dict['x-signature']
             key = headers_dict['x-key']
             crypto = int(headers_dict['x-crypto']) #TODO: better handling of this
+            is_hex = is_hex_string(key)
+            if not is_hex:
+                return _return_error(400, "X-Key should be a hex value")
             signature = parse_hex(signature)
             key = parse_hex(key)
             verified = signer.verify(key, crypto, body, signature)

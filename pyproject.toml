@@ -21,6 +21,7 @@ py-sr25519-bindings = "^0.2.0"
 typer = "^0.9.0"
 rich = "^13.7.0"
 python-daemon = "^3.0.1"
+keylimiter = "^0.1.5"
 
 [tool.poetry.group.dev]
 optional = true

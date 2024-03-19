@@ -593,6 +593,17 @@ MarkupSafe = ">=2.0"
 i18n = ["Babel (>=2.7)"]
 
 [[package]]
+name = "keylimiter"
+version = "0.1.5"
+description = "Thread-safe rate limiter algorithms"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "keylimiter-0.1.5-py3-none-any.whl", hash = "sha256:08d0f7b05133e3e2b7f7aab8e023a8881deb37ec213a3ff270d79876658ed2e5"},
+    {file = "keylimiter-0.1.5.tar.gz", hash = "sha256:6655240c15d1aee6acf26bd66bb1ae6c5dfd014e287f9c9c563dcfeacfc8fc81"},
+]
+
+[[package]]
 name = "lockfile"
 version = "0.12.2"
 description = "Platform-independent file locking module"
@@ -1644,4 +1655,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "cbfaea88f2c3fa7ada7bd014fd3086caae4140c8b6abbcde97bdf3d7461a7d3a"
+content-hash = "2e25cd4e9e930286a5377981715a48930c221184d6cdb8e59a2d9558cb2e7be6"
