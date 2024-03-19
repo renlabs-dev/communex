@@ -11,17 +11,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from substrateinterface import Keypair  # type: ignore
 
-
-# from scalecodec.base import ScaleBytes  # type: ignore
-# from scalecodec.utils.ss58 import ss58_decode  # type: ignore
-# from substrateinterface import KeypairType  # type: ignore
-# from substrateinterface.exceptions import ConfigurationError  # type: ignore
-# from substrateinterface.utils.ecdsa_helpers import ecdsa_sign  # type: ignore
-# from substrateinterface.utils.ecdsa_helpers import ecdsa_verify  # type: ignore
-
 from communex.module import _signer as signer
 from communex.module.module import Module, endpoint
-from communex.key import check_ss58_address
 
 def parse_hex(hex_str: str) -> bytes:
     if hex_str[0:2] == '0x':
@@ -59,9 +50,9 @@ class ModuleServer:
             ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
+        self.key = key
         self.register_endpoints()
         self.register_middleware()
-        self.key = key
         self.max_request_staleness = max_request_staleness
 
     def get_fastapi_app(self):
@@ -81,7 +72,6 @@ class ModuleServer:
             body = await peek_body(request)
             headers_dict: dict[str, str] = {}
             for required_header in ['x-signature', 'x-key', 'x-crypto']:
-                breakpoint()
                 value = request.headers.get(required_header)
                 if not value:
                     code = 400
@@ -97,10 +87,9 @@ class ModuleServer:
             
             signature = headers_dict['x-signature']
             key = headers_dict['x-key']
-            crypto = headers_dict['x-crypto']
-            breakpoint()
+            crypto = int(headers_dict['x-crypto']) #TODO: better handling of this
             signature = parse_hex(signature)
-            key = check_ss58_address(key)
+            key = parse_hex(key)
             verified = signer.verify(key, crypto, body, signature)
             if not verified:
                 return JSONResponse(

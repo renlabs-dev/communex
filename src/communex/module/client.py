@@ -47,7 +47,7 @@ class ModuleClient:
             "Content-Type": "application/json",
             "X-Signature": signature.hex(),
             "X-Timestamp": iso_timestamp_now(),
-            "X-Key": self.key.ss58_address,
+            "X-Key": self.key.public_key.hex(),
             "X-Crypto": str(self.key.crypto_type),
         }
         async with aiohttp.ClientSession() as session:

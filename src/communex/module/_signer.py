@@ -3,7 +3,6 @@ from typing import TypedDict
 import sr25519  # type: ignore
 from substrateinterface import Keypair, KeypairType  # type: ignore
 from substrateinterface.exceptions import ConfigurationError  # type: ignore
-from communex.types import Ss58Address
 
 
 # Random key mnemonic for testing
@@ -22,8 +21,8 @@ def sign(keypair: Keypair, data: bytes) -> bytes:
 
 
 def verify(
-        pubkey: Ss58Address,
-        crypto_type: KeypairType,
+        pubkey: bytes,
+        crypto_type: int,
         data: bytes,
         signature: bytes,
 ) -> bool:
@@ -39,7 +38,7 @@ def verify(
         # Another attempt with the data wrapped, as discussed in https://github.com/polkadot-js/extension/pull/743
         # Note: As Python apps are trusted sources on its own, no need to wrap data when signing from this lib
         verified: bool = crypto_verify_fn(  # type: ignore
-            signature, b'<Bytes>' + data + b'</Bytes>', public_key)
+            signature, b'<Bytes>' + data + b'</Bytes>', pubkey)
 
     return verified  # type: ignore
 

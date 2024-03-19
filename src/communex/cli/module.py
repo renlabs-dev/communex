@@ -14,7 +14,7 @@ from communex.errors import ChainTransactionError
 from communex.key import generate_keypair
 from communex.misc import get_map_modules
 from communex.util import is_ip_valid
-from communex.module.module import ModuleServer
+from communex.module.server import ModuleServer
 
 from ._common import make_client, print_table_from_plain_dict
 
