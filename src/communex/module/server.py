@@ -107,16 +107,21 @@ class ModuleServer:
             self,
             module: Module,
             key: Keypair,
-            max_request_staleness: int=60,
-            ip_limiter: KeyLimiter | None=None,
+            max_request_staleness: int = 60,
+            ip_limiter: KeyLimiter | None = None,
+            whitelist: list[str] | None = None,
+            blacklist: list[str] | None = None,
             ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
         self.key = key
         self.register_endpoints()
+        self.register_middleware()
         self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
         self._app.add_middleware(InputMiddleware)
         self.max_request_staleness = max_request_staleness
+        self._blacklist = blacklist
+        self._whitelist = whitelist
     
     
     def get_fastapi_app(self):
@@ -131,6 +136,16 @@ class ModuleServer:
                 return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
             self._app.post(f"/method/{name}")(handler)
 
+    def register_middleware(self):
+        async def check_lists(request: Request, call_next: Callback):
+            key = request.headers.get('x-key')
+            if self._blacklist and key in self._blacklist:
+                return _return_error(403, "You are blacklisted")
+            if self._whitelist and key not in self._whitelist:
+                return _return_error(403, "You are not whitelisted")
+            response = await call_next(request)
+            return response
+        self._app.middleware("http")(check_lists)
     
 
 def main():
@@ -145,7 +160,10 @@ def main():
 
     a_mod = Amod()
     keypair = Keypair.create_from_mnemonic(signer.TESTING_MNEMONIC)
-    server = ModuleServer(a_mod, keypair)
+    server = ModuleServer(
+        a_mod, keypair, 
+        blacklist=["aaaa"], whitelist=["48c16f97bbfc7a32ce670c4ecab864051a452b066891d19db14e6540f08ade02"]
+        )
     app = server.get_fastapi_app()
 
     import uvicorn
