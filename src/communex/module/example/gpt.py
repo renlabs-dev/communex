@@ -5,8 +5,8 @@ from os import getenv
 from fastapi import HTTPException
 from openai import OpenAI
 
-from ..module import Module, endpoint
-from ..server import ModuleServer
+from communex.module.module import Module, endpoint
+from communex.module.server import ModuleServer
 
 OPENAI_API_KEY = getenv("OPENAI_API_KEY")
 
