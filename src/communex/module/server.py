@@ -14,10 +14,13 @@ from substrateinterface import Keypair  # type: ignore
 from keylimiter import KeyLimiter
 import starlette.datastructures
 from starlette.middleware.base import BaseHTTPMiddleware
+from scalecodec.utils.ss58 import ss58_encode # type: ignore
 
+from communex.cli._common import make_client
 from communex.module._ip_limiter import IpLimiterMiddleware
 from communex.module import _signer as signer
 from communex.module.module import Module, endpoint
+from communex.key import check_ss58_address
 
 def parse_hex(hex_str: str) -> bytes:
     if hex_str[0:2] == '0x':
@@ -98,6 +101,13 @@ class InputMiddleware(BaseHTTPMiddleware):
                 content="Signatures doesn't match"
                 )
 
+        client = make_client() # TODO: maybe a global client?
+        format = 42
+        ss58 = ss58_encode(key, format)
+        ss58 = check_ss58_address(ss58, format)
+        uids = client.get_uids(ss58)
+        if not uids:
+            return _return_error(403, "Key is not registered on the network")
         response = await call_next(request)
         return response
     
@@ -160,10 +170,7 @@ def main():
 
     a_mod = Amod()
     keypair = Keypair.create_from_mnemonic(signer.TESTING_MNEMONIC)
-    server = ModuleServer(
-        a_mod, keypair, 
-        blacklist=["aaaa"], whitelist=["48c16f97bbfc7a32ce670c4ecab864051a452b066891d19db14e6540f08ade02"]
-        )
+    server = ModuleServer(a_mod, keypair)
     app = server.get_fastapi_app()
 
     import uvicorn
