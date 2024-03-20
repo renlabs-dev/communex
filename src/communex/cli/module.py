@@ -95,10 +95,18 @@ def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, ne
 
 
 @module_app.command()
-def serve(name: str, ip: str, port: int, key: str):
+def serve(
+    name: str, port: int, key: str,
+    ip: Optional[str]=None, whitelist: Optional[list[str]]=None, 
+    blacklist: Optional[list[str]]=None,
+    ):
+    """
+    Serves a module on `127.0.0.1` using port `port`.
+    Name should specify the dotted path to the module class.
+    i.e. `module.submodule.ClassName`
+    """
     # TODO implement
     # -[x] make better serve and register module UI
-    
     splitted_name = name.split(".")
     path = '/'.join(splitted_name[:-1]) + ".py"
     class_ = splitted_name[-1]
@@ -118,9 +126,13 @@ def serve(name: str, ip: str, port: int, key: str):
         raise AttributeError(f"Class not found: {class_}")
     
     keypair = classic_load_key(key)
-    server = ModuleServer(class_obj(), keypair)
+    server = ModuleServer(
+        class_obj(), keypair, 
+        whitelist=whitelist, blacklist=blacklist
+        )
     app = server.get_fastapi_app()
-    uvicorn.run(app, host=ip, port=port) #type: ignore
+    host = ip or "127.0.0.1"
+    uvicorn.run(app, host=host, port=port) #type: ignore
 
 
 @module_app.command()
