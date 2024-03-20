@@ -3,16 +3,17 @@ Server for Commune modules.
 """
 
 
-from typing import Any, Callable
+from typing import Any, Callable, Awaitable
 import re
 
 import fastapi
-from fastapi import HTTPException, Request
+from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from substrateinterface import Keypair  # type: ignore
 from keylimiter import KeyLimiter
 import starlette.datastructures
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from communex.module._ip_limiter import IpLimiterMiddleware
 from communex.module import _signer as signer
@@ -64,6 +65,42 @@ def _get_headers_dict(headers: starlette.datastructures.Headers, required: list[
         headers_dict[required_header] = value
     return True, headers_dict
 
+Callback = Callable[[Request], Awaitable[Response]]
+class InputMiddleware(BaseHTTPMiddleware):
+    def __init__(
+            self,
+            app: fastapi.FastAPI,
+    ):
+        super().__init__(app)
+
+    async def dispatch(self, request: Request, call_next: Callback):
+        body = await peek_body(request)
+        required_headers = ['x-signature', 'x-key', 'x-crypto']
+        success, headers_dict = _get_headers_dict(request.headers, required_headers)
+        if not success:
+            error = headers_dict
+            assert isinstance(error, JSONResponse)
+            return error
+        assert isinstance(headers_dict, dict)
+        
+        signature = headers_dict['x-signature']
+        key = headers_dict['x-key']
+        crypto = int(headers_dict['x-crypto']) #TODO: better handling of this
+        is_hex = is_hex_string(key)
+        if not is_hex:
+            return _return_error(400, "X-Key should be a hex value")
+        signature = parse_hex(signature)
+        key = parse_hex(key)
+        verified = signer.verify(key, crypto, body, signature)
+        if not verified:
+            return JSONResponse(
+                status_code=401,
+                content="Signatures doesn't match"
+                )
+
+        response = await call_next(request)
+        return response
+    
 
 class ModuleServer:
     def __init__(
@@ -77,8 +114,8 @@ class ModuleServer:
         self._app = fastapi.FastAPI()
         self.key = key
         self.register_endpoints()
-        self.register_middleware()
         self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
+        self._app.add_middleware(InputMiddleware)
         self.max_request_staleness = max_request_staleness
     
     
@@ -94,36 +131,7 @@ class ModuleServer:
                 return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
             self._app.post(f"/method/{name}")(handler)
 
-    def register_middleware(self):
-        async def input_middleware(request: Request, call_next: Callable[[Any], Any]):
-            body = await peek_body(request)
-            required_headers = ['x-signature', 'x-key', 'x-crypto']
-            success, headers_dict = _get_headers_dict(request.headers, required_headers)
-            if not success:
-                error = headers_dict
-                return error
-            assert isinstance(headers_dict, dict)
-            
-            signature = headers_dict['x-signature']
-            key = headers_dict['x-key']
-            crypto = int(headers_dict['x-crypto']) #TODO: better handling of this
-            is_hex = is_hex_string(key)
-            if not is_hex:
-                return _return_error(400, "X-Key should be a hex value")
-            signature = parse_hex(signature)
-            key = parse_hex(key)
-            verified = signer.verify(key, crypto, body, signature)
-            if not verified:
-                return JSONResponse(
-                    status_code=401,
-                    content="Signatures doesn't match"
-                    )
-
-            response = await call_next(request)
-            return response
-
-        self._app.middleware('http')(input_middleware)
-
+    
 
 def main():
     class Amod(Module):

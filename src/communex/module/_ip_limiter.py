@@ -1,4 +1,5 @@
 from fastapi import Request, Response, FastAPI
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from keylimiter import KeyLimiter, TokenBucketLimiter
@@ -35,11 +36,14 @@ class IpLimiterMiddleware(BaseHTTPMiddleware):
 
         
         if not is_allowed:
-            response = Response(status_code=400, headers={"X-RateLimit-Remaining": str(self._limiter.remaining(ip))})
+            response = JSONResponse(
+                status_code=400, 
+                headers={"X-RateLimit-Remaining": str(self._limiter.remaining(ip))},
+                content={"error": "Rate limit exceeded"}
+                )
             return response
         
         response = await call_next(request)
         
         return response
-    
     
