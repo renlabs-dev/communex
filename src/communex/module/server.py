@@ -149,9 +149,14 @@ class ModuleServer:
     def register_middleware(self):
         async def check_lists(request: Request, call_next: Callback):
             key = request.headers.get('x-key')
-            if self._blacklist and key in self._blacklist:
+            assert key
+            format = 42
+            ss58 = ss58_encode(key, format)
+            ss58 = check_ss58_address(ss58, format)
+
+            if self._blacklist and ss58 in self._blacklist:
                 return _return_error(403, "You are blacklisted")
-            if self._whitelist and key not in self._whitelist:
+            if self._whitelist and ss58 not in self._whitelist:
                 return _return_error(403, "You are not whitelisted")
             response = await call_next(request)
             return response
