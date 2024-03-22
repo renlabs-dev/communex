@@ -1,12 +1,12 @@
+import json
+from enum import Enum
 from os import getenv
 
-from openai import OpenAI
 from fastapi import HTTPException
-from enum import Enum
-import json
+from openai import OpenAI
 
-from ..module import Module, endpoint, ModuleServer
-
+from communex.module.module import Module, endpoint
+from communex.module.server import ModuleServer
 
 OPENAI_API_KEY = getenv("OPENAI_API_KEY")
 

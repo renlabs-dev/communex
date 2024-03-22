@@ -8,11 +8,9 @@ import json
 from typing import Any
 
 import aiohttp
-from substrateinterface import Keypair, KeypairType  # type: ignore
+from substrateinterface import Keypair  # type: ignore
 
-import sr25519  # type: ignore
-
-from ._signer import sign_to_dict, sign, TESTING_MNEMONIC
+from ._signer import sign, TESTING_MNEMONIC
 
 
 def iso_timestamp_now() -> str:
@@ -49,19 +47,23 @@ class ModuleClient:
             "Content-Type": "application/json",
             "X-Signature": signature.hex(),
             "X-Timestamp": iso_timestamp_now(),
+            "X-Key": self.key.public_key.hex(),
+            "X-Crypto": str(self.key.crypto_type),
         }
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=8)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(
-                f"http://{self.host}:{self.port}/{fn}", 
+                f"http://{self.host}:{self.port}/{fn}",
                 json=json.loads(serialized_data),
                 headers=headers,
-                ) as response:
+            ) as response:
                 match response.status:
                     case 200:
                         pass
                     case _:
+                        response_j = await response.json()
                         raise Exception(
-                            f"Unexpected status code: {response.status} {response.reason}")
+                            f"Unexpected status code: {response_j['error']}")
                 match response.content_type:
                     case 'application/json':
                         result = await asyncio.wait_for(response.json(), timeout=timeout)
@@ -78,11 +80,10 @@ class ModuleClient:
         return result
 
 
-
 if __name__ == "__main__":
     keypair = Keypair.create_from_mnemonic(
         TESTING_MNEMONIC
-        )
+    )
     client = ModuleClient("localhost", 8000, keypair)
-    resul = asyncio.run(client.request("method/do_the_thing", {"awesomness": 45}))
-    print(resul)
+    result = asyncio.run(client.request("method/do_the_thing", {"awesomness": 45}))
+    print(result)

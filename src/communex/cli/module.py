@@ -1,7 +1,12 @@
 from typing import Any, Optional, cast
+import importlib.util
+from pathlib import Path
 
+
+import uvicorn
 import typer
 from rich.console import Console
+
 
 import communex.balance as c_balance
 from communex.compat.key import classic_load_key, classic_store_key
@@ -9,6 +14,7 @@ from communex.errors import ChainTransactionError
 from communex.key import generate_keypair
 from communex.misc import get_map_modules
 from communex.util import is_ip_valid
+from communex.module.server import ModuleServer
 
 from ._common import make_client, print_table_from_plain_dict
 
@@ -16,7 +22,10 @@ module_app = typer.Typer()
 
 
 @module_app.command()
-def register(name: str, ip: str, port: int, key: Optional[str] = None, subnet: str = "commune", stake: Optional[float] = None, netuid: int = 0):
+def register(
+    name: str, ip: str, port: int, key: Optional[str] = None, 
+    subnet: str = "commune", stake: Optional[float] = None, netuid: int = 0
+    ):
     """
     Registers a module.
 
@@ -89,10 +98,45 @@ def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, ne
 
 
 @module_app.command()
-def serve(name: str, type: str, key: str):
+def serve(
+    qualified_path: str, port: int, key: str,
+    subnets: list[int],
+    ip: Optional[str]=None, whitelist: Optional[list[str]]=None, 
+    blacklist: Optional[list[str]]=None,
+    ):
+    """
+    Serves a module on `127.0.0.1` using port `port`.
+   `qualified_path` should specify the dotted path to the module class.
+    i.e. `module.submodule.ClassName`
+    """
     # TODO implement
     # -[x] make better serve and register module UI
-    pass
+    splitted_name = qualified_path.split(".")
+    path = '/'.join(splitted_name[:-1]) + ".py"
+    class_ = splitted_name[-1]
+    full_path = Path(path)
+    print(full_path)
+    if not full_path.exists():
+        raise FileNotFoundError(f"File not found: {full_path}")
+
+    spec = importlib.util.spec_from_file_location("module_name", full_path)
+    assert spec
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module) #type: ignore
+    
+    try:
+        class_obj = getattr(module, class_)
+    except AttributeError:
+        raise AttributeError(f"Class not found: {class_}")
+    
+    keypair = classic_load_key(key)
+    server = ModuleServer(
+        class_obj(), keypair, 
+        whitelist=whitelist, blacklist=blacklist, subnets=subnets
+        )
+    app = server.get_fastapi_app()
+    host = ip or "127.0.0.1"
+    uvicorn.run(app, host=host, port=port) #type: ignore
 
 
 @module_app.command()
