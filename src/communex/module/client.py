@@ -50,7 +50,8 @@ class ModuleClient:
             "X-Key": self.key.public_key.hex(),
             "X-Crypto": str(self.key.crypto_type),
         }
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=8)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(
                 f"http://{self.host}:{self.port}/{fn}",
                 json=json.loads(serialized_data),
