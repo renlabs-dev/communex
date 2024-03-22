@@ -73,8 +73,10 @@ class InputMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
             app: fastapi.FastAPI,
+            subnets: list[int],
     ):
         super().__init__(app)
+        self.subnets = subnets
 
     async def dispatch(self, request: Request, call_next: Callback):
         body = await peek_body(request)
@@ -105,9 +107,11 @@ class InputMiddleware(BaseHTTPMiddleware):
         format = 42
         ss58 = ss58_encode(key, format)
         ss58 = check_ss58_address(ss58, format)
-        uids = client.get_uids(ss58)
-        if not uids:
-            return _return_error(403, "Key is not registered on the network")
+        print(self.subnets)
+        for subnet in self.subnets:
+            uids = client.get_uids(ss58, subnet)
+            if not uids:
+                return _return_error(403, "Key is not registered on the network")
         response = await call_next(request)
         return response
     
@@ -117,6 +121,7 @@ class ModuleServer:
             self,
             module: Module,
             key: Keypair,
+            subnets: list[int],
             max_request_staleness: int = 60,
             ip_limiter: KeyLimiter | None = None,
             whitelist: list[str] | None = None,
@@ -124,11 +129,12 @@ class ModuleServer:
             ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
+        self._subnets = subnets
         self.key = key
         self.register_endpoints()
         self.register_middleware()
         self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
-        self._app.add_middleware(InputMiddleware)
+        self._app.add_middleware(InputMiddleware, subnets=subnets)
         self.max_request_staleness = max_request_staleness
         self._blacklist = blacklist
         self._whitelist = whitelist

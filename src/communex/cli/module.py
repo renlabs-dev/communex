@@ -22,7 +22,10 @@ module_app = typer.Typer()
 
 
 @module_app.command()
-def register(name: str, ip: str, port: int, key: Optional[str] = None, subnet: str = "commune", stake: Optional[float] = None, netuid: int = 0):
+def register(
+    name: str, ip: str, port: int, key: Optional[str] = None, 
+    subnet: str = "commune", stake: Optional[float] = None, netuid: int = 0
+    ):
     """
     Registers a module.
 
@@ -96,18 +99,19 @@ def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, ne
 
 @module_app.command()
 def serve(
-    name: str, port: int, key: str,
+    qualified_path: str, port: int, key: str,
+    subnets: list[int],
     ip: Optional[str]=None, whitelist: Optional[list[str]]=None, 
     blacklist: Optional[list[str]]=None,
     ):
     """
     Serves a module on `127.0.0.1` using port `port`.
-    Name should specify the dotted path to the module class.
+   `qualified_path` should specify the dotted path to the module class.
     i.e. `module.submodule.ClassName`
     """
     # TODO implement
     # -[x] make better serve and register module UI
-    splitted_name = name.split(".")
+    splitted_name = qualified_path.split(".")
     path = '/'.join(splitted_name[:-1]) + ".py"
     class_ = splitted_name[-1]
     full_path = Path(path)
@@ -128,7 +132,7 @@ def serve(
     keypair = classic_load_key(key)
     server = ModuleServer(
         class_obj(), keypair, 
-        whitelist=whitelist, blacklist=blacklist
+        whitelist=whitelist, blacklist=blacklist, subnets=subnets
         )
     app = server.get_fastapi_app()
     host = ip or "127.0.0.1"
