@@ -19,7 +19,7 @@ To serve a Python module, ensure that it's a class inheriting from our `Module` 
 With a class that inherits from `Module` and the communex CLI installed, you can simply run:
 
 ```
-comx module serve <qualified_path> <port> <key> <subnets>
+comx module serve <qualified_path> <key>
 ```
 
 - `qualified_path`: The dotted path to the class that should be served. For example, `communex.module.example.openai.OpenAI`.
