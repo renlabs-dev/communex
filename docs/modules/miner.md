@@ -38,7 +38,6 @@ Additionally, you can optionally pass the following arguments:
 First make sure to set the environment variable `OPENAI_API_KEY` with your OpenAI API key. And you are in the Communex root folder.
 
 ```sh
-cd src/communex
 export OPENAI_API_KEY=your_openai_api_key
 ```
 
