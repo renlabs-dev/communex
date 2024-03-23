@@ -45,7 +45,7 @@ export OPENAI_API_KEY=your_openai_api_key
 Then run the following command:
 
 ```sh
-comx module serve communex.module.example.gpt.OpenAIModule <port> <key> <subnets>
+comx module serve communex.module.example.gpt.OpenAIModule <key> 
 ```
 
 To run module using pm2, install it globally:
