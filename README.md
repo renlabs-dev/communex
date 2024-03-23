@@ -51,11 +51,11 @@ nix profile install .
   - [x] Key management
   - [x] Transfering and staking tokens
   - [x] Module management
+  - [x] Client to interact with served modules
+  - [x] Module class and server
 
 ### Planned
 
-- [ ] Client to interact with served modules
-- [ ] Module class and server
 - [ ] Module API extraction and documentation generator
 
 ## CLI Usage
