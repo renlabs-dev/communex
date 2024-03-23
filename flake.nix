@@ -28,9 +28,8 @@
         devShells.default = pkgs.mkShell {
 	  buildInputs = [
 	    pkgs.python310
-	    pkgs.python310Packages.ipython
-	    pkgs.ruff
 	    pkgs.poetry
+	    pkgs.ruff
 	  ];
 	};
         packages = rec {

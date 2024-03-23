@@ -14,13 +14,19 @@ python = ">=3.10,<4.0"
 
 # Substrate
 substrate-interface = "^1.7.4"
-# scalecodec = "^1.2.7"
+scalecodec = "^1.2.7"
 py-sr25519-bindings = "^0.2.0"
+
+# Typing/Modeling/Validation
+pydantic = "^2.6.4"
 
 # CLI
 typer = "^0.9.0"
 rich = "^13.7.0"
-python-daemon = "^3.0.1"
+# HTTP server
+fastapi = "^0.110.0"
+starlette = "^0.36.3"
+uvicorn = "^0.29.0"
 keylimiter = "^0.1.5"
 
 [tool.poetry.group.dev]
@@ -31,8 +37,14 @@ optional = true
 pyright = "^1.1.335"
 # Testing
 pytest = "^7.4.2"
-# linter
-ruff = "^0.1.15"
+# Linter
+#ruff = "^0.1.15"
+# Debugging
+ipython = "^8.22.2"
+# Formatting
+autopep8 = "^2.1.0"
+isort = "^5.13.2"
+
 
 [tool.poetry.group.examples]
 optional = true

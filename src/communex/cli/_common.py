@@ -36,6 +36,10 @@ class CustomCtx:
     def info(self, message: str) -> None:
         self.console_err.print(message)
 
+    def error(self, message: str) -> None:
+        message = f"ERROR: {message}"
+        self.console_err.print(message, style="bold red")
+
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:
     return CustomCtx(

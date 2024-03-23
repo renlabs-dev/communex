@@ -1,22 +1,20 @@
-from typing import Any, Optional, cast
 import importlib.util
-from pathlib import Path
+from typing import Any, Optional, cast
 
-
-import uvicorn
 import typer
+import uvicorn
 from rich.console import Console
-
 
 import communex.balance as c_balance
 from communex.compat.key import classic_load_key, classic_store_key
 from communex.errors import ChainTransactionError
 from communex.key import generate_keypair
 from communex.misc import get_map_modules
-from communex.util import is_ip_valid
 from communex.module.server import ModuleServer
+from communex.util import is_ip_valid
 
-from ._common import make_client, print_table_from_plain_dict
+from ._common import (make_client, make_custom_context,
+                      print_table_from_plain_dict)
 
 module_app = typer.Typer()
 
@@ -99,36 +97,46 @@ def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, ne
 
 @module_app.command()
 def serve(
-    qualified_path: str, port: int, key: str,
+    ctx: typer.Context,
+    class_path: str,
+    port: int,
+    key: str,
     subnets: list[int],
     ip: Optional[str]=None, whitelist: Optional[list[str]]=None, 
     blacklist: Optional[list[str]]=None,
     ):
     """
-    Serves a module on `127.0.0.1` using port `port`.
-   `qualified_path` should specify the dotted path to the module class.
-    i.e. `module.submodule.ClassName`
+    Serves a module on `127.0.0.1` on port `port`. `class_path` should specify
+    the dotted path to the module class e.g. `module.submodule.ClassName`.
     """
-    # TODO implement
-    # -[x] make better serve and register module UI
-    splitted_name = qualified_path.split(".")
-    path = '/'.join(splitted_name[:-1]) + ".py"
-    class_ = splitted_name[-1]
-    full_path = Path(path)
-    print(full_path)
-    if not full_path.exists():
-        raise FileNotFoundError(f"File not found: {full_path}")
 
-    spec = importlib.util.spec_from_file_location("module_name", full_path)
-    assert spec
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module) #type: ignore
-    
+    context = make_custom_context(ctx)
+
+    path_parts = class_path.split(".")
+    match path_parts:
+        case [*module_parts, class_name]: 
+            module_path = ".".join(module_parts)
+            if not module_path:
+                # This could do some kind of relative import somehow?
+                raise ValueError(f"Invalid class path: `{class_path}`, module name is missing")
+            if not class_name:
+                raise ValueError(f"Invalid class path: `{class_path}`, class name is missing")
+        case _:
+            # This is impossible
+            raise Exception(f"Invalid class path: `{class_path}`")
+
     try:
-        class_obj = getattr(module, class_)
+        module = importlib.import_module(module_path)
+    except ModuleNotFoundError:
+        context.error(f"Module `{module_path}` not found")
+        raise typer.Exit(code=1)
+
+    try:
+        class_obj = getattr(module, class_name)
     except AttributeError:
-        raise AttributeError(f"Class not found: {class_}")
-    
+        context.error(f"Class `{class_name}` not found in module `{module}`")
+        raise typer.Exit(code=1)
+
     keypair = classic_load_key(key)
     server = ModuleServer(
         class_obj(), keypair, 
