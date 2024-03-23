@@ -57,7 +57,7 @@ npm install -g pm2
 Then run the following command:
 
 ```sh
-pm2 start "comx module serve communex.module.example.gpt.OpenAIModule <port> <key> <subnets>" --name "openai"
+pm2 start "comx module serve communex.module.example.gpt.OpenAIModule <key>" --name "openai"
 ```
 
 ## Communication
