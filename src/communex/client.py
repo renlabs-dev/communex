@@ -314,7 +314,7 @@ class CommuneClient:
         # smaller_requests = self._make_request_smaller(batch_requests)
         request_id = 0
         with ThreadPoolExecutor() as executor:
-            futures: list[Future] = []
+            futures: list[Future[list[str | dict[Any, Any]]]] = []
             for chunk in [batch_requests]:
                 request_ids: list[int] = []
                 batch_payload: list[Any] = []
@@ -848,8 +848,7 @@ class CommuneClient:
             # modify the rpc methods at runtime, to allow for correct payment
             # fee calculation parity has a bug in this version,
             # where the method has to be removed
-
-            rpc_methods = substrate.config.get('rpc_methods')
+            rpc_methods = substrate.config.get('rpc_methods')  # type: ignore
 
             if "state_call" in rpc_methods:  # type: ignore
                 rpc_methods.remove("state_call")  # type: ignore

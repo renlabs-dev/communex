@@ -13,17 +13,21 @@ from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
 
-from ._common import (make_client, make_custom_context,
-                      print_table_from_plain_dict)
+from ._common import make_client, make_custom_context, print_table_from_plain_dict
 
 module_app = typer.Typer()
 
 
 @module_app.command()
 def register(
-    name: str, ip: str, port: int, key: Optional[str] = None, 
-    subnet: str = "commune", stake: Optional[float] = None, netuid: int = 0
-    ):
+    name: str,
+    ip: str,
+    port: int,
+    key: Optional[str] = None,
+    subnet: str = "commune",
+    stake: Optional[float] = None,
+    netuid: int = 0,
+):
     """
     Registers a module.
 
@@ -52,8 +56,7 @@ def register(
             exit(1)
 
         resolved_key = classic_load_key(name)
-        console.print(
-            f"Created key {name} with address {resolved_key.ss58_address}", style="bold green")
+        console.print(f"Created key {name} with address {resolved_key.ss58_address}", style="bold green")
 
     if not is_ip_valid(ip):
         raise ValueError("Invalid ip address")
@@ -61,8 +64,7 @@ def register(
     address = f"{ip}:{port}"
 
     with console.status(f"Registering Module on a subnet '{subnet}' ..."):
-        response = (client.register_module(resolved_key, name=name,
-                                           address=address, subnet=subnet, min_stake=stake_nano))
+        response = client.register_module(resolved_key, name=name, address=address, subnet=subnet, min_stake=stake_nano)
 
     if response.is_success:
         console.print(f"Module {name} registered")
@@ -86,8 +88,7 @@ def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, ne
     address = f"{ip}:{port}"
 
     with console.status(f"Updating Module on a subnet with netuid '{netuid}' ..."):
-        response = (client.update_module(resolved_key, name,
-                                         address, delegation_fee, netuid=netuid))
+        response = client.update_module(resolved_key, name, address, delegation_fee, netuid=netuid)
 
     if response.is_success:
         console.print(f"Module {key} updated")
@@ -99,12 +100,13 @@ def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, ne
 def serve(
     ctx: typer.Context,
     class_path: str,
-    port: int,
     key: str,
-    subnets: list[int],
-    ip: Optional[str]=None, whitelist: Optional[list[str]]=None, 
-    blacklist: Optional[list[str]]=None,
-    ):
+    port: int = 8000,
+    ip: Optional[str] = None,
+    subnets_whitelist: Optional[list[int]] = [0],
+    whitelist: Optional[list[str]] = None,
+    blacklist: Optional[list[str]] = None,
+):
     """
     Serves a module on `127.0.0.1` on port `port`. `class_path` should specify
     the dotted path to the module class e.g. `module.submodule.ClassName`.
@@ -114,7 +116,7 @@ def serve(
 
     path_parts = class_path.split(".")
     match path_parts:
-        case [*module_parts, class_name]: 
+        case [*module_parts, class_name]:
             module_path = ".".join(module_parts)
             if not module_path:
                 # This could do some kind of relative import somehow?
@@ -138,13 +140,10 @@ def serve(
         raise typer.Exit(code=1)
 
     keypair = classic_load_key(key)
-    server = ModuleServer(
-        class_obj(), keypair, 
-        whitelist=whitelist, blacklist=blacklist, subnets=subnets
-        )
+    server = ModuleServer(class_obj(), keypair, whitelist=whitelist, blacklist=blacklist, subnets_whitelist=subnets_whitelist)
     app = server.get_fastapi_app()
     host = ip or "127.0.0.1"
-    uvicorn.run(app, host=host, port=port) #type: ignore
+    uvicorn.run(app, host=host, port=port)  # type: ignore
 
 
 @module_app.command()
@@ -157,7 +156,7 @@ def info(name: str, balance: bool = False, netuid: int = 0):
     client = make_client()
 
     with console.status(f"Getting Module {name} on a subnet with netuid '{netuid}' ..."):
-        modules = (get_map_modules(client, netuid=netuid, include_balances=balance))
+        modules = get_map_modules(client, netuid=netuid, include_balances=balance)
         modules_to_list = [value for _, value in modules.items()]
 
         module = next((item for item in modules_to_list if item["name"] == name), None)
@@ -179,7 +178,7 @@ def inventory(balances: bool = False, netuid: int = 0):
     client = make_client()
 
     with console.status(f"Getting Modules on a subnet with netuid '{netuid}' ..."):
-        modules = (get_map_modules(client, netuid=netuid, include_balances=balances))
+        modules = get_map_modules(client, netuid=netuid, include_balances=balances)
         modules_to_list = [value for _, value in modules.items()]
 
     for index, item in enumerate(modules_to_list, start=1):

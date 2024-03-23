@@ -3,27 +3,29 @@ Server for Commune modules.
 """
 
 
-from typing import Callable, Awaitable
 import re
+from typing import Awaitable, Callable
 
 import fastapi
+import starlette.datastructures
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-from substrateinterface import Keypair  # type: ignore
 from keylimiter import KeyLimiter
-import starlette.datastructures
+from pydantic import BaseModel
+from scalecodec.utils.ss58 import ss58_encode  # type: ignore
 from starlette.middleware.base import BaseHTTPMiddleware
-from scalecodec.utils.ss58 import ss58_encode # type: ignore
+from starlette.types import ASGIApp
+from substrateinterface import Keypair  # type: ignore
 
 from communex.cli._common import make_client
-from communex.module._ip_limiter import IpLimiterMiddleware
-from communex.module import _signer as signer
-from communex.module.module import Module, endpoint
 from communex.key import check_ss58_address
+from communex.module import _signer as signer
+from communex.module._ip_limiter import IpLimiterMiddleware
+from communex.module.module import Module, endpoint
+
 
 def parse_hex(hex_str: str) -> bytes:
-    if hex_str[0:2] == '0x':
+    if hex_str[0:2] == "0x":
         return bytes.fromhex(hex_str[2:])
     else:
         return bytes.fromhex(hex_str)
@@ -38,24 +40,19 @@ async def peek_body(request: Request) -> bytes:
 
     async def receive():
         return {"type": "http.request", "body": body}
+
     request._receive = receive  # pyright: ignore [reportPrivateUsage]
     return body
 
 
 def is_hex_string(string: str):
     # Regular expression to match a hexadecimal string
-    hex_pattern = re.compile(r'^[0-9a-fA-F]+$')
+    hex_pattern = re.compile(r"^[0-9a-fA-F]+$")
     return bool(hex_pattern.match(string))
 
+
 def _return_error(code: int, message: str):
-    return JSONResponse(
-        status_code=code, content={
-        "error": {
-            "code": code,
-            "message": message
-            }
-        }
-    )
+    return JSONResponse(status_code=code, content={"error": {"code": code, "message": message}})
 
 
 def _get_headers_dict(headers: starlette.datastructures.Headers, required: list[str]):
@@ -68,29 +65,34 @@ def _get_headers_dict(headers: starlette.datastructures.Headers, required: list[
         headers_dict[required_header] = value
     return True, headers_dict
 
+
 Callback = Callable[[Request], Awaitable[Response]]
+
+
 class InputMiddleware(BaseHTTPMiddleware):
+    subnets_whitelist: list[int] | None
+
     def __init__(
-            self,
-            app: fastapi.FastAPI,
-            subnets: list[int],
+        self,
+        app: ASGIApp,
+        subnets_whitelist: list[int] | None,
     ):
         super().__init__(app)
-        self.subnets = subnets
+        self.subnets_whitelist = subnets_whitelist
 
     async def dispatch(self, request: Request, call_next: Callback):
         body = await peek_body(request)
-        required_headers = ['x-signature', 'x-key', 'x-crypto']
+        required_headers = ["x-signature", "x-key", "x-crypto"]
         success, headers_dict = _get_headers_dict(request.headers, required_headers)
         if not success:
             error = headers_dict
             assert isinstance(error, JSONResponse)
             return error
         assert isinstance(headers_dict, dict)
-        
-        signature = headers_dict['x-signature']
-        key = headers_dict['x-key']
-        crypto = int(headers_dict['x-crypto']) #TODO: better handling of this
+
+        signature = headers_dict["x-signature"]
+        key = headers_dict["x-key"]
+        crypto = int(headers_dict["x-crypto"])  # TODO: better handling of this
         is_hex = is_hex_string(key)
         if not is_hex:
             return _return_error(400, "X-Key should be a hex value")
@@ -98,63 +100,66 @@ class InputMiddleware(BaseHTTPMiddleware):
         key = parse_hex(key)
         verified = signer.verify(key, crypto, body, signature)
         if not verified:
-            return JSONResponse(
-                status_code=401,
-                content="Signatures doesn't match"
-                )
+            return JSONResponse(status_code=401, content="Signatures doesn't match")
 
-        client = make_client() # TODO: maybe a global client?
+        client = make_client()  # TODO: maybe a global client?
         format = 42
         ss58 = ss58_encode(key, format)
         ss58 = check_ss58_address(ss58, format)
-        print(self.subnets)
-        for subnet in self.subnets:
-            uids = client.get_uids(ss58, subnet)
-            if not uids:
-                return _return_error(403, "Key is not registered on the network")
+
+        # If subnets whitelist is specified, checks if key is registered in one
+        # of the given subnets
+        if self.subnets_whitelist is not None:
+            for subnet in self.subnets_whitelist:
+                uids = client.get_uids(ss58, subnet)
+                if not uids:
+                    return _return_error(403, "Key is not registered on the network")
+
         response = await call_next(request)
         return response
-    
+
 
 class ModuleServer:
     def __init__(
-            self,
-            module: Module,
-            key: Keypair,
-            subnets: list[int],
-            max_request_staleness: int = 60,
-            ip_limiter: KeyLimiter | None = None,
-            whitelist: list[str] | None = None,
-            blacklist: list[str] | None = None,
-            ) -> None:
+        self,
+        module: Module,
+        key: Keypair,
+        max_request_staleness: int = 60,
+        ip_limiter: KeyLimiter | None = None,
+        whitelist: list[str] | None = None,
+        blacklist: list[str] | None = None,
+        subnets_whitelist: list[int] | None = None,
+    ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
-        self._subnets = subnets
+        self._subnets_whitelist = subnets_whitelist
         self.key = key
         self.register_endpoints()
         self.register_middleware()
         self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
-        self._app.add_middleware(InputMiddleware, subnets=subnets)
+        self._app.add_middleware(InputMiddleware, subnets_whitelist=subnets_whitelist)
         self.max_request_staleness = max_request_staleness
         self._blacklist = blacklist
         self._whitelist = whitelist
-    
-    
+
     def get_fastapi_app(self):
         return self._app
 
     def register_endpoints(self):
         endpoints = self._module.get_endpoints()
         for name, endpoint_def in endpoints.items():
+
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
+
             def handler(body: Body):
                 return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
+
             self._app.post(f"/method/{name}")(handler)
 
     def register_middleware(self):
         async def check_lists(request: Request, call_next: Callback):
-            key = request.headers.get('x-key')
+            key = request.headers.get("x-key")
             assert key
             format = 42
             ss58 = ss58_encode(key, format)
@@ -166,8 +171,9 @@ class ModuleServer:
                 return _return_error(403, "You are not whitelisted")
             response = await call_next(request)
             return response
+
         self._app.middleware("http")(check_lists)
-    
+
 
 def main():
     class Amod(Module):
@@ -181,11 +187,12 @@ def main():
 
     a_mod = Amod()
     keypair = Keypair.create_from_mnemonic(signer.TESTING_MNEMONIC)
-    server = ModuleServer(a_mod, keypair)
+    server = ModuleServer(a_mod, keypair, subnets=[0])
     app = server.get_fastapi_app()
 
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)  # type: ignore
+
 
 if __name__ == "__main__":
     main()
