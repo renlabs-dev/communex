@@ -34,8 +34,7 @@ class ModuleClient:
         self.port = port
         self.key = key
 
-    async def request(self, fn: str, params: Any = None) -> Any:
-        timeout = 60
+    async def request(self, fn: str, params: Any = None, timeout: int = 16) -> Any:
         request_data = {
             "params": params,
         }
@@ -50,8 +49,8 @@ class ModuleClient:
             "X-Key": self.key.public_key.hex(),
             "X-Crypto": str(self.key.crypto_type),
         }
-        timeout = aiohttp.ClientTimeout(total=8)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
+        out = aiohttp.ClientTimeout(total=timeout)
+        async with aiohttp.ClientSession(timeout=out) as session:
             async with session.post(
                 f"http://{self.host}:{self.port}/{fn}",
                 json=json.loads(serialized_data),
