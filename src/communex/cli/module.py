@@ -6,9 +6,8 @@ import uvicorn
 from rich.console import Console
 
 import communex.balance as c_balance
-from communex.compat.key import classic_load_key, classic_store_key
+from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
-from communex.key import generate_keypair
 from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
@@ -23,10 +22,9 @@ def register(
     name: str,
     ip: str,
     port: int,
-    key: Optional[str] = None,
-    subnet: str = "commune",
+    key: str,
+    netuid: int,
     stake: Optional[float] = None,
-    netuid: int = 0,
 ):
     """
     Registers a module.
@@ -37,39 +35,28 @@ def register(
     console = Console()
     client = make_client()
 
-    if stake is None:
-        stake = client.get_min_stake(netuid)
+    with console.status(f"Registering Module on a netuid '{netuid}' ..."):
 
-    stake_nano = c_balance.to_nano(stake)
+        if stake is None:
+            burn = client.get_burn()
+            stake = client.get_min_stake(netuid) + burn
+        stake_nano = c_balance.to_nano(stake)
 
-    if key is not None:
         resolved_key = classic_load_key(key)
-    else:
-        console.print("Do you want to generate a key for the module? (y/n)")
 
-        answer = input()
-        if answer == "y":  # TODO: refactor prompt
-            keypair = generate_keypair()
-            classic_store_key(keypair, name)
+        if not is_ip_valid(ip):
+            raise ValueError("Invalid ip address")
+
+        address = f"{ip}:{port}"
+        subnet = client.get_name(netuid)
+
+        response = client.register_module(
+            resolved_key, name=name, address=address, subnet=subnet, min_stake=stake_nano)
+
+        if response.is_success:
+            console.print(f"Module {name} registered")
         else:
-            console.print("You need to provide or generate a key.")
-            exit(1)
-
-        resolved_key = classic_load_key(name)
-        console.print(f"Created key {name} with address {resolved_key.ss58_address}", style="bold green")
-
-    if not is_ip_valid(ip):
-        raise ValueError("Invalid ip address")
-
-    address = f"{ip}:{port}"
-
-    with console.status(f"Registering Module on a subnet '{subnet}' ..."):
-        response = client.register_module(resolved_key, name=name, address=address, subnet=subnet, min_stake=stake_nano)
-
-    if response.is_success:
-        console.print(f"Module {name} registered")
-    else:
-        raise ChainTransactionError(response.error_message)  # type: ignore
+            raise ChainTransactionError(response.error_message)  # type: ignore
 
 
 @module_app.command()
@@ -140,7 +127,8 @@ def serve(
         raise typer.Exit(code=1)
 
     keypair = classic_load_key(key)
-    server = ModuleServer(class_obj(), keypair, whitelist=whitelist, blacklist=blacklist, subnets_whitelist=subnets_whitelist)
+    server = ModuleServer(class_obj(), keypair, whitelist=whitelist,
+                          blacklist=blacklist, subnets_whitelist=subnets_whitelist)
     app = server.get_fastapi_app()
     host = ip or "127.0.0.1"
     uvicorn.run(app, host=host, port=port)  # type: ignore

@@ -1986,7 +1986,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("SubnetNames", extract_value=False)["SubnetNames"]
+        return self.query_map("SubnetNames", extract_value=extract_value)["SubnetNames"]
 
     def query_map_balances(self) -> \
             dict[str, dict['str', int | dict[str, int]]]:
@@ -2126,6 +2126,22 @@ class CommuneClient:
         """
 
         return self.query("MaxAllowedUids", params=[netuid])
+
+    def get_name(self, netuid: int = 0) -> str:
+        """
+        Queries the network for the name of a specific subnet.
+
+        Args:
+            netuid: The network UID for which to query the name.
+
+        Returns:
+            The name of the specified network subnet.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query("Name", params=[netuid])
 
     def get_n(self, netuid: int = 0) -> int:
         """
@@ -2319,6 +2335,23 @@ class CommuneClient:
         """
 
         return self.query("BurnRate", params=[],)
+
+    def get_burn(self) -> int:
+        """
+        Queries the network for the burn setting.
+
+        Retrieves the burn value, which represents the amount of 
+        the $COMAI tokens that are 'burned' or permanently 
+        removed from circulation.
+
+        Returns:
+            The burn value for the network.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query("Burn", params=[],)
 
     def get_min_burn(self) -> int:
         """
