@@ -34,7 +34,7 @@ class ModuleClient:
         self.port = port
         self.key = key
 
-    async def request(self, fn: str, params: Any = None, timeout: int = 16) -> Any:
+    async def call(self, fn: str, params: Any = None, timeout: int = 16) -> Any:
         request_data = {
             "params": params,
         }
@@ -52,7 +52,7 @@ class ModuleClient:
         out = aiohttp.ClientTimeout(total=timeout)
         async with aiohttp.ClientSession(timeout=out) as session:
             async with session.post(
-                f"http://{self.host}:{self.port}/{fn}",
+                f"http://{self.host}:{self.port}/method/{fn}",
                 json=json.loads(serialized_data),
                 headers=headers,
             ) as response:
@@ -84,5 +84,5 @@ if __name__ == "__main__":
         TESTING_MNEMONIC
     )
     client = ModuleClient("localhost", 8000, keypair)
-    result = asyncio.run(client.request("method/do_the_thing", {"awesomness": 45}))
+    result = asyncio.run(client.call("method/do_the_thing", {"awesomness": 45}))
     print(result)
