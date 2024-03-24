@@ -59,10 +59,10 @@ class ModuleClient:
                 match response.status:
                     case 200:
                         pass
-                    case _:
+                    case status_code:
                         response_j = await response.json()
                         raise Exception(
-                            f"Unexpected status code: {response_j['error']}")
+                            f"Unexpected status code: {status_code}, response: {response_j}")
                 match response.content_type:
                     case 'application/json':
                         result = await asyncio.wait_for(response.json(), timeout=timeout)
@@ -84,5 +84,5 @@ if __name__ == "__main__":
         TESTING_MNEMONIC
     )
     client = ModuleClient("localhost", 8000, keypair)
-    result = asyncio.run(client.call("method/do_the_thing", {"awesomness": 45}))
+    result = asyncio.run(client.call("do_the_thing", {"awesomness": 45}))
     print(result)
