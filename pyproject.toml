@@ -30,6 +30,7 @@ starlette = "^0.36.3"
 uvicorn = "^0.29.0"
 keylimiter = "^0.1.5"
 
+
 [tool.poetry.group.dev]
 optional = true
 
@@ -52,11 +53,13 @@ optional = true
 [tool.poetry.group.examples.dependencies]
 openai = "^1.13.3"
 
+
 [tool.poetry.group.docs]
 optional = true
 
 [tool.poetry.group.docs.dependencies]
 pdoc = "^14.3.0"
+
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
