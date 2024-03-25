@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "communex"
-version = "0.1.5"
+version = "0.1.6"
 description = "A library for Commune network focused on simplicity"
 authors = ["agicommies <info@agicommies.org>"]
 license = "MIT"
@@ -31,6 +31,7 @@ uvicorn = "^0.29.0"
 keylimiter = "^0.1.5"
 loguru = "^0.7.2"
 
+
 [tool.poetry.group.dev]
 optional = true
 
@@ -53,11 +54,13 @@ optional = true
 [tool.poetry.group.examples.dependencies]
 openai = "^1.13.3"
 
+
 [tool.poetry.group.docs]
 optional = true
 
 [tool.poetry.group.docs.dependencies]
 pdoc = "^14.3.0"
+
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
