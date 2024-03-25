@@ -7,7 +7,7 @@ from rich.console import Console
 
 import communex.balance as c_balance
 from communex.compat.key import classic_load_key
-from communex.errors import ChainTransactionError
+from communex.errors import ChainTransactionError, InvalidIPError, InvalidClassError, InvalidModuleError
 from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
@@ -45,7 +45,7 @@ def register(
         resolved_key = classic_load_key(key)
 
         if not is_ip_valid(ip):
-            raise ValueError("Invalid ip address")
+            raise InvalidIPError("Invalid ip address")
 
         address = f"{ip}:{port}"
         subnet = client.get_name(netuid)
@@ -70,7 +70,7 @@ def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, ne
     client = make_client()
 
     if not is_ip_valid(ip):
-        raise ValueError("Invalid ip address")
+        raise InvalidIPError("Invalid ip address")
 
     address = f"{ip}:{port}"
 
@@ -102,29 +102,30 @@ def serve(
     context = make_custom_context(ctx)
 
     path_parts = class_path.split(".")
-    match path_parts:
-        case [*module_parts, class_name]:
-            module_path = ".".join(module_parts)
-            if not module_path:
-                # This could do some kind of relative import somehow?
-                raise ValueError(f"Invalid class path: `{class_path}`, module name is missing")
-            if not class_name:
-                raise ValueError(f"Invalid class path: `{class_path}`, class name is missing")
-        case _:
-            # This is impossible
-            raise Exception(f"Invalid class path: `{class_path}`")
+    try:
+        module_path = ".".join(module_parts for module_parts in path_parts[:-1])
+    except (InvalidModuleError, IndexError) as e:
+        context.error(f"Invalid module path `{class_path}`")
+        raise typer.Exit(code=1) from e
+
+    try:
+        class_name = path_parts[-1]
+    except (InvalidModuleError, IndexError) as e:
+        context.error(f"Invalid module path `{class_path}`")
+        raise typer.Exit(code=1) from e
+        
 
     try:
         module = importlib.import_module(module_path)
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as e:
         context.error(f"Module `{module_path}` not found")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
     try:
         class_obj = getattr(module, class_name)
-    except AttributeError:
+    except AttributeError as e:
         context.error(f"Class `{class_name}` not found in module `{module}`")
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e
 
     keypair = classic_load_key(key)
     server = ModuleServer(class_obj(), keypair, whitelist=whitelist,

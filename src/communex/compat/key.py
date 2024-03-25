@@ -15,6 +15,7 @@ from communex.compat.types import CommuneKeyDict
 from communex.key import check_ss58_address, is_ss58_address
 from communex.types import Ss58Address
 from communex.util import bytes_to_hex, check_str
+from communex.errors import KeyFormatError
 
 
 def check_key_dict(key_dict: Any) -> CommuneKeyDict:
@@ -144,7 +145,7 @@ def local_key_addresses() -> dict[str, Ss58Address]:
     for key_name in key_names:
         # issue #11 https://github.com/agicommies/communex/issues/12 added check for key2address to stop error from being thrown by wrong key type. 
         if key_name == "key2address": 
-            continue
+            raise KeyFormatError(f"Key '{key_name}' is not a valid key name. Passing key.")
         key_dict = classic_load_key(key_name)
         addresses_map[key_name] = check_ss58_address(key_dict.ss58_address)
 
@@ -166,8 +167,8 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
 
     try:
         keypair = classic_load_key(key)
-    except FileNotFoundError:
-        raise ValueError(f"Key is not a valid SS58 address nor a valid key name: {key}")
+    except FileNotFoundError as e:
+        raise ValueError(f"Key is not a valid SS58 address nor a valid key name: {key}\n{str(e)}") from e
 
     address = keypair.ss58_address
 

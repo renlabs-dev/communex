@@ -1,8 +1,8 @@
 """
 Common types for the communex module.
 """
-
-from typing import NewType, TypedDict
+from pydantic import BaseModel
+from typing import NewType, TypedDict, Optional
 
 Ss58Address = NewType("Ss58Address", str)
 """Substrate SS58 address.
@@ -18,13 +18,13 @@ chains.
 
 # TODO: replace with dataclasses(?)
 
-
-class NetworkParams(TypedDict):
+# Made it into a pydantic base model so that I could assign none to the values not being passed to it in NetworkParams in src/communex/cli/network.py. The red lines made my brain upset. 
+class NetworkParams(BaseModel):
     max_allowed_subnets: int
     max_allowed_modules: int
     max_registrations_per_block: int
-    target_registrations_interval: int  #  in blocks
-    target_registrations_per_interval: int
+    target_registrations_interval: Optional[int]=None  #  in blocks
+    target_registrations_per_interval: Optional[int]=None
     unit_emission: int
     tx_rate_limit: int
     vote_threshold: int
@@ -33,13 +33,12 @@ class NetworkParams(TypedDict):
     max_name_length: int
     burn_rate: int
     min_burn: int  # min burn to register
-    max_burn: int  # max burn to register
-    burn: int  # this is the actual burn to register
+    max_burn: Optional[int]=None  # max burn to register
+    burn: Optional[int]=None  # this is the actual burn to register
     min_stake: int
     min_weight_stake: int
-    adjustment_alpha: int
-    floor_delegation_fee: int
-
+    adjustment_alpha: Optional[int]=None
+    floor_delegation_fee: Optional[int]=None
 
 class SubnetParams(TypedDict):
     name: str

@@ -13,8 +13,6 @@ from substrateinterface.storage import StorageKey  # type: ignore
 from communex.errors import ChainTransactionError, NetworkQueryError
 from communex.types import NetworkParams, Ss58Address, SubnetParams
 
-# TODO: InsufficientBalanceError, MismatchedLengthError etc
-
 MAX_REQUEST_SIZE = 9_000_000
 
 
