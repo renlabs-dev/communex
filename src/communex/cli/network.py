@@ -91,19 +91,21 @@ def propose_globally(
 
     resolved_key = classic_load_key(key)
 
-    proposal: NetworkParams = {"max_allowed_subnets": max_allowed_subnets,
-                               "max_allowed_modules": max_allowed_modules,
-                               "max_registrations_per_block": max_registrations_per_block,
-                               "unit_emission": unit_emission,
-                               "tx_rate_limit": tx_rate_limit,
-                               "vote_threshold": vote_threshold,
-                               "vote_mode": vote_mode,
-                               "max_proposals": max_proposals,
-                               "max_name_length": max_name_length,
-                               "burn_rate": burn_rate,
-                               "min_burn": min_burn,
-                               "min_stake": min_stake,
-                               "min_weight_stake": min_weight_stake}
+    proposal = NetworkParams(
+        max_allowed_subnets=max_allowed_subnets,
+        max_allowed_modules=max_allowed_modules,
+        max_registrations_per_block=max_registrations_per_block,
+        unit_emission=unit_emission,
+        tx_rate_limit=tx_rate_limit,
+        vote_threshold=vote_threshold,
+        vote_mode=vote_mode,
+        max_proposals=max_proposals,
+        max_name_length=max_name_length,
+        burn_rate=burn_rate,
+        min_burn=min_burn,
+        min_stake=min_stake,
+        min_weight_stake=min_weight_stake
+    )
 
     with console.status("Adding a proposal..."):
         client.add_global_proposal(resolved_key, proposal)

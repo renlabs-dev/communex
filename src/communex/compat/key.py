@@ -144,6 +144,9 @@ def local_key_addresses() -> dict[str, Ss58Address]:
     addresses_map: dict[str, Ss58Address] = {}
 
     for key_name in key_names:
+        # issue #11 https://github.com/agicommies/communex/issues/12 added check for key2address to stop error from being thrown by wrong key type. 
+        if key_name == "key2address": 
+            raise KeyFormatError(f"Key '{key_name}' is not a valid key name. Passing key.")
         key_dict = classic_load_key(key_name)
         addresses_map[key_name] = check_ss58_address(key_dict.ss58_address)
 
