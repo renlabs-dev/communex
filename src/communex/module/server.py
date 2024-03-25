@@ -43,7 +43,6 @@ def build_input_handler_route_class(subnets_whitelist: list[int] | None) -> type
             original_route_handler = super().get_route_handler()
 
             async def custom_route_handler(request: Request) -> Response:
-                response: Response = await original_route_handler(request)
                 body = await request.body()
 
                 # TODO: we'll replace this by a Result ADT :)
@@ -53,6 +52,7 @@ def build_input_handler_route_class(subnets_whitelist: list[int] | None) -> type
                     case (True, _):
                         pass
 
+                response: Response = await original_route_handler(request)
                 return response
 
             return custom_route_handler
