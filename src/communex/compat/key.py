@@ -15,6 +15,7 @@ from communex.compat.types import CommuneKeyDict
 from communex.key import check_ss58_address, is_ss58_address
 from communex.types import Ss58Address
 from communex.util import bytes_to_hex, check_str
+from communex.errors import KeyFormatError
 
 
 def check_key_dict(key_dict: Any) -> CommuneKeyDict:
@@ -164,7 +165,7 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
     try:
         keypair = classic_load_key(key)
     except FileNotFoundError:
-        raise ValueError(f"Key is not a valid SS58 address nor a valid key name: {key}")
+        raise KeyFormatError(f"Key is not a valid SS58 address nor a valid key name: {key}")
 
     address = keypair.ss58_address
 

@@ -4,13 +4,13 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, TypeVar, Mapping
+from typing import Any, TypeVar, Mapping, Union, Dict
 
 from substrateinterface import (ExtrinsicReceipt, Keypair,  # type: ignore
                                 SubstrateInterface)
 from substrateinterface.storage import StorageKey  # type: ignore
 
-from communex.errors import ChainTransactionError, NetworkQueryError
+from communex.errors import ChainTransactionError, NetworkQueryError, QueryError, QueueEmptyError, SubstrateRequestException, InsufficientBalanceError, InsufficientStakeError, InvalidKeyFormatError, InvalidParameterError, AuthorizationError, MismatchedLengthError, InvalidProposalIDError
 from communex.types import NetworkParams, Ss58Address, SubnetParams
 
 # TODO: InsufficientBalanceError, MismatchedLengthError etc
@@ -62,13 +62,16 @@ class CommuneClient:
             url: The URL of the network node to connect to.
             num_connections: The number of websocket connections to be opened.
         """
-        assert num_connections > 0
-        self._num_connections = num_connections
-        self.wait_for_finalization = wait_for_finalization
-        self._connection_queue = queue.Queue(num_connections)
-
-        for _ in range(num_connections):
-            self._connection_queue.put(SubstrateInterface(url))
+        try:
+            assert num_connections > 0
+            self._num_connections = num_connections
+            self.wait_for_finalization = wait_for_finalization
+            self._connection_queue = queue.Queue(num_connections)
+            for _ in range(num_connections):
+                self._connection_queue.put(SubstrateInterface(url))
+        except AssertionError as e:
+            raise AssertionError("Maximum connections must be greater than 0") from e
+        
 
     @property
     def connections(self) -> int:
@@ -102,6 +105,9 @@ class CommuneClient:
             conn.init_runtime()  # type: ignore
         try:
             yield conn
+        except QueueEmptyError as e:
+            self._connection_queue.put(conn)
+            raise QueryError("No connection available") from e
         finally:
             self._connection_queue.put(conn)
 
@@ -203,13 +209,13 @@ class CommuneClient:
                         if extract_result:
                             try:
                                 results.append(message['result'])
-                            except Exception:
+                            except NetworkQueryError as e:
                                 raise (RuntimeError(
-                                    f"Error extracting result from message: {message}"))
+                                    f"Error extracting result from message: {message}")) from e
                         else:
                             results.append(message)
                     if 'error' in message:
-                        raise NetworkQueryError(message['error'])
+                        raise QueryError(message['error'])
 
             return results
 
@@ -425,7 +431,7 @@ class CommuneClient:
         function_parameters: list[tuple[Any, Any, Any, Any, str]],
         prefix_list: list[Any],
         block_hash: str,
-    ) -> dict[str, dict[Any, Any]]:
+    ) -> Union[Dict[str, dict[Any, Any]], None]:
         """
         Decodes a response from the substrate interface and organizes the data into a dictionary.
 
@@ -455,8 +461,10 @@ class CommuneClient:
                 )
             {'storage_function_name': {decoded_key: decoded_value, ...}, ...}
         """
+        if len(response) == 0:
+            return {'storage_function_name': {decoded_key: decoded_value} for decoded_key, decoded_value in zip(response, function_parameters)}
 
-        def concat_hash_len(key_hasher: str) -> int:
+        def concat_hash_len(key_hasher: str) -> Union[Dict[Any, Any], int, None]:
             """
             Determines the length of the hash based on the given key hasher type.
 
@@ -467,71 +475,78 @@ class CommuneClient:
                 The length of the hash corresponding to the given key hasher type.
 
             Raises:
-                ValueError: If the key hasher type is not supported.
+                InvalidKeyFormatError: If the key hasher type is not supported.
 
             Example:
                 >>> concat_hash_len("Blake2_128Concat")
                 16
             """
-
-            if key_hasher == "Blake2_128Concat":
-                return 16
-            elif key_hasher == "Twox64Concat":
-                return 8
-            elif key_hasher == "Identity":
-                return 0
-            else:
-                raise ValueError('Unsupported hash type')
-
-        assert len(response) == len(function_parameters) == len(prefix_list)
-        result_dict: dict[str, dict[Any, Any]] = {}
-        for res, fun_params_tuple, prefix in zip(
-            response, function_parameters, prefix_list
-        ):
-            if not res:
-                return {}
-            res = res[0]
-            changes = res["changes"]  # type: ignore
-            value_type, param_types, key_hashers, params, storage_function = fun_params_tuple
-            with self.get_conn(init=True) as substrate:
-                for item in changes:
-                    # Determine type string
+            try:
+                if key_hasher == "Blake2_128Concat":
+                    return 16
+                elif key_hasher == "Twox64Concat":
+                    return 8
+                elif key_hasher == "Identity":
+                    return 0
+            except ValueError as e:
+                raise InvalidKeyFormatError('Unsupported hash type') from e
+            try:
+                assert len(response) == len(function_parameters) == len(prefix_list)
+                result_dict: dict[str, dict[Any, Any]] = {}
+                for res, fun_params_tuple, prefix in zip(
+                    response, function_parameters, prefix_list
+                ):
+                    item = []
                     key_type_string: list[Any] = []
-                    for n in range(len(params), len(param_types)):
-                        key_type_string.append(f'[u8; {concat_hash_len(key_hashers[n])}]')
-                        key_type_string.append(param_types[n])
+                    if not res:
+                        return {}
+                    res = res[0]
+                    changes = res["changes"]  # type: ignore
+                    value_type, param_types, key_hashers, params, storage_function = fun_params_tuple
+                    with self.get_conn(init=True) as substrate:
+                        for item in changes:
+                            # Determine type string
+                            key_type_string: list[Any] = []
+                            for n in range(len(params), len(param_types)):
+                                key_type_string.append(f'[u8; {concat_hash_len(key_hashers[n])}]')
+                                key_type_string.append(param_types[n])
 
-                    item_key_obj = substrate.decode_scale(  # type: ignore
+                        item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
                         scale_bytes='0x' + item[0][len(prefix):],
                         return_scale_obj=True,
                         block_hash=block_hash
-                    )
-                    # strip key_hashers to use as item key
-                    if len(param_types) - len(params) == 1:
-                        item_key = item_key_obj.value_object[1]  # type: ignore
-                    else:
-                        item_key = tuple(  # type: ignore
-                            item_key_obj.value_object[key + 1] for key in range(  # type: ignore
-                                len(params), len(param_types) + 1, 2
-                            )
                         )
+                        item_key = None
+                        # strip key_hashers to use as item key
+                        if len(param_types) - len(params) == 1:
+                            item_key = item_key_obj.value_object[1]  # type: ignore
+                        else:
+                            item_key = tuple(  # type: ignore
+                                item_key_obj.value_object[key + 1] for key in range(  # type: ignore
+                                    len(params), len(param_types) + 1, 2
+                                )
+                            )
 
-                    item_value = substrate.decode_scale(  # type: ignore
-                        type_string=value_type,
-                        scale_bytes=item[1],
-                        return_scale_obj=True,
-                        block_hash=block_hash
-                    )
-                    result_dict.setdefault(storage_function, {})
-                    result_dict[storage_function][item_key.value] = item_value.value  # type: ignore
 
-        return result_dict
+
+                            item_value = substrate.decode_scale(  # type: ignore
+                                type_string=value_type,
+                                scale_bytes=item[1],
+                                return_scale_obj=True,
+                                block_hash=block_hash
+                            )
+                            result_dict.setdefault(storage_function, {})
+                            result_dict[storage_function][item_key[1]] = item_value.value  # type: ignore
+                            
+            except Exception as e:
+                raise InvalidKeyFormatError from e
+            return result_dict
 
     def query_batch(
         self,
         functions: dict[str, list[tuple[str, list[Any]]]]
-    ) -> dict[str, str]:
+    ) -> Union[Dict[Any, Any], None]:
         """
         Executes batch queries on a substrate and returns results in a dictionary format.
 
@@ -550,31 +565,31 @@ class CommuneClient:
             {'function_name': 'query_result', ...}
         """
 
-        result = None
-        with self.get_conn(init=True) as substrate:
-            for module, queries in functions.items():
-                storage_keys: list[Any] = []
-                for fn, params in queries:
-                    storage_function = substrate.create_storage_key(  # type: ignore
-                        pallet=module, storage_function=fn, params=params)
-                    storage_keys.append(storage_function)
+        try:
+            result = None
+            with self.get_conn(init=True) as substrate:
+                for module, queries in functions.items():
+                    storage_keys: list[Any] = []
+                    for fn, params in queries:
+                        storage_function = substrate.create_storage_key(  # type: ignore
+                            pallet=module, storage_function=fn, params=params)
+                        storage_keys.append(storage_function)
 
-                block_hash = substrate.get_block_hash()
-                responses: list[Any] = substrate.query_multi(  # type: ignore
-                    storage_keys=storage_keys, block_hash=block_hash)
+                    block_hash = substrate.get_block_hash()
+                    responses: list[Any] = substrate.query_multi(  # type: ignore
+                        storage_keys=storage_keys, block_hash=block_hash)
 
-                result: dict[str, str] | None = {}
+                    result: dict[str, str] | None = {}
 
-                for item in responses:
-                    fun = item[0]
-                    query = item[1]
-                    storage_fun = fun.storage_function
-                    result[storage_fun] = query.value
-
-            if result is None:
-                raise Exception("No result")
-
-        return result
+                    for item in responses:
+                        fun = item[0]
+                        query = item[1]
+                        storage_fun = fun.storage_function
+                        result[storage_fun] = query.value
+                    return result
+        except Exception as e:
+            raise QueryError from e
+        
 
     def query_batch_map(
         self,
@@ -595,18 +610,21 @@ class CommuneClient:
             >>> query_batch_map(substrate_instance, {'module_name': [('function_name', ['param1', 'param2'])]})
             # Returns the combined result of the map batch query
         """
-        multi_result: dict[str, dict[Any, Any]] = {}
+        try:
+            multi_result: dict[str, dict[Any, Any]] = {}
 
-        def recursive_update(
-            d: dict[str, dict[T1, T2] | dict[str, Any]],
-            u: Mapping[str, dict[Any, Any] | str]
-        ) -> dict[str, dict[T1, T2]]:
-            for k, v in u.items():
-                if isinstance(v, dict):
-                    d[k] = recursive_update(d.get(k, {}), v)  # type: ignore
-                else:
-                    d[k] = v  # type: ignore
-            return d  # type: ignore
+            def recursive_update(
+                d: dict[str, dict[T1, T2] | dict[str, Any]],
+                u: Mapping[str, dict[Any, Any] | str]
+            ) -> dict[str, dict[T1, T2]]:
+                for k, v in u.items():
+                    if isinstance(v, dict):
+                        d[k] = recursive_update(d.get(k, {}), v)  # type: ignore
+                    else:
+                        d[k] = v  # type: ignore
+                return d  # type: ignore
+        except Exception as e:
+            raise QueryError from e
 
         def get_page():
             send, prefix_list = self._get_storage_keys(storage, queries, block_hash)
@@ -645,6 +663,8 @@ class CommuneClient:
                     chunk_info.prefix_list,
                     block_hash
                 )
+                if not storage_result:
+                    continue
                 multi_result = recursive_update(multi_result, storage_result)
 
         return multi_result
@@ -652,9 +672,9 @@ class CommuneClient:
     def query(
         self,
         name: str,
-        params: list[Any] = [],
+        params: list[Any],
         module: str = 'SubspaceModule',
-    ) -> Any:
+    ) -> Union[Dict[Any, Any], None]:
         """
         Queries a storage function on the network.
 
@@ -672,15 +692,20 @@ class CommuneClient:
         Raises:
             NetworkQueryError: If the query fails or is invalid.
         """
-
-        result = self.query_batch({module: [(name, params)]})
+        result = {}
+        try:
+            result = self.query_batch({module: [(name, params)]})
+        except QueryError as e:
+            raise NetworkQueryError(e) from e
+        if not result:
+            return None
 
         return result[name]
 
     def query_map(
         self,
         name: str,
-        params: list[Any] = [],
+        params: list[Any],
         module: str = 'SubspaceModule',
         extract_value: bool = True,
     ) -> dict[Any, Any]:
@@ -699,11 +724,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result = self.query_batch_map({module: [(name, params)]})
 
-        result = self.query_batch_map({module: [(name, params)]})
-
-        if extract_value:
-            return {k.value: v.value for k, v in result}  # type: ignore
+            if extract_value:
+                return {k.value: v.value for k, v in result}  # type: ignore
+        except QueryError as e:
+            raise QueryError(e) from e
 
         return result
 
@@ -742,38 +769,40 @@ class CommuneClient:
         Raises:
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            with self.get_conn() as substrate:
+                if wait_for_finalization is None:
+                    wait_for_finalization = self.wait_for_finalization
 
-        with self.get_conn() as substrate:
-            if wait_for_finalization is None:
-                wait_for_finalization = self.wait_for_finalization
-
-            call = substrate.compose_call(  # type: ignore
-                call_module=module,
-                call_function=fn,
-                call_params=params
-            )
-            if sudo:
                 call = substrate.compose_call(  # type: ignore
-                    call_module='Sudo',
-                    call_function='sudo',
-                    call_params={
-                        'call': call.value,  # type: ignore
-                    }
+                    call_module=module,
+                    call_function=fn,
+                    call_params=params
                 )
+                if sudo:
+                    call = substrate.compose_call(  # type: ignore
+                        call_module='Sudo',
+                        call_function='sudo',
+                        call_params={
+                            'call': call.value,  # type: ignore
+                        }
+                    )
 
-            extrinsic = substrate.create_signed_extrinsic(  # type: ignore
-                call=call, keypair=key  # type: ignore
-            )  # type: ignore
-            response = substrate.submit_extrinsic(
-                extrinsic=extrinsic,
-                wait_for_inclusion=wait_for_inclusion,
-                wait_for_finalization=wait_for_finalization,
-            )
-        if wait_for_inclusion:
-            if not response.is_success:
-                raise ChainTransactionError(
-                    response.error_message, response  # type: ignore
+                extrinsic = substrate.create_signed_extrinsic(  # type: ignore
+                    call=call, keypair=key  # type: ignore
+                )  # type: ignore
+                response = substrate.submit_extrinsic(
+                    extrinsic=extrinsic,
+                    wait_for_inclusion=wait_for_inclusion,
+                    wait_for_finalization=wait_for_finalization,
                 )
+            if wait_for_inclusion:
+                if not response.is_success:
+                    raise ChainTransactionError(
+                        response.error_message, response  # type: ignore
+                    )
+        except SubstrateRequestException as e:
+            raise ChainTransactionError(e) from e
 
         return response
 
@@ -824,43 +853,43 @@ class CommuneClient:
         Raises:
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            # getting the call ready
+            with self.get_conn() as substrate:
+                if wait_for_finalization is None:
+                    wait_for_finalization = self.wait_for_finalization
 
-        # getting the call ready
-        with self.get_conn() as substrate:
-            if wait_for_finalization is None:
-                wait_for_finalization = self.wait_for_finalization
-
-            # prepares the `GenericCall` object
-            call = substrate.compose_call(  # type: ignore
-                call_module=module,
-                call_function=fn,
-                call_params=params
-            )
-            if sudo:
+                # prepares the `GenericCall` object
                 call = substrate.compose_call(  # type: ignore
-                    call_module='Sudo',
-                    call_function='sudo',
-                    call_params={
-                        'call': call.value,  # type: ignore
-                    }
+                    call_module=module,
+                    call_function=fn,
+                    call_params=params
                 )
+                if sudo:
+                    call = substrate.compose_call(  # type: ignore
+                        call_module='Sudo',
+                        call_function='sudo',
+                        call_params={
+                            'call': call.value,  # type: ignore
+                        }
+                    )
 
-            # modify the rpc methods at runtime, to allow for correct payment
-            # fee calculation parity has a bug in this version,
-            # where the method has to be removed
-            rpc_methods = substrate.config.get('rpc_methods')  # type: ignore
+                # modify the rpc methods at runtime, to allow for correct payment
+                # fee calculation parity has a bug in this version,
+                # where the method has to be removed
+                rpc_methods = substrate.config.get('rpc_methods')  # type: ignore
 
-            if "state_call" in rpc_methods:  # type: ignore
-                rpc_methods.remove("state_call")  # type: ignore
+                if "state_call" in rpc_methods:  # type: ignore
+                    rpc_methods.remove("state_call")  # type: ignore
 
-            # create the multisig account
-            multisig_acc = (substrate.generate_multisig_account(  # type: ignore
-                signatories, threshold))
+                # create the multisig account
+                multisig_acc = (substrate.generate_multisig_account(  # type: ignore
+                    signatories, threshold))
 
-            # send the multisig extrinsic
-            extrinsic = substrate.create_multisig_extrinsic(  # type: ignore
-                call=call, keypair=key, multisig_account=multisig_acc,  # type: ignore
-                era=era)  # type: ignore
+                # send the multisig extrinsic
+                extrinsic = substrate.create_multisig_extrinsic(  # type: ignore
+                    call=call, keypair=key, multisig_account=multisig_acc,  # type: ignore
+                    era=era)  # type: ignore
 
             response = substrate.submit_extrinsic(
                 extrinsic=extrinsic,
@@ -868,11 +897,13 @@ class CommuneClient:
                 wait_for_finalization=wait_for_finalization,
             )
 
-        if wait_for_inclusion:
-            if not response.is_success:
-                raise ChainTransactionError(
-                    response.error_message, response  # type: ignore
-                )
+            if wait_for_inclusion:
+                if not response.is_success:
+                    raise ChainTransactionError(
+                        response.error_message, response  # type: ignore
+                    )
+        except SubstrateRequestException as e:
+            raise ChainTransactionError(e) from e
 
         return response
 
@@ -899,17 +930,19 @@ class CommuneClient:
               enough balance.
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            amount = amount - self.get_existential_deposit()
 
-        amount = amount - self.get_existential_deposit()
+            params = {'dest': dest, 'value': amount}
 
-        params = {'dest': dest, 'value': amount}
-
-        return self.compose_call(
-            module='Balances',
-            fn='transfer',
-            params=params,
-            key=key
-        )
+            return self.compose_call(
+                module='Balances',
+                fn='transfer',
+                params=params,
+                key=key
+            )
+        except SubstrateRequestException as e:
+            raise ChainTransactionError(e) from e
 
     def transfer_multiple(
         self,
@@ -938,25 +971,27 @@ class CommuneClient:
               enough balance for all transfers.
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            assert len(destinations) == len(amounts)
 
-        assert len(destinations) == len(amounts)
+            # extract existential deposit from amounts
+            existential_deposit = self.get_existential_deposit()
+            amounts = [a - existential_deposit for a in amounts]
 
-        # extract existential deposit from amounts
-        existential_deposit = self.get_existential_deposit()
-        amounts = [a - existential_deposit for a in amounts]
+            params = {
+                "netuid": netuid,
+                "destinations": destinations,
+                "amounts": amounts,
+            }
 
-        params = {
-            "netuid": netuid,
-            "destinations": destinations,
-            "amounts": amounts,
-        }
-
-        return self.compose_call(
-            module='SubspaceModule',
-            fn='transfer_multiple',
-            params=params,
-            key=key
-        )
+            return self.compose_call(
+                module='SubspaceModule',
+                fn='transfer_multiple',
+                params=params,
+                key=key
+            )
+        except SubstrateRequestException as e:
+            raise ChainTransactionError(e) from e
 
     def stake(
         self,
@@ -982,14 +1017,16 @@ class CommuneClient:
               enough balance.
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            amount = amount - self.get_existential_deposit()
 
-        amount = amount - self.get_existential_deposit()
-
-        params = {
-            'amount': amount,
-            'netuid': netuid,
-            'module_key': dest
-        }
+            params = {
+                'amount': amount,
+                'netuid': netuid,
+                'module_key': dest
+            }
+        except InsufficientBalanceError as e:
+            raise ChainTransactionError(e) from e
 
         return self.compose_call(fn='add_stake', params=params, key=key)
 
@@ -1017,15 +1054,17 @@ class CommuneClient:
               staked tokens by the signer key.
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            amount = amount - self.get_existential_deposit()
 
-        amount = amount - self.get_existential_deposit()
-
-        params = {
-            'amount': amount,
-            'netuid': netuid,
-            'module_key': dest
-        }
-        return self.compose_call(fn='remove_stake', params=params, key=key)
+            params = {
+                'amount': amount,
+                'netuid': netuid,
+                'module_key': dest
+            }
+            return self.compose_call(fn='remove_stake', params=params, key=key)
+        except InsufficientStakeError as e:
+            raise ChainTransactionError(e) from e
 
     def update_module(
         self,
@@ -1056,22 +1095,23 @@ class CommuneClient:
             InvalidParameterError: If the provided parameters are invalid.
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            assert isinstance(delegation_fee, int)
 
-        assert isinstance(delegation_fee, int)
+            if not name:
+                name = ''
+            if not address:
+                address = ''
+            params = {
+                'netuid': netuid,
+                'name': name,
+                'address': address,
+                'delegation_fee': delegation_fee
+            }
 
-        if not name:
-            name = ''
-        if not address:
-            address = ''
-        params = {
-            'netuid': netuid,
-            'name': name,
-            'address': address,
-            'delegation_fee': delegation_fee
-        }
-
-        response = self.compose_call('update_module', params=params, key=key)
-
+            response = self.compose_call('update_module', params=params, key=key)
+        except InvalidParameterError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def register_module(
@@ -1102,20 +1142,24 @@ class CommuneClient:
             InvalidParameterError: If the provided parameters are invalid.
             ChainTransactionError: If the transaction fails.
         """
+        try:
 
-        stake = self.get_min_stake() if min_stake is None else min_stake
+            stake = self.get_min_stake() if min_stake is None else min_stake
 
-        key_addr = key.ss58_address
+            key_addr = key.ss58_address
 
-        params = {
-            'network': subnet,
-            'address': address,
-            'name': name,
-            'stake': stake,
-            'module_key': key_addr
-        }
-        response = self.compose_call('register', params=params, key=key)
+            params = {
+                'network': subnet,
+                'address': address,
+                'name': name,
+                'stake': stake,
+                'module_key': key_addr
+            }
+            response = self.compose_call('register', params=params, key=key)
+        except InvalidParameterError as e:
+            raise ChainTransactionError(e) from e
         return response
+    
 
     def vote(
         self,
@@ -1144,17 +1188,19 @@ class CommuneClient:
                 do not match.
             ChainTransactionError: If the transaction fails.
         """
+        try: 
 
-        assert len(uids) == len(weights)
+            assert len(uids) == len(weights)
 
-        params = {
-            'uids': uids,
-            'weights': weights,
-            'netuid': netuid,
-        }
+            params = {
+                'uids': uids,
+                'weights': weights,
+                'netuid': netuid,
+            }
 
-        response = self.compose_call('set_weights', params=params, key=key)
-
+            response = self.compose_call('set_weights', params=params, key=key)
+        except InvalidParameterError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def update_subnet(
@@ -1180,16 +1226,18 @@ class CommuneClient:
             AuthorizationError: If the key is not authorized.
             ChainTransactionError: If the transaction fails.
         """
+        try:
 
-        general_params = dict(params)
-        general_params['netuid'] = netuid
+            general_params = dict(params)
+            general_params['netuid'] = netuid
 
-        response = self.compose_call(
-            fn='update_subnet',
-            params=general_params,
-            key=key,
-        )
-
+            response = self.compose_call(
+                fn='update_subnet',
+                params=general_params,
+                key=key,
+            )
+        except AuthorizationError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def transfer_stake(
@@ -1218,18 +1266,19 @@ class CommuneClient:
             enough staked tokens. ChainTransactionError: If the transaction
             fails.
         """
+        try:
+            amount = amount - self.get_existential_deposit()
 
-        amount = amount - self.get_existential_deposit()
+            params = {
+                'amount': amount,
+                'netuid': netuid,
+                'module_key': from_module_key,
+                'new_module_key': dest_module_address,
+            }
 
-        params = {
-            'amount': amount,
-            'netuid': netuid,
-            'module_key': from_module_key,
-            'new_module_key': dest_module_address,
-        }
-
-        response = self.compose_call('transfer_stake', key=key, params=params)
-
+            response = self.compose_call('transfer_stake', key=key, params=params)
+        except InsufficientStakeError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def multiunstake(
@@ -1261,23 +1310,26 @@ class CommuneClient:
             have enough staked tokens. ChainTransactionError: If the transaction
             fails.
         """
+        try: 
+            assert len(keys) == len(amounts)
 
-        assert len(keys) == len(amounts)
+            # extract existential deposit from amounts
+            amounts = [a - self.get_existential_deposit() for a in amounts]
 
-        # extract existential deposit from amounts
-        amounts = [a - self.get_existential_deposit() for a in amounts]
+            params = {
+                "netuid": netuid,
+                "module_keys": keys,
+                "amounts": amounts
+            }
 
-        params = {
-            "netuid": netuid,
-            "module_keys": keys,
-            "amounts": amounts
-        }
-
-        response = self.compose_call(
-            'remove_stake_multiple',
-            params=params, key=key
-        )
-
+            response = self.compose_call(
+                'remove_stake_multiple',
+                params=params, key=key
+            )
+        except MismatchedLengthError as e:
+            raise ChainTransactionError(e) from e
+        except InsufficientStakeError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def multistake(
@@ -1308,18 +1360,21 @@ class CommuneClient:
                 do not match.
             ChainTransactionError: If the transaction fails.
         """
+        try:
 
-        assert len(keys) == len(amounts)
+            assert len(keys) == len(amounts)
 
-        params = {
-            'module_keys': keys,
-            'amounts': amounts,
-            'netuid': netuid,
-        }
+            params = {
+                'module_keys': keys,
+                'amounts': amounts,
+                'netuid': netuid,
+            }
 
-        response = self.compose_call(
-            'add_stake_multiple', params=params, key=key
-        )
+            response = self.compose_call(
+                'add_stake_multiple', params=params, key=key
+            )
+        except MismatchedLengthError as e:
+            raise ChainTransactionError(e) from e
 
         return response
 
@@ -1350,19 +1405,20 @@ class CommuneClient:
                 lists do not match.
             ChainTransactionError: If the transaction fails.
         """
+        try: 
+            assert len(keys) == len(shares)
 
-        assert len(keys) == len(shares)
+            params = {
+                'keys': keys,
+                'shares': shares
+            }
 
-        params = {
-            'keys': keys,
-            'shares': shares
-        }
-
-        response = self.compose_call(
-            'add_profit_shares',
-            params=params, key=key
-        )
-
+            response = self.compose_call(
+                'add_profit_shares',
+                params=params, key=key
+            )
+        except MismatchedLengthError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def add_subnet_proposal(self,
@@ -1390,14 +1446,16 @@ class CommuneClient:
                 parameters are invalid.
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            general_params = dict(params)
+            general_params['netuid'] = netuid
 
-        general_params = dict(params)
-        general_params['netuid'] = netuid
+            response = self.compose_call(fn='add_subnet_proposal',
+                                         params=general_params,
+                                         key=key,)
 
-        response = self.compose_call(fn='add_subnet_proposal',
-                                     params=general_params,
-                                     key=key,)
-
+        except InvalidParameterError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def add_global_proposal(self,
@@ -1427,12 +1485,14 @@ class CommuneClient:
                 parameters are invalid.
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            general_params = dict(params)
+            response = self.compose_call(fn='add_global_proposal',
+                                         params=general_params,
+                                         key=key,)
 
-        general_params = dict(params)
-        response = self.compose_call(fn='add_global_proposal',
-                                     params=general_params,
-                                     key=key,)
-
+        except InvalidParameterError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def vote_on_proposal(self,
@@ -1454,13 +1514,15 @@ class CommuneClient:
                 exist or is invalid.
             ChainTransactionError: If the transaction fails.
         """
+        try:
+            params = {
+                'proposal_id': proposal_id
+            }
 
-        params = {
-            'proposal_id': proposal_id
-        }
+            response = self.compose_call('vote_proposal', key=key, params=params)
 
-        response = self.compose_call('vote_proposal', key=key, params=params)
-
+        except InvalidProposalIDError as e:
+            raise ChainTransactionError(e) from e
         return response
 
     def unvote_on_proposal(self,
@@ -1484,16 +1546,18 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails to be processed, or 
                 if there was no prior vote to retract.
         """
+        try:
+            params = {
+                'proposal_id': proposal_id
+            }
 
-        params = {
-            'proposal_id': proposal_id
-        }
-
-        response = self.compose_call('unvote_proposal', key=key, params=params)
+            response = self.compose_call('unvote_proposal', key=key, params=params)
+        except InvalidProposalIDError as e:
+            raise ChainTransactionError(e) from e
 
         return response
 
-    def query_map_proposals(self) -> dict[int, dict[str, Any]]:
+    def query_map_proposals(self) -> Union[Dict[int, dict[str, Any]], None]:
         """
         Retrieves a mappping of proposals from the network.
 
@@ -1507,8 +1571,14 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Proposals', extract_value=False)["Proposals"]
+        result = {}
+        try:
+            result = self.query_map('Proposals', params=[], extract_value=False)["Proposals"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        if not result:
+            return None
+        return result
 
     def query_map_weights(self, netuid: int = 0) -> dict[int, list[int]]:
         """
@@ -1526,8 +1596,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Weights', [netuid], extract_value=False)["Weights"]
+        try:
+            result = self.query_map('Weights', [netuid], extract_value=False)["Weights"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        
+        return result
 
     def query_map_key(
             self,
@@ -1550,7 +1624,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-        return self.query_map('Keys', [netuid], extract_value=extract_value)["Keys"]
+
+        try:
+            result = self.query_map('Keys', [netuid], extract_value=extract_value)["Keys"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_address(self, netuid: int = 0) -> dict[int, str]:
         """
@@ -1567,8 +1646,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Address', [netuid], extract_value=False)["Address"]
+        try:
+            result = self.query_map('Address', [netuid], extract_value=False)["Address"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_emission(self) -> dict[int, list[int]]:
         """
@@ -1583,8 +1665,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Emission', extract_value=False)["Emission"]
+        try: 
+            result = self.query_map('Emission', params=[], extract_value=False)["Emission"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_incentive(self) -> dict[int, list[int]]:
         """
@@ -1599,8 +1684,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Incentive', extract_value=False)["Incentive"]
+        try: 
+            result = self.query_map('Incentives', params=[], extract_value=False)["Incentives"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_dividend(self) -> dict[int, list[int]]:
         """
@@ -1615,8 +1703,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Dividends', extract_value=False)["Dividends"]
+        try: 
+            result = self.query_map('Dividends', params=[], extract_value=False)["Dividends"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_regblock(self, netuid: int = 0) -> dict[int, int]:
         """
@@ -1634,8 +1725,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result = self.query_map('RegistrationBlock', [netuid], extract_value=False)["RegistrationBlock"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query_map('RegistrationBlock', [netuid], extract_value=False)["RegistrationBlock"]
 
     def query_map_lastupdate(self) -> dict[int, list[int]]:
         """
@@ -1649,8 +1744,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('LastUpdate', extract_value=False)["LastUpdate"]
+        try:
+            result =  self.query_map('LastUpdate', params=[], extract_value=False)["LastUpdate"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_total_stake(self, extract_value: bool = False) -> dict[int, int]:
         """
@@ -1664,8 +1762,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('TotalStake', extract_value=extract_value)["TotalStake"]
+        try:
+            result = self.query_map('TotalStake', params=[], extract_value=extract_value)["TotalStake"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_stakefrom(self, netuid: int = 0, extract_value: bool = False) -> \
             dict[str, list[tuple[str, int]]]:
@@ -1685,8 +1786,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('StakeFrom', [netuid], extract_value=extract_value)["StakeFrom"]
+        try:
+            result = self.query_map('StakeFrom', [netuid], extract_value=extract_value)["StakeFrom"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_staketo(self, netuid: int = 0, extract_value: bool = False) -> \
             dict[str, list[tuple[str, int]]]:
@@ -1706,8 +1810,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('StakeTo', [netuid], extract_value=extract_value)
+        try:
+            result = self.query_map('StakeTo', [netuid], extract_value=extract_value)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result 
 
     def query_map_stake(self, netuid: int = 0) -> dict[str, int]:
         """
@@ -1726,8 +1833,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Stake', [netuid], extract_value=False)["Stake"]
+        try: 
+            result = self.query_map('Stake', [netuid], extract_value=False)["Stake"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_delegationfee(self, netuid: int = 0) -> dict[str, int]:
         """
@@ -1745,9 +1855,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('DelegationFee', [netuid], extract_value=False)["DelegationFee"]
-
+        try:
+            result = self.query_map('DelegationFee', [netuid], extract_value=False)["DelegationFee"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
+    
     def query_map_tempo(self) -> dict[int, int]:
         """
         Retrieves a mapping of tempo settings for the network.
@@ -1761,8 +1874,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("Tempo", extract_value=False)["Tempo"]
+        try:
+            result = self.query_map("Tempo", params=[], extract_value=False)["Tempo"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_immunity_period(self) -> dict[int, int]:
         """
@@ -1778,8 +1894,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("ImmunityPeriod", extract_value=False)["ImmunityPeriod"]
+        try:
+            result = self.query_map("ImmunityPeriod",  params=[], extract_value=False)["ImmunityPeriod"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        
+        return result
 
     def query_map_min_allowed_weights(self) -> dict[int, int]:
         """
@@ -1796,8 +1916,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("MinAllowedWeights", extract_value=False)["MinAllowedWeights"]
+        try:
+            result =  self.query_map("MinAllowedWeights", params=[], extract_value=False)["MinAllowedWeights"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_max_allowed_weights(self) -> dict[int, int]:
         """
@@ -1814,8 +1937,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("MaxAllowedWeights", extract_value=False)["MaxAllowedWeights"]
+        try:
+            result = self.query_map("MaxAllowedWeights", params=[], extract_value=False)["MaxAllowedWeights"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_max_allowed_uids(self) -> dict[int, int]:
         """
@@ -1834,8 +1960,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("MaxAllowedUids", extract_value=False)["MaxAllowedUids"]
+        try:
+            result = self.query_map("MaxAllowedUids", params=[], extract_value=False)["MaxAllowedUids"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_min_stake(self) -> dict[int, int]:
         """
@@ -1851,8 +1980,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("MinStake", extract_value=False)["MinStake"]
+        try:
+            result = self.query_map("MinStake", params=[], extract_value=False)["MinStake"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_max_stake(self) -> dict[int, int]:
         """
@@ -1867,8 +1999,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("MaxStake", extract_value=False)["MaxStake"]
+        try: 
+            result = self.query_map("MaxStake", params=[], extract_value=False)["MaxStake"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_founder(self) -> dict[int, str]:
         """
@@ -1883,8 +2018,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result = self.query_map("Founder", params=[], extract_value=False)["Founder"]
+        except QueryError as e:
+            raise QueryError(e) from e
 
-        return self.query_map("Founder", extract_value=False)["Founder"]
+        return result
 
     def query_map_founder_share(self) -> dict[int, int]:
         """
@@ -1897,10 +2036,14 @@ class CommuneClient:
             A dictionary mapping network UIDs to their founder share percentages.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails or is inval
+            i   d.
         """
-
-        return self.query_map("FounderShare", extract_value=False)["FounderShare"]
+        try:
+            result =  self.query_map("FounderShare", params=[], extract_value=False)["FounderShare"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_incentive_ratio(self) -> dict[int, int]:
         """
@@ -1914,10 +2057,13 @@ class CommuneClient:
             A dictionary mapping network UIDs to their incentive ratios.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails or is invalid.   
         """
-
-        return self.query_map("IncentiveRatio", extract_value=False)["IncentiveRatio"]
+        try:
+            result =  self.query_map("IncentiveRatio", params=[], extract_value=False)["IncentiveRatio"] 
+        except QueryError as e:
+            raise QueryError(e) from e    
+        return result
 
     def query_map_trust_ratio(self) -> dict[int, int]:
         """
@@ -1933,8 +2079,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("TrustRatio", extract_value=False)["TrustRatio"]
+        try:
+            result =  self.query_map("TrustRatio",  params=[],extract_value=False)["TrustRatio"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_vote_threshold_subnet(self) -> dict[int, int]:
         """
@@ -1950,9 +2099,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("VoteThresholdSubnet", extract_value=False)["VoteThresholdSubnet"]
-
+        try:
+            result =  self.query_map("VoteThresholdSubnet",  params=[],extract_value=False)["VoteThresholdSubnet"]
+        except QueryError as e:
+            raise QueryError(e) from e 
+        return result
+    
     def query_map_vote_mode_subnet(self) -> dict[int, str]:
         """
         Retrieves a mapping of vote modes for subnets within the network.
@@ -1966,10 +2118,13 @@ class CommuneClient:
             modes for subnets.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails or is invalid.   
         """
-
-        return self.query_map("VoteModeSubnet", extract_value=False)["VoteModeSubnet"]
+        try:
+            result =  self.query_map("VoteModeSubnet", params=[], extract_value=False)["VoteModeSubnet"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def query_map_subnet_names(self, extract_value: bool = False) -> dict[int, str]:
         """
@@ -1985,9 +2140,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("SubnetNames", extract_value=extract_value)["SubnetNames"]
-
+        try:
+            result =  self.query_map("SubnetNames", params=[], extract_value=extract_value)["SubnetNames"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
+    
     def query_map_balances(self) -> \
             dict[str, dict['str', int | dict[str, int]]]:
         """
@@ -2003,9 +2161,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Account', module='System', extract_value=False)["Account"]
-
+        try:
+            result =  self.query_map('Account', params=[], module='System', extract_value=False)["Account"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
+    
     def query_map_registration_blocks(self, netuid: int = 0) -> dict[int, int]:
         """
         Retrieves a mapping of registration blocks for UIDs on the network.
@@ -2020,10 +2181,15 @@ class CommuneClient:
             A dictionary mapping UIDs to their registration block numbers.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails or is 
+            i   nvalid.
         """
-
-        return self.query_map("RegistrationBlock", [netuid], extract_value=False)["RegistrationBlock"]
+        try:
+            result =  self.query_map("RegistrationBlock", [netuid], extract_value=False)["RegistrationBlock"] 
+        except QueryError as e:
+            raise QueryError(e) from e
+        
+        return result
 
     def query_map_name(self, netuid: int = 0) -> dict[int, str]:
         """
@@ -2041,12 +2207,15 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map('Name', [netuid], extract_value=False)["Name  "]
+        try:   
+            result =  self.query_map('Name', [netuid], extract_value=False)["Name"]
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     #  == QUERY FUNCTIONS == #
 
-    def get_immunity_period(self, netuid: int = 0) -> int:
+    def get_immunity_period(self, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the immunity period setting.
 
@@ -2061,12 +2230,16 @@ class CommuneClient:
             The immunity period setting for the specified network subnet.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails or is 
+            i   nvalid.
         """
+        try:
+            result =  self.query("ImmunityPeriod", params=[netuid],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("ImmunityPeriod", params=[netuid],)
-
-    def get_min_allowed_weights(self, netuid: int = 0) -> int:
+    def get_min_allowed_weights(self, netuid: int = 0) -> Dict[Any, Any]:
         """
         Queries the network for the minimum allowed weights setting.
 
@@ -2082,12 +2255,19 @@ class CommuneClient:
               subnet.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails or is inv
+            a   lid.
         """
+        result = {}
+        try:
+            result =  self.query("MinAllowedWeights", params=[netuid],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        if not result: 
+            return {}
+        return result
 
-        return self.query("MinAllowedWeights", params=[netuid],)
-
-    def get_max_allowed_weights(self, netuid: int = 0) -> int:
+    def get_max_allowed_weights(self, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the maximum allowed weights setting.
 
@@ -2103,12 +2283,20 @@ class CommuneClient:
               subnet.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails or is in
+            v   alid.
         """
+        result = {}
+        try: 
+            result =  self.query("MaxAllowedWeights", params=[netuid])
+        except QueryError as e:
+            raise QueryError(e) from e
+        
+        if not result: 
+            return {}
+        return result
 
-        return self.query("MaxAllowedWeights", params=[netuid])
-
-    def get_max_allowed_uids(self, netuid: int = 0) -> int:
+    def get_max_allowed_uids(self, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the maximum allowed UIDs setting.
 
@@ -2122,12 +2310,19 @@ class CommuneClient:
             The maximum number of allowed UIDs for the specified network subnet.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails or is
+            invalid.
         """
+        try: 
+            result =  self.query("MaxAllowedUids", params=[netuid])
+        except QueryError as e:
+            raise QueryError(e) from e
 
-        return self.query("MaxAllowedUids", params=[netuid])
+        if not result: 
+            return {}
+        return result
 
-    def get_name(self, netuid: int = 0) -> str:
+    def get_name(self, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the name of a specific subnet.
 
@@ -2140,10 +2335,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("Name", params=[netuid])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("Name", params=[netuid])
-
-    def get_n(self, netuid: int = 0) -> int:
+    def get_n(self, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the 'N' hyperparameter, which represents how
         many modules are on the network.
@@ -2156,12 +2354,16 @@ class CommuneClient:
               subnet.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the networ
+            try:k    fails or is invalid.
         """
+        try:
+            result =  self.query("N", params=[netuid])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("N", params=[netuid])
-
-    def get_tempo(self, netuid: int = 0) -> int:
+    def get_tempo(self, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the tempo setting, measured in blocks, for the
         specified subnet.
@@ -2175,8 +2377,11 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query("Tempo", params=[netuid])
+        try: 
+            result =  self.query("Tempo", params=[netuid])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def get_total_stake(self, netuid: int = 0):
         """
@@ -2193,10 +2398,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("TotalStake", params=[netuid],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("TotalStake", params=[netuid],)
-
-    def get_registrations_per_block(self):
+    def get_registrations_per_block(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the number of registrations per block.
 
@@ -2209,10 +2417,16 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        result = {}
+        try:
+            result =  self.query("RegistrationsPerBlock", params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        if not result:
+            return {}
+        return result
 
-        return self.query("RegistrationsPerBlock",)
-
-    def max_registrations_per_block(self, netuid: int = 0):
+    def max_registrations_per_block(self, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the maximum number of registrations per block.
 
@@ -2229,10 +2443,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query("MaxRegistrationsPerBlock", params=[netuid],)
-
-    def get_proposal(self, proposal_id: int = 0):
+        try:
+            result =  self.query("MaxRegistrationsPerBlock", params=[netuid],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
+    
+    def get_proposal(self, proposal_id: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for a specific proposal.
 
@@ -2246,10 +2463,13 @@ class CommuneClient:
             QueryError: If the query to the network fails, is invalid, 
                 or if the proposal ID does not exist.
         """
-
-        return self.query("Proposals", params=[proposal_id],)
-
-    def get_trust(self, netuid: int = 0):
+        try:
+            result =  self.query("Proposals", params=[proposal_id],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
+    
+    def get_trust(self, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the trust setting of a specific network subnet.
 
@@ -2266,10 +2486,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("Trust", params=[netuid],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("Trust", params=[netuid],)
-
-    def get_uids(self, key: Ss58Address, netuid: int = 0) -> bool | None:
+    def get_uids(self, key: Ss58Address, netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for module UIDs associated with a specific key.
 
@@ -2283,10 +2506,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("Uids", params=[netuid, key],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("Uids", params=[netuid, key],)
-
-    def get_unit_emission(self) -> int:
+    def get_unit_emission(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the unit emission setting.
 
@@ -2299,10 +2525,16 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        result = {}
+        try: 
+            result =  self.query("UnitEmission", params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        if result is None:
+            return {}
+        return result
 
-        return self.query("UnitEmission")
-
-    def get_tx_rate_limit(self) -> int:
+    def get_tx_rate_limit(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the transaction rate limit.
 
@@ -2316,10 +2548,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try: 
+            result =  self.query("TxRateLimit", params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("TxRateLimit",)
-
-    def get_burn_rate(self) -> int:
+    def get_burn_rate(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the burn rate setting.
 
@@ -2333,10 +2568,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("BurnRate", params=[],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("BurnRate", params=[],)
-
-    def get_burn(self) -> int:
+    def get_burn(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the burn setting.
 
@@ -2348,12 +2586,16 @@ class CommuneClient:
             The burn value for the network.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the netw
+            try:o   rk fails or is invalid.
         """
+        try:
+            result =  self.query("Burn", params=[],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("Burn", params=[],)
-
-    def get_min_burn(self) -> int:
+    def get_min_burn(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the minimum burn setting.
 
@@ -2367,10 +2609,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("MinBurn", params=[],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("MinBurn", params=[],)
-
-    def get_min_weight_stake(self) -> int:
+    def get_min_weight_stake(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the minimum weight stake setting.
 
@@ -2382,12 +2627,15 @@ class CommuneClient:
             The minimum weight stake for the network.
 
         Raises:
-            QueryError: If the query to the network fails or is invalid.
+            QueryError: If the query to the network fails for is invalid.
         """
+        try:
+            result =  self.query("MinWeightStake", params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("MinWeightStake", params=[])
-
-    def get_vote_mode_global(self) -> str:
+    def get_vote_mode_global(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the global vote mode setting.
 
@@ -2400,10 +2648,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("VoteModeGlobal", params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("VoteModeGlobal",)
-
-    def get_max_proposals(self) -> int:
+    def get_max_proposals(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the maximum number of proposals allowed.
 
@@ -2416,10 +2667,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("MaxProposals", params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("MaxProposals",)
-
-    def get_max_registrations_per_block(self) -> int:
+    def get_max_registrations_per_block(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the maximum number of registrations per block.
 
@@ -2432,10 +2686,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("MaxRegistrationsPerBlock", params=[],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("MaxRegistrationsPerBlock", params=[],)
-
-    def get_max_name_length(self) -> int:
+    def get_max_name_length(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the maximum length allowed for names.
 
@@ -2448,10 +2705,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try: 
+            result =  self.query("MaxNameLength", params=[],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("MaxNameLength", params=[],)
-
-    def get_global_vote_threshold(self) -> int:
+    def get_global_vote_threshold(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the global vote threshold.
 
@@ -2464,10 +2724,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try: 
+            result =  self.query("GlobalVoteThreshold",params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("GlobalVoteThreshold",)
-
-    def get_max_allowed_subnets(self) -> int:
+    def get_max_allowed_subnets(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the maximum number of allowed subnets.
 
@@ -2480,10 +2743,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+        try:
+            result =  self.query("MaxAllowedSubnets", params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
-        return self.query("MaxAllowedSubnets", params=[],)
-
-    def get_max_allowed_modules(self) -> int:
+    def get_max_allowed_modules(self) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the maximum number of allowed modules.
 
@@ -2496,11 +2762,14 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query("MaxAllowedModules", params=[],)
+        try:
+            result =  self.query("MaxAllowedModules", params=[])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def get_min_stake(self,
-                      netuid: int = 0) -> int:
+                      netuid: int = 0) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the minimum stake required to register a key.
 
@@ -2516,13 +2785,16 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query('MinStake', params=[netuid])
+        try:
+            result =  self.query('MinStake', params=[netuid])
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def get_stake(self,
                   key: Ss58Address,
                   netuid: int = 0,
-                  ) -> int:
+                  ) -> Union[Dict[Any, Any], None]:
         """
         Queries the network for the stake delegated with a specific key.
 
@@ -2539,14 +2811,17 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query("Stake", params=[netuid, key],)
+        try:
+            result =  self.query("Stake", params=[netuid, key],)
+        except QueryError as e:
+            raise QueryError(e) from e
+        return result
 
     def get_stakefrom(
         self,
         key_addr: Ss58Address,
         netuid: int = 0,
-    ) -> dict[str, int]:
+    ) -> Union[Dict[Any, Any], None]:
         """
         Retrieves a list of keys from which a specific key address is staked.
 
@@ -2565,9 +2840,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-        result = self.query('StakeFrom', [netuid, key_addr])
-
-        return {k: v for k, v in result}
+        try:
+            result = self.query('StakeFrom', [netuid, key_addr])
+        except QueryError as e:
+            raise QueryError(e) from e 
+        if not result:
+            return {}
+        return  {k: v for k, v in result}
 
     def get_staketo(
         self,
@@ -2592,15 +2871,18 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        result = self.query('StakeTo', [netuid, key_addr])
-
+        try:
+            result = self.query('StakeTo', [netuid, key_addr])
+        except QueryError as e:
+            raise QueryError(e) from e             
+        if not result:
+            return {}
         return {k: v for k, v in result}
-
+    
     def get_balance(
         self,
         addr: Ss58Address,
-    ) -> int:
+    ) -> Union[Dict[Any, Any], None]:
         """
         Retrieves the balance of a specific key.
 
@@ -2613,9 +2895,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        result = self.query('Account', module='System', params=[addr])
-
+        try: 
+            result = self.query('Account', module='System', params=[addr])
+        except QueryError as e:
+            raise QueryError(e) from e
+        if not result:
+            return None
         return result["data"]["free"]
 
     def get_block(self, block_hash: str | None = None) -> dict[Any, Any] | None:
@@ -2633,12 +2918,13 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        with self.get_conn() as substrate:
-            block: dict[Any, Any] | None = substrate.get_block(  # type: ignore
+        try:
+            with self.get_conn() as substrate:
+                block: dict[Any, Any] | None = substrate.get_block(  # type: ignore
                 block_hash  # type: ignore
             )
-
+        except QueryError as e:
+            raise QueryError(e) from e
         return block
 
     def get_existential_deposit(self, block_hash: str | None = None) -> int:
@@ -2654,9 +2940,10 @@ class CommuneClient:
             The value returned is a fixed value defined in the 
             client and may not reflect changes in the network's configuration.
         """
-
-        with self.get_conn() as substrate:
-            result: int = substrate.get_constant(  #  type: ignore
+        try:
+            with self.get_conn() as substrate:
+                result: int = substrate.get_constant(  #  type: ignore
                 "Balances", "ExistentialDeposit", block_hash).value  #  type: ignore
-
+        except QueryError as e:
+            raise QueryError(e) from e
         return result

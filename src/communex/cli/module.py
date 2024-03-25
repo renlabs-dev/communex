@@ -7,7 +7,7 @@ from rich.console import Console
 
 import communex.balance as c_balance
 from communex.compat.key import classic_load_key
-from communex.errors import ChainTransactionError
+from communex.errors import ChainTransactionError, InvalidClassError, InvalidModuleError, InvalidIPError
 from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
@@ -70,7 +70,7 @@ def update(key: str, name: str, ip: str, port: int, delegation_fee: int = 20, ne
     client = make_client()
 
     if not is_ip_valid(ip):
-        raise ValueError("Invalid ip address")
+        raise InvalidIPError("Invalid ip address")
 
     address = f"{ip}:{port}"
 
@@ -112,7 +112,7 @@ def serve(
                 raise ValueError(f"Invalid class path: `{class_path}`, class name is missing")
         case _:
             # This is impossible
-            raise Exception(f"Invalid class path: `{class_path}`")
+            raise InvalidClassError(f"Invalid class path: `{class_path}`")
 
     try:
         module = importlib.import_module(module_path)
@@ -122,7 +122,7 @@ def serve(
 
     try:
         class_obj = getattr(module, class_name)
-    except AttributeError:
+    except InvalidClassError:
         context.error(f"Class `{class_name}` not found in module `{module}`")
         raise typer.Exit(code=1)
 
@@ -150,7 +150,7 @@ def info(name: str, balance: bool = False, netuid: int = 0):
         module = next((item for item in modules_to_list if item["name"] == name), None)
 
     if module is None:
-        raise ValueError("Module not found")
+        raise InvalidModuleError("Module not found")
 
     general_module = cast(dict[str, Any], module)
     print_table_from_plain_dict(general_module, ["Params", "Values"], console)
