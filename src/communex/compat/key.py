@@ -15,7 +15,7 @@ from communex.compat.types import CommuneKeyDict
 from communex.key import check_ss58_address, is_ss58_address
 from communex.types import Ss58Address
 from communex.util import bytes_to_hex, check_str
-from communex.errors import KeyFormatError
+from communex.errors import InvalidKeyFormatError
 
 
 def check_key_dict(key_dict: Any) -> CommuneKeyDict:
@@ -74,18 +74,19 @@ def from_classic_dict(data: dict[Any, Any]) -> Keypair:
         The reconstructed `Key` instance.
 
     Raises:
-        AssertionError: If `data` does not conform to the expected format.
+        InvalidKeyFormatError: If `data` does not conform to the expected format.
     """
+    try:
+        data_ = check_key_dict(data)
 
-    data_ = check_key_dict(data)
+        ss58_address = data_["ss58_address"]
+        private_key = data_["private_key"]
+        public_key = data_["public_key"]
+        ss58_format = data_["ss58_format"]
 
-    ss58_address = data_["ss58_address"]
-    private_key = data_["private_key"]
-    public_key = data_["public_key"]
-    ss58_format = data_["ss58_format"]
-
-    key = Keypair.create_from_private_key(private_key, public_key, ss58_address, ss58_format)
-
+        key = Keypair.create_from_private_key(private_key, public_key, ss58_address, ss58_format)
+    except AssertionError as e:
+        raise InvalidKeyFormatError(e) from e
     return key
 
 
@@ -164,8 +165,8 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
 
     try:
         keypair = classic_load_key(key)
-    except FileNotFoundError:
-        raise KeyFormatError(f"Key is not a valid SS58 address nor a valid key name: {key}")
+    except FileNotFoundError as e:
+        raise InvalidKeyFormatError(f"Key is not a valid SS58 address nor a valid key name: {key}") from e
 
     address = keypair.ss58_address
 
