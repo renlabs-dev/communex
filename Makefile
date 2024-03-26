@@ -6,6 +6,7 @@ clean:
 	rm -rf __pycache__
 	rm -rf .pytest_cache
 	rm -rf .ruff_cache
+	rm -rf dist
 
 check: lint type_check
 
