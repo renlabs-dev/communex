@@ -1,6 +1,5 @@
-from typing import Optional
 import typer
-from typing_extensions import Annotated
+from typing import Optional, Annotated
 
 from communex import __version__
 
@@ -33,8 +32,9 @@ def main(json: Optional[bool] = False,
     ] = None,
 ):
     """
-    CommuneX CLI Version: {0}
+    CommuneX CLI {version}
 
     This command line interface is under development and subject to change.
     """
-main.__doc__ = main.__doc__.format(__version__)
+
+main.__doc__ = main.__doc__.format(version=__version__)
