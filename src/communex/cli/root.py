@@ -1,5 +1,7 @@
-from typing import Optional
 import typer
+from typing import Optional, Annotated
+
+from communex import __version__
 
 from .balance import balance_app
 from .key import key_app
@@ -18,10 +20,21 @@ app.add_typer(network_app, name="network", help="Network operations")
 app.add_typer(subnet_app, name="subnet", help="Subnet operations")
 
 
+def _version_callback(value: bool):
+    if value:
+        print(f"CommuneX {__version__}")
+        raise typer.Exit()
+
 @app.callback()
-def main(json: Optional[bool] = False):
+def main(json: Optional[bool] = False,
+    version: Annotated[
+        Optional[bool], typer.Option("--version", callback=_version_callback)
+    ] = None,
+):
     """
-    CommuneX CLI.
+    CommuneX CLI {version}
 
     This command line interface is under development and subject to change.
     """
+
+main.__doc__ = main.__doc__.format(version=__version__)
