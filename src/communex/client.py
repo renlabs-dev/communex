@@ -2143,6 +2143,22 @@ class CommuneClient:
 
         return self.query("Name", params=[netuid])
 
+    def get_subnet_name(self, netuid: int = 0) -> str:
+        """
+        Queries the network for the name of a specific subnet.
+
+        Args:
+            netuid: The network UID for which to query the name.
+
+        Returns:
+            The name of the specified network subnet.
+        
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query("SubnetNames", params=[netuid])
+
     def get_n(self, netuid: int = 0) -> int:
         """
         Queries the network for the 'N' hyperparameter, which represents how

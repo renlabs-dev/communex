@@ -61,9 +61,9 @@ def register(
             raise ValueError("Invalid ip address")
 
         address = f"{ip}:{port}"
-       
+
         if new_subnet_name is None:
-            subnet = client.get_name(netuid)
+            subnet = client.get_subnet_name(netuid)
         else:
             subnet = new_subnet_name
 
