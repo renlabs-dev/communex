@@ -23,7 +23,7 @@ def register(
     ip: str,
     port: int,
     key: str,
-    netuid: Optional[float] = None,
+    netuid: Optional[int] = None,
     stake: Optional[float] = None,
     new_subnet_name: Optional[str] = None,
 ):
