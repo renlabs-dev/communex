@@ -23,7 +23,7 @@ def register(
     ip: str,
     port: int,
     key: str,
-    netuid: int,
+    netuid: Optional[float] = None,
     stake: Optional[float] = None,
     new_subnet_name: Optional[str] = None,
 ):
@@ -33,6 +33,9 @@ def register(
     Asks to generate a key if not provided.
     """
 
+    if netuid is None and new_subnet_name is None:
+        raise ValueError("netuid or new_subnet_name must be provided")
+    
     console = Console()
     client = make_client()
 
@@ -44,12 +47,12 @@ def register(
         print("Not registering")
         raise typer.Abort()
 
-    with console.status(f"Registering Module on a netuid '{netuid}' ..."):
+    with console.status(f"Registering Module {name}..."):
 
         if stake is not None:
             stake_nano = c_balance.to_nano(stake)
         else: 
-            min_stake = client.get_min_stake(netuid) 
+            min_stake = client.get_min_stake(netuid) if netuid is not None else 0
             stake_nano = min_stake + burn
 
         resolved_key = classic_load_key(key)
