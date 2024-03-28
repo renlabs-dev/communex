@@ -129,21 +129,19 @@ def transfer(key: str, amount: float, dest: str):
     resolved_key = classic_load_key(key)
     resolved_dest = resolve_key_ss58(dest)
 
-    # TODO: refactor yes/no prompts into function
-    console.print(
-        f"Please confirm that you want to transfer {amount} tokens to {dest} using key {key} (y/n)")
+    transfer = typer.confirm(f"Are you sure you want to transfer {amount} tokens to {dest}?")
+    if not transfer:
+        print("Not transfering")
+        raise typer.Abort()
 
-    answer = input().lower()
+    with console.status(f"Transferring {amount} tokens to {dest}..."):
+        response = client.transfer(key=resolved_key,
+                                    amount=nano_amount, dest=resolved_dest)
 
-    if answer == "y":
-        with console.status(f"Transferring {amount} tokens to {dest}..."):
-            response = client.transfer(key=resolved_key,
-                                       amount=nano_amount, dest=resolved_dest)
-
-        if response.is_success:
-            console.print(f"Transferred {amount} tokens to {dest}")
-        else:
-            raise ChainTransactionError(response.error_message)  # type: ignore
+    if response.is_success:
+        console.print(f"Transferred {amount} tokens to {dest}")
+    else:
+        raise ChainTransactionError(response.error_message)  # type: ignore
 
 
 @balance_app.command()

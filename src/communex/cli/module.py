@@ -25,6 +25,7 @@ def register(
     key: str,
     netuid: int,
     stake: Optional[float] = None,
+    new_subnet_name: Optional[str] = None,
 ):
     """
     Registers a module.
@@ -35,12 +36,21 @@ def register(
     console = Console()
     client = make_client()
 
+    burn = client.get_burn()
+
+    do_burn = typer.confirm(f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?")
+
+    if not do_burn:
+        print("Not registering")
+        raise typer.Abort()
+
     with console.status(f"Registering Module on a netuid '{netuid}' ..."):
 
-        if stake is None:
-            burn = client.get_burn()
-            stake = client.get_min_stake(netuid) + burn
-        stake_nano = c_balance.to_nano(stake)
+        if stake is not None:
+            stake_nano = c_balance.to_nano(stake)
+        else: 
+            min_stake = client.get_min_stake(netuid) 
+            stake_nano = min_stake + burn
 
         resolved_key = classic_load_key(key)
 
@@ -48,7 +58,11 @@ def register(
             raise ValueError("Invalid ip address")
 
         address = f"{ip}:{port}"
-        subnet = client.get_name(netuid)
+       
+        if new_subnet_name is None:
+            subnet = client.get_name(netuid)
+        else:
+            subnet = new_subnet_name
 
         response = client.register_module(
             resolved_key, name=name, address=address, subnet=subnet, min_stake=stake_nano)
