@@ -1,7 +1,7 @@
 import pytest
 from typer.testing import CliRunner, Result # type: ignore
 
-from communex.cli import app
+from communex.cli.root import app
 
 from typing import Callable
 

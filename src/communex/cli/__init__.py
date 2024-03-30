@@ -1,0 +1,1 @@
+from communex.cli.root import app
