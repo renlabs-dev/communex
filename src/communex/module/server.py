@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from scalecodec.utils.ss58 import ss58_encode  # type: ignore
 from substrateinterface import Keypair  # type: ignore
 
-from communex.cli._common import make_client
+from communex._common import make_client
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._ip_limiter import IpLimiterMiddleware

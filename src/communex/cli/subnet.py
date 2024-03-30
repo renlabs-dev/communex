@@ -9,7 +9,8 @@ from communex.errors import ChainTransactionError
 from communex.misc import get_map_subnets_params
 from communex.types import Ss58Address, SubnetParams
 
-from ._common import make_client, print_table_from_plain_dict
+from .._common import make_client
+from ._common import print_table_from_plain_dict
 
 subnet_app = typer.Typer()
 

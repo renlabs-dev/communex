@@ -1,27 +1,10 @@
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Mapping
 
 import rich
 import typer
 from rich.console import Console
 from rich.table import Table
-
-from communex.client import CommuneClient
-from communex.balance import from_nano
-
-
-class BalanceUnit(str, Enum):
-    joule = "joule"
-    j = "j"
-    nano = "nano"
-    n = "n"
-
-
-class SortBalance(str, Enum):
-    all = "all"
-    free = "free"
-    staked = "staked"
 
 
 @dataclass
@@ -52,20 +35,6 @@ def make_custom_context(ctx: typer.Context) -> CustomCtx:
     )
 
 
-# Client
-
-def get_node_url() -> str:
-    return "wss://commune-api-node-1.communeai.net"
-
-
-def make_client():
-    """
-    Create a client to the Commune network.
-    """
-
-    node_url = get_node_url()
-    return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
-
 # Formatting
 
 
@@ -79,21 +48,9 @@ def eprint(e: Any) -> None:
     console.print(f"[bold red]ERROR: {e}", style="italic")
 
 
-def format_balance(balance: int, unit: BalanceUnit = BalanceUnit.nano) -> str:
-    """
-    Formats a balance.
-    """
-
-    match unit:
-        case BalanceUnit.nano | BalanceUnit.n:
-            return f"{balance}"
-        case BalanceUnit.joule | BalanceUnit.j:
-            in_joules = from_nano(balance)
-            round_joules = round(in_joules, 4)
-            return f"{round_joules:,} J"
-
-
-def print_table_from_plain_dict(result: Mapping[str, str | int | float], column_names: list[str], console: Console) -> None:
+def print_table_from_plain_dict(
+    result: Mapping[str, str | int | float], column_names: list[str], console: Console
+) -> None:
     """
     Creates a table for a plain dictionary.
     """

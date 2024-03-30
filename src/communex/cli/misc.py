@@ -4,7 +4,7 @@ from rich.console import Console
 from communex.balance import from_nano
 from communex.client import CommuneClient
 
-from ._common import BalanceUnit, format_balance, make_client
+from .._common import BalanceUnit, format_balance, make_client
 
 misc_app = typer.Typer()
 

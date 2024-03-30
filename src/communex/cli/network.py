@@ -8,7 +8,8 @@ from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.misc import get_global_params
 from communex.types import NetworkParams, SubnetParams
 
-from ._common import make_client, make_custom_context, print_table_from_plain_dict
+from .._common import make_client
+from ._common import make_custom_context, print_table_from_plain_dict
 
 network_app = typer.Typer()
 

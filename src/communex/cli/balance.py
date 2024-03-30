@@ -2,10 +2,11 @@ import typer
 from rich.console import Console
 
 from communex.balance import to_nano
-from communex.compat.key import resolve_key_ss58, classic_load_key
+from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.errors import ChainTransactionError
 
-from ._common import BalanceUnit, format_balance, make_client, print_table_from_plain_dict
+from .._common import BalanceUnit, format_balance, make_client
+from ._common import print_table_from_plain_dict
 
 balance_app = typer.Typer()
 

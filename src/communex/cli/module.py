@@ -13,7 +13,8 @@ from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
 
-from ._common import make_client, make_custom_context, print_table_from_plain_dict
+from .._common import make_client
+from ._common import make_custom_context, print_table_from_plain_dict
 
 module_app = typer.Typer()
 

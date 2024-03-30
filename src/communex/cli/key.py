@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 from typing import Any, cast
 
 import typer
@@ -13,11 +14,17 @@ from communex.key import generate_keypair
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
 
-from ._common import (BalanceUnit, SortBalance, format_balance, make_client,
-                      make_custom_context, print_table_from_plain_dict,
+from .._common import BalanceUnit, format_balance, make_client
+from ._common import (make_custom_context, print_table_from_plain_dict,
                       print_table_standardize)
 
 key_app = typer.Typer()
+
+
+class SortBalance(str, Enum):
+    all = "all"
+    free = "free"
+    staked = "staked"
 
 
 @key_app.command()
