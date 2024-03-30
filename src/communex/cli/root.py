@@ -25,11 +25,11 @@ def _version_callback(value: bool):
         print(f"CommuneX {__version__}")
         raise typer.Exit()
 
+
 @app.callback()
-def main(json: Optional[bool] = False,
-    version: Annotated[
-        Optional[bool], typer.Option("--version", callback=_version_callback)
-    ] = None,
+def main(
+    json: Optional[bool] = False,
+    version: Annotated[Optional[bool], typer.Option("--version", callback=_version_callback)] = None,
 ):
     """
     CommuneX CLI {version}
@@ -37,4 +37,6 @@ def main(json: Optional[bool] = False,
     This command line interface is under development and subject to change.
     """
 
-main.__doc__ = main.__doc__.format(version=__version__)
+
+if main.__doc__ is not None:
+    main.__doc__ = main.__doc__.format(version=__version__)

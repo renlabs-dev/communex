@@ -10,6 +10,7 @@ from communex.module.server import ModuleServer
 
 OPENAI_API_KEY = getenv("OPENAI_API_KEY")
 
+
 class OpenAIModels(str, Enum):
     three = "gpt-3.5-turbo"
 
@@ -19,16 +20,15 @@ class OpenAIModule(Module):
         super().__init__()
         self.client = OpenAI(api_key=OPENAI_API_KEY)
 
-
     @endpoint
     def prompt(self, text: str, model: OpenAIModels):
         response = self.client.chat.completions.create(
             model=model,
-            response_format = {"type": "json_object"},
-            messages= [
+            response_format={"type": "json_object"},
+            messages=[
                 {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
-                {"role": "user", "content": text}
-            ]
+                {"role": "user", "content": text},
+            ],
         )
         answers: list[dict[str, str]] = []
         for msg in response.choices:
@@ -42,12 +42,14 @@ class OpenAIModule(Module):
         return {"Answer": answers}
 
 
-
 if __name__ == "__main__":
     import uvicorn
 
+    from communex.compat.key import classic_load_key
+
     model = OpenAIModule()
-    model_server = ModuleServer(model)
+    key = classic_load_key("test")
+    model_server = ModuleServer(model, key)
     app = model_server.get_fastapi_app()
 
-    uvicorn.run(app, host="127.0.0.1", port=8000) #type: ignore
+    uvicorn.run(app, host="127.0.0.1", port=8000)  # type: ignore

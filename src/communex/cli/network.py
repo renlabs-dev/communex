@@ -2,12 +2,13 @@ from typing import Any, cast
 
 import typer
 from rich.console import Console
+from typer import Context
 
 from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.misc import get_global_params
 from communex.types import NetworkParams, SubnetParams
 
-from ._common import make_client, print_table_from_plain_dict
+from ._common import make_client, make_custom_context, print_table_from_plain_dict
 
 network_app = typer.Typer()
 
@@ -40,7 +41,9 @@ def params():
     console = Console()
     client = make_client()
 
-    with console.status("Getting global network params ...",):
+    with console.status(
+        "Getting global network params ...",
+    ):
         global_params = get_global_params(client)
 
     general_params: dict[str, Any] = cast(dict[str, Any], global_params)
@@ -61,16 +64,18 @@ def list_proposals():
 
     for _, batch_proposal in proposals.items():
         for proposal_id, proposal in batch_proposal.items():
-            print_table_from_plain_dict(
-                proposal, [f"Proposal id: {proposal_id}", "Params"], console)
+            print_table_from_plain_dict(proposal, [f"Proposal id: {proposal_id}", "Params"], console)
 
 
 @network_app.command()
 def propose_globally(
+    ctx: Context,
     key: str,
     max_allowed_subnets: int,
     max_allowed_modules: int,
     max_registrations_per_block: int,
+    target_registrations_interval: int,
+    target_registrations_per_interval: int,
     unit_emission: int,
     tx_rate_limit: int,
     vote_threshold: int,
@@ -79,34 +84,47 @@ def propose_globally(
     max_name_length: int,
     burn_rate: int,
     min_burn: int,
+    max_burn: int,
+    burn: int,
     min_stake: int,
     min_weight_stake: int,
+    adjustment_alpha: int,
+    floor_delegation_fee: int,
 ):
     """
     Adds a global proposal to the network.
     """
 
-    console = Console()
     client = make_client()
+    context = make_custom_context(ctx)
 
     resolved_key = classic_load_key(key)
 
-    proposal: NetworkParams = {"max_allowed_subnets": max_allowed_subnets,
-                               "max_allowed_modules": max_allowed_modules,
-                               "max_registrations_per_block": max_registrations_per_block,
-                               "unit_emission": unit_emission,
-                               "tx_rate_limit": tx_rate_limit,
-                               "vote_threshold": vote_threshold,
-                               "vote_mode": vote_mode,
-                               "max_proposals": max_proposals,
-                               "max_name_length": max_name_length,
-                               "burn_rate": burn_rate,
-                               "min_burn": min_burn,
-                               "min_stake": min_stake,
-                               "min_weight_stake": min_weight_stake}
+    proposal: NetworkParams = {
+        "max_allowed_subnets": max_allowed_subnets,
+        "max_allowed_modules": max_allowed_modules,
+        "max_registrations_per_block": max_registrations_per_block,
+        "target_registrations_interval": target_registrations_interval,
+        "target_registrations_per_interval": target_registrations_per_interval,
+        "unit_emission": unit_emission,
+        "tx_rate_limit": tx_rate_limit,
+        "vote_threshold": vote_threshold,
+        "vote_mode": vote_mode,
+        "max_proposals": max_proposals,
+        "max_name_length": max_name_length,
+        "burn_rate": burn_rate,
+        "min_burn": min_burn,
+        "max_burn": max_burn,
+        "burn": burn,
+        "min_stake": min_stake,
+        "min_weight_stake": min_weight_stake,
+        "adjustment_alpha": adjustment_alpha,
+        "floor_delegation_fee": floor_delegation_fee,
+    }
 
-    with console.status("Adding a proposal..."):
+    with context.progress_status("Adding a proposal..."):
         client.add_global_proposal(resolved_key, proposal)
+
 
 # ! THESE ARE BETA COMMANDS (might not have full substrate support)
 
@@ -140,22 +158,23 @@ def propose_on_subnet(
     resolve_founder = resolve_key_ss58(founder)
     resolved_key = classic_load_key(key)
 
-    proposal: SubnetParams = {"name": name,
-                              "founder": resolve_founder,
-                              "founder_share": founder_share,
-                              "immunity_period": immunity_period,
-                              "incentive_ratio": incentive_ratio,
-                              "max_allowed_uids": max_allowed_uids,
-                              "max_allowed_weights": max_allowed_weights,
-                              "min_allowed_weights": min_allowed_weights,
-                              "max_stake": max_stake,
-                              "min_stake": min_stake,
-                              "tempo": tempo,
-                              "trust_ratio": trust_ratio,
-                              "vote_mode": vote_mode,
-                              "vote_threshold": vote_threshold,
-                              "max_weight_age": max_weight_age,
-                              }
+    proposal: SubnetParams = {
+        "name": name,
+        "founder": resolve_founder,
+        "founder_share": founder_share,
+        "immunity_period": immunity_period,
+        "incentive_ratio": incentive_ratio,
+        "max_allowed_uids": max_allowed_uids,
+        "max_allowed_weights": max_allowed_weights,
+        "min_allowed_weights": min_allowed_weights,
+        "max_stake": max_stake,
+        "min_stake": min_stake,
+        "tempo": tempo,
+        "trust_ratio": trust_ratio,
+        "vote_mode": vote_mode,
+        "vote_threshold": vote_threshold,
+        "max_weight_age": max_weight_age,
+    }
 
     with console.status("Adding a proposal..."):
         client.add_subnet_proposal(resolved_key, proposal)

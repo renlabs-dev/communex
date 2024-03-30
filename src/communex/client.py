@@ -2152,7 +2152,7 @@ class CommuneClient:
 
         Returns:
             The name of the specified network subnet.
-        
+
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """

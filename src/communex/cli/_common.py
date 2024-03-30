@@ -40,6 +40,9 @@ class CustomCtx:
         message = f"ERROR: {message}"
         self.console_err.print(message, style="bold red")
 
+    def progress_status(self, message: str):
+        return self.console_err.status(message)
+
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:
     return CustomCtx(

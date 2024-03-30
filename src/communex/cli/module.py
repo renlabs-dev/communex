@@ -4,6 +4,7 @@ from typing import Any, Optional, cast
 import typer
 import uvicorn
 from rich.console import Console
+from typer import Context
 
 import communex.balance as c_balance
 from communex.compat.key import classic_load_key
@@ -17,8 +18,12 @@ from ._common import make_client, make_custom_context, print_table_from_plain_di
 module_app = typer.Typer()
 
 
+# TODO: refactor CLI
+# - module address should be a single (arbitrary) parameter
+# - key can be infered from name or vice-versa?
 @module_app.command()
 def register(
+    ctx: Context,
     name: str,
     ip: str,
     port: int,
@@ -33,11 +38,19 @@ def register(
     Asks to generate a key if not provided.
     """
 
-    if netuid is None and new_subnet_name is None:
-        raise ValueError("netuid or new_subnet_name must be provided")
-    
-    console = Console()
+    context = make_custom_context(ctx)
     client = make_client()
+
+    match (netuid, new_subnet_name):
+        case (None, None):
+            raise ValueError("`netuid` or `new_subnet_name` must be provided")
+        case (netuid, None):
+            assert netuid is not None
+            subnet_name = client.get_subnet_name(netuid)
+        case (None, new_subnet_name):
+            subnet_name = new_subnet_name
+        case (_, _):
+            raise ValueError("`netuid` and `new_subnet_name` cannot be provided at the same time")
 
     burn = client.get_burn()
 
@@ -47,11 +60,10 @@ def register(
         print("Not registering")
         raise typer.Abort()
 
-    with console.status(f"Registering Module {name}..."):
-
+    with context.progress_status(f"Registering Module {name}..."):
         if stake is not None:
             stake_nano = c_balance.to_nano(stake)
-        else: 
+        else:
             min_stake = client.get_min_stake(netuid) if netuid is not None else 0
             stake_nano = min_stake + burn
 
@@ -62,16 +74,12 @@ def register(
 
         address = f"{ip}:{port}"
 
-        if new_subnet_name is None:
-            subnet = client.get_subnet_name(netuid)
-        else:
-            subnet = new_subnet_name
-
         response = client.register_module(
-            resolved_key, name=name, address=address, subnet=subnet, min_stake=stake_nano)
+            resolved_key, name=name, address=address, subnet=subnet_name, min_stake=stake_nano
+        )
 
         if response.is_success:
-            console.print(f"Module {name} registered")
+            context.info(f"Module {name} registered")
         else:
             raise ChainTransactionError(response.error_message)  # type: ignore
 
@@ -144,8 +152,9 @@ def serve(
         raise typer.Exit(code=1)
 
     keypair = classic_load_key(key)
-    server = ModuleServer(class_obj(), keypair, whitelist=whitelist,
-                          blacklist=blacklist, subnets_whitelist=subnets_whitelist)
+    server = ModuleServer(
+        class_obj(), keypair, whitelist=whitelist, blacklist=blacklist, subnets_whitelist=subnets_whitelist
+    )
     app = server.get_fastapi_app()
     host = ip or "127.0.0.1"
     uvicorn.run(app, host=host, port=port)  # type: ignore
