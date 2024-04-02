@@ -1,10 +1,24 @@
+import random
 from enum import Enum
+
+from pydantic_settings import BaseSettings
+
 from communex.balance import from_nano
 from communex.client import CommuneClient
 
 
-def get_node_url() -> str:
-    return "wss://commune-api-node-1.communeai.net"
+class ComxSettings(BaseSettings):
+    NODE_URLS: list[str] = ["wss://commune-api-node-1.communeai.net"]
+
+    class Config:
+        env_prefix = "COMX_"
+
+
+def get_node_url(comx_settings: ComxSettings | None = None) -> str:
+    comx_settings = comx_settings or ComxSettings()
+    node_url = random.choice(comx_settings.NODE_URLS)
+    print(f"Using node: {node_url}")
+    return node_url
 
 
 def make_client():
