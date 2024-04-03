@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
 import rich
 import typer
@@ -81,3 +81,15 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
         table.add_row(*row, style="white")
 
     console.print(table)
+
+def create_use_testnet_getter():
+    use_testnet = False
+    def state_function(testnet: Optional[bool]=None):
+        nonlocal use_testnet
+        if testnet:
+            use_testnet = testnet
+        return use_testnet
+
+    return state_function
+
+get_use_testnet = create_use_testnet_getter()
