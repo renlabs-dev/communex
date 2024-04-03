@@ -86,7 +86,7 @@ def create_use_testnet_getter():
     use_testnet = False
     def state_function(testnet: Optional[bool]=None):
         nonlocal use_testnet
-        if testnet != use_testnet:
+        if testnet is not None:
             use_testnet = testnet
         return use_testnet
 
