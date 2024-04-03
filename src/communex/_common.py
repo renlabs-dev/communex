@@ -5,10 +5,12 @@ from pydantic_settings import BaseSettings
 
 from communex.balance import from_nano
 from communex.client import CommuneClient
+from communex.cli._common import get_use_testnet
 
 
 class ComxSettings(BaseSettings):
     NODE_URLS: list[str] = ["wss://commune-api-node-1.communeai.net"]
+    TESTNET_NODE_URLS: list[str] = ["wss://testnet-commune-api-node-0.communeai.net"]
 
     class Config:
         env_prefix = "COMX_"
@@ -16,6 +18,11 @@ class ComxSettings(BaseSettings):
 
 def get_node_url(comx_settings: ComxSettings | None = None) -> str:
     comx_settings = comx_settings or ComxSettings()
+    match get_use_testnet():
+        case True:
+            node_url = random.choice(comx_settings.TESTNET_NODE_URLS)
+        case False:
+            node_url = random.choice(comx_settings.NODE_URLS)
     node_url = random.choice(comx_settings.NODE_URLS)
     print(f"Using node: {node_url}")
     return node_url

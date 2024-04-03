@@ -9,9 +9,16 @@ from .misc import misc_app
 from .module import module_app
 from .network import network_app
 from .subnet import subnet_app
+from ._common import get_use_testnet
 
 app = typer.Typer()
 
+balance_app.callback()(get_use_testnet)
+key_app.callback()(get_use_testnet)
+misc_app.callback()(get_use_testnet)
+module_app.callback()(get_use_testnet)
+network_app.callback()(get_use_testnet)
+subnet_app.callback()(get_use_testnet)
 app.add_typer(key_app, name="key", help="Key operations")
 app.add_typer(balance_app, name="balance", help="Balance operations")
 app.add_typer(misc_app, name="misc", help="Other operations")
