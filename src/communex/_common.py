@@ -23,7 +23,6 @@ def get_node_url(comx_settings: ComxSettings | None = None) -> str:
             node_url = random.choice(comx_settings.TESTNET_NODE_URLS)
         case False:
             node_url = random.choice(comx_settings.NODE_URLS)
-    node_url = random.choice(comx_settings.NODE_URLS)
     print(f"Using node: {node_url}")
     return node_url
 
