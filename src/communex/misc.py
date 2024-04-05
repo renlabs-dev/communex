@@ -110,7 +110,7 @@ def get_map_subnets_params(
                 ("MinAllowedWeights", []),
                 ("MaxAllowedWeights", []),
                 ('MinStake', []),
-                ("Emission", []),
+                ("SubnetEmission", []),
                 ('MaxStake', []),
                 ("Tempo", []),
                 ("MaxAllowedUids", []),
@@ -137,7 +137,7 @@ def get_map_subnets_params(
         netuid_to_subnet_names,
         netuid_to_weight_age
     ) = (
-        bulk_query["Emission"], bulk_query["Tempo"],
+        bulk_query["SubnetEmission"], bulk_query["Tempo"],
         bulk_query["ImmunityPeriod"], bulk_query["MinAllowedWeights"],
         bulk_query["MaxAllowedWeights"], bulk_query["MaxAllowedUids"],
         bulk_query["MinStake"], bulk_query["MaxStake"],
@@ -164,7 +164,7 @@ def get_map_subnets_params(
         trust_ratio = netuid_to_trust_ratio[netuid]
         vote_mode = netuid_to_vote_mode_subnet[netuid]
         vote_threshold = netuid_to_vote_treshold_subnet[netuid]
-        emission = sum(netuid_to_emission[netuid])
+        emission = netuid_to_emission[netuid]
         max_weight_age = netuid_to_weight_age[netuid]
 
         subnet: SubnetParamsWithEmission = {
@@ -314,7 +314,6 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int = 0) -> tuple[dic
                 })
             staketo_map = query_result.get("StakeTo", {})
             staketo_maps.append(staketo_map)
-
 
     format_balances: dict[str, int] = {key: value['data']['free']
                                        for key, value in balance_map.items()
