@@ -40,12 +40,12 @@ def get_node_url(comx_settings: ComxSettings | None = None) -> str:
     return node_url
 
 
-def make_client():
+def make_client(node_url: str | None = None):
     """
     Create a client to the Commune network.
     """
-
-    node_url = get_node_url()
+    if not node_url:
+        node_url = get_node_url()
     return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
 
 
