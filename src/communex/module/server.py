@@ -14,6 +14,7 @@ from keylimiter import KeyLimiter
 from pydantic import BaseModel
 from scalecodec.utils.ss58 import ss58_encode  # type: ignore
 from substrateinterface import Keypair  # type: ignore
+import json
 
 from communex._common import make_client
 from communex.key import check_ss58_address
@@ -107,6 +108,11 @@ def _check_signature(headers_dict: dict[str, str], body: bytes):
     key = headers_dict["x-key"]
     signature = headers_dict["x-signature"]
     crypto = int(headers_dict["x-crypto"])  # TODO: better handling of this
+    timestamp = headers_dict["x-timestamp"]
+    json_body = json.loads(body)
+
+    if timestamp != json_body["timestamp"]:
+        return (False, _json_error(400, "Timestamps doesn't match"))
 
     if not is_hex_string(key):
         return (False, _json_error(400, "X-Key should be a hex value"))
