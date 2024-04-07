@@ -9,7 +9,7 @@ from .misc import misc_app
 from .module import module_app
 from .network import network_app
 from .subnet import subnet_app
-from ._common import get_use_testnet
+from .._common import get_use_testnet
 
 app = typer.Typer()
 

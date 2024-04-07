@@ -1,11 +1,11 @@
 import random
 from enum import Enum
+from typing import Optional
 
 from pydantic_settings import BaseSettings
 
 from communex.balance import from_nano
 from communex.client import CommuneClient
-from communex.cli._common import get_use_testnet
 
 
 class ComxSettings(BaseSettings):
@@ -14,6 +14,19 @@ class ComxSettings(BaseSettings):
 
     class Config:
         env_prefix = "COMX_"
+
+
+def create_use_testnet_getter():
+    use_testnet = False
+    def state_function(testnet: Optional[bool]=None):
+        nonlocal use_testnet
+        if testnet is not None:
+            use_testnet = testnet
+        return use_testnet
+
+    return state_function
+
+get_use_testnet = create_use_testnet_getter()
 
 
 def get_node_url(comx_settings: ComxSettings | None = None) -> str:
