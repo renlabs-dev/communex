@@ -1,18 +1,16 @@
 import random
 from enum import Enum
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from communex.balance import from_nano
 
 
 class ComxSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="COMX_")
     # TODO: improve node lists
     NODE_URLS: list[str] = ["wss://commune-api-node-1.communeai.net"]
     TESTNET_NODE_URLS: list[str] = ["wss://testnet-commune-api-node-0.communeai.net"]
-
-    class Config:
-        env_prefix = "COMX_"
 
 
 def get_node_url(comx_settings: ComxSettings | None = None, *, use_testnet: bool = False) -> str:
