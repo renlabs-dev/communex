@@ -1,6 +1,6 @@
 import ipaddress
 import os.path
-from typing import Any, Callable, TypeVar, Generic, Protocol
+from typing import Any, Callable, Generic, Optional, Protocol, TypeVar
 
 
 def check_str(x: Any) -> str:
@@ -67,7 +67,7 @@ def create_state_fn(default: Callable[..., T]) -> SetterGetterFn[T]:
     """
     value = default()
 
-    def state_function(input: T | None = None):
+    def state_function(input: Optional[T] = None):
         nonlocal value
         if input is not None:
             value = input
