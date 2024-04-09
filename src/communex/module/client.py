@@ -38,11 +38,12 @@ class ModuleClient:
         timestamp = iso_timestamp_now()
         request_data = {
             "params": params,
-            "timestamp": timestamp
         }
 
         serialized_data = serialize(request_data)
-        signature = sign(self.key, serialized_data)
+        request_data["timestamp"] = timestamp
+        serialized_stamped_data = serialize(request_data)
+        signature = sign(self.key, serialized_stamped_data)
         # signed_data = sign_to_dict(self.key, serialized_data)
         headers = {
             "Content-Type": "application/json",
