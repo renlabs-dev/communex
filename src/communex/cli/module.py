@@ -7,14 +7,14 @@ from rich.console import Console
 from typer import Context
 
 import communex.balance as c_balance
+from communex._common import make_client
+from communex.cli._common import (make_custom_context,
+                                  print_table_from_plain_dict)
 from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
-
-from .._common import make_client
-from ._common import make_custom_context, print_table_from_plain_dict
 
 module_app = typer.Typer()
 

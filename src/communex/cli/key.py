@@ -7,16 +7,16 @@ from rich.console import Console
 from substrateinterface import Keypair  # type: ignore
 from typer import Context
 
+from communex._common import BalanceUnit, format_balance, make_client
+from communex.cli._common import (make_custom_context,
+                                  print_table_from_plain_dict,
+                                  print_table_standardize)
 from communex.compat.key import (classic_key_path, classic_store_key,
                                  local_key_addresses, resolve_key_ss58)
 from communex.compat.storage import classic_load
 from communex.key import generate_keypair
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
-
-from .._common import BalanceUnit, format_balance, make_client
-from ._common import (make_custom_context, print_table_from_plain_dict,
-                      print_table_standardize)
 
 key_app = typer.Typer()
 

@@ -3,7 +3,6 @@ from enum import Enum
 
 from pydantic_settings import BaseSettings
 
-from communex._global import get_use_testnet
 from communex.balance import from_nano
 from communex.client import CommuneClient
 
@@ -16,9 +15,9 @@ class ComxSettings(BaseSettings):
         env_prefix = "COMX_"
 
 
-def get_node_url(comx_settings: ComxSettings | None = None) -> str:
+def get_node_url(comx_settings: ComxSettings | None = None, use_testnet: bool = False) -> str:
     comx_settings = comx_settings or ComxSettings()
-    match get_use_testnet():
+    match use_testnet:
         case True:
             node_url = random.choice(comx_settings.TESTNET_NODE_URLS)
         case False:

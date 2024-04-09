@@ -1,17 +1,39 @@
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 import rich
 import typer
 from rich.console import Console
 from rich.table import Table
+from typer import Context
+
+from communex._common import get_node_url
+from communex.client import CommuneClient
+
+
+@dataclass
+class ExtraCtxData:
+    output_json: bool
+    use_testnet: bool
+
+
+class ExtendedContext(Context):
+    obj: ExtraCtxData
 
 
 @dataclass
 class CustomCtx:
-    typer_ctx: typer.Context
+    ctx: ExtendedContext
     console: rich.console.Console
     console_err: rich.console.Console
+    _com_client: CommuneClient | None = None
+
+    def com_client(self) -> CommuneClient:
+        use_testnet = self.ctx.obj.use_testnet
+        node_url = get_node_url(None, use_testnet=use_testnet)
+        if self._com_client is None:
+            self._com_client = CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
+        return self._com_client
 
     def output(self, message: str) -> None:
         self.console.print(message)
@@ -29,7 +51,7 @@ class CustomCtx:
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:
     return CustomCtx(
-        typer_ctx=ctx,
+        ctx=cast(ExtendedContext, ctx),
         console=Console(),
         console_err=Console(stderr=True),
     )

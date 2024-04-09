@@ -1,12 +1,12 @@
 import typer
 from rich.console import Console
 
+from communex._common import BalanceUnit, format_balance, make_client
 from communex.balance import to_nano
+from communex.cli._common import (make_custom_context,
+                                  print_table_from_plain_dict)
 from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.errors import ChainTransactionError
-
-from .._common import BalanceUnit, format_balance, make_client
-from ._common import print_table_from_plain_dict
 
 balance_app = typer.Typer()
 
@@ -44,20 +44,20 @@ def show(key: str, unit: BalanceUnit = BalanceUnit.joule):
 
 
 @balance_app.command()
-def free_balance(key: str, unit: BalanceUnit = BalanceUnit.joule):
+def free_balance(ctx: typer.Context, key: str, unit: BalanceUnit = BalanceUnit.joule):
     """
     Gets free balance of a key.
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    com_client = context.com_client()
 
     key_address = resolve_key_ss58(key)
 
-    with console.status(f"Getting free balance of key {key_address}..."):
-        balance = client.get_balance(key_address)
+    with context.progress_status(f"Getting free balance of key {key_address}..."):
+        balance = com_client.get_balance(key_address)
 
-    console.print(format_balance(balance, unit))
+    context.output(format_balance(balance, unit))
 
 
 @balance_app.command()
