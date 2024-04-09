@@ -1,30 +1,29 @@
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import typer
-from rich.console import Console
+from typer import Context
 
 from communex.balance import from_nano
+from communex.cli._common import (make_custom_context,
+                                  print_table_from_plain_dict)
 from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_subnets_params
 from communex.types import Ss58Address, SubnetParams
 
-from .._common import make_client
-from ._common import print_table_from_plain_dict
-
 subnet_app = typer.Typer()
 
 
 @subnet_app.command()
-def list():
+def list(ctx: Context):
     """
     Gets subnets.
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
-    with console.status("Getting subnets ..."):
+    with context.progress_status("Getting subnets ..."):
         subnets = get_map_subnets_params(client)
 
     keys, values = subnets.keys(), subnets.values()
@@ -40,19 +39,19 @@ def list():
         subnets_with_stakes, key=lambda x: x["emission"], reverse=True)
 
     for dict in subnets_with_netuids:
-        print_table_from_plain_dict(dict, ["Params", "Values"], console)
+        print_table_from_plain_dict(dict, ["Params", "Values"], context.console)
 
 
 @subnet_app.command()
-def info(netuid: int):
+def info(ctx: Context, netuid: int):
     """
     Gets subnet info.
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
-    with console.status(f"Getting subnet with netuid '{netuid}'..."):
+    with context.progress_status(f"Getting subnet with netuid '{netuid}'..."):
 
         subnets = get_map_subnets_params(client)
         subnet = subnets.get(netuid, None)
@@ -61,12 +60,13 @@ def info(netuid: int):
         raise ValueError("Subnet not found")
 
     general_subnet: dict[str, Any] = cast(dict[str, Any], subnet)
-    print_table_from_plain_dict(general_subnet, ["Params", "Values"], console)
+    print_table_from_plain_dict(general_subnet, ["Params", "Values"], context.console)
 
 
 # TODO refactor (user does not need to specify all params)
 @subnet_app.command()
-def update(netuid: int,
+def update(ctx: Context,
+           netuid: int,
            name: str,
            founder: str,
            founder_share: int,
@@ -83,13 +83,13 @@ def update(netuid: int,
            vote_threshold: int,
            key: str,
            max_weight_age: int,
-           password: Optional[str] = None):
+    ):
     """
     Updates a subnet.
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
     params: SubnetParams = {
         "name": name,
@@ -111,10 +111,10 @@ def update(netuid: int,
 
     resolved_key = classic_load_key(key)
 
-    with console.status("Updating subnet ..."):
-        response = (client.update_subnet(key=resolved_key, params=params, netuid=netuid))
+    with context.progress_status("Updating subnet ..."):
+        response = client.update_subnet(key=resolved_key, params=params, netuid=netuid)
 
-        if response.is_success:
-            console.print(f"Successfully updated subnet {name} with netuid {netuid}")
-        else:
-            raise ChainTransactionError(response.error_message)  # type: ignore
+    if response.is_success:
+        context.info(f"Successfully updated subnet {name} with netuid {netuid}")
+    else:
+        raise ChainTransactionError(response.error_message)  # type: ignore
