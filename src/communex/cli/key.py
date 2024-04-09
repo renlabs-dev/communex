@@ -3,7 +3,6 @@ from enum import Enum
 from typing import Any, cast
 
 import typer
-from rich.console import Console
 from substrateinterface import Keypair  # type: ignore
 from typer import Context
 
@@ -68,7 +67,7 @@ def multi_address(ctx: Context, signatories: list[str], threshold: int):
     """
 
     context = make_custom_context(ctx)
-    client = make_client()
+    client = context.com_client()
 
     with client.get_conn() as substrate:
         multisig_address = (substrate.generate_multisig_account(  # type: ignore
@@ -149,9 +148,7 @@ def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joul
 
 
 @key_app.command(name='list')
-def inventory(
-    ctx: Context,
-):
+def inventory(ctx: Context):
     """
     Lists all keys stored on disk.
     """
@@ -163,90 +160,89 @@ def inventory(
 
 
 @key_app.command()
-def stakefrom(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
+def stakefrom(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
     """
     Gets what keys is key staked from.
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
     key_address = resolve_key_ss58(key)
 
-    with console.status(f"Getting stake-from map for {key_address}..."):
+    with context.progress_status(f"Getting stake-from map for {key_address}..."):
         result = client.get_stakefrom(key_addr=key_address, netuid=netuid)
 
     result = {k: format_balance(v, unit) for k, v in result.items()}
 
-    print_table_from_plain_dict(result, ["Key", "Stake"], console)
+    print_table_from_plain_dict(result, ["Key", "Stake"], context.console)
 
 
 @key_app.command()
-def staketo(key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
+def staketo(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
     """
     Gets stake to a key.
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
     key_address = resolve_key_ss58(key)
 
-    with console.status(f"Getting stake-to of {key_address}..."):
+    with context.progress_status(f"Getting stake-to of {key_address}..."):
         result = client.get_staketo(key_addr=key_address, netuid=netuid)
 
     result = {k: format_balance(v, unit) for k, v in result.items()}
 
-    # Table
-    print_table_from_plain_dict(result, ["Key", "Stake"], console)
+    print_table_from_plain_dict(result, ["Key", "Stake"], context.console)
 
 
 @key_app.command()
-def total_free_balance(unit: BalanceUnit = BalanceUnit.joule):
+def total_free_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule):
     """
     Returns total balance of all keys on a disk
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
-    with console.status("Getting total free balance of all keys..."):
+    with context.progress_status("Getting total free balance of all keys..."):
         key2balance: dict[str, int] = local_keys_to_freebalance(client)
 
         balance_sum = sum(key2balance.values())
 
-        console.print(format_balance(balance_sum, unit=unit))
+        context.output(format_balance(balance_sum, unit=unit))
 
 
 @key_app.command()
-def total_staked_balance(unit: BalanceUnit = BalanceUnit.joule, netuid: int = 0):
+def total_staked_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule, netuid: int = 0):
     """
     Returns total stake of all keys on a disk
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
-    with console.status("Getting total staked balance of all keys..."):
+    with context.progress_status("Getting total staked balance of all keys..."):
         key2stake: dict[str, int] = local_keys_to_stakedbalance(client, netuid=netuid)
 
         stake_sum = sum(key2stake.values())
 
-        console.print(format_balance(stake_sum, unit=unit))
+        context.output(format_balance(stake_sum, unit=unit))
 
 
 @key_app.command()
-def total_balance(unit: BalanceUnit = BalanceUnit.joule, netuid: int = 0):
+def total_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule, netuid: int = 0):
     """
     Returns total tokens of all keys on a disk
     """
 
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
-    with console.status("Getting total tokens of all keys..."):
+    with context.progress_status("Getting total tokens of all keys..."):
         key2balance, key2stake = local_keys_allbalance(client, netuid=netuid)
         key2tokens = {k: v + key2stake[k] for k, v in key2balance.items()}
         tokens_sum = sum(key2tokens.values())
 
-        console.print(format_balance(tokens_sum, unit=unit))
+        context.output(format_balance(tokens_sum, unit=unit))
