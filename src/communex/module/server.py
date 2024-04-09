@@ -15,7 +15,8 @@ from pydantic import BaseModel
 from scalecodec.utils.ss58 import ss58_encode  # type: ignore
 from substrateinterface import Keypair  # type: ignore
 
-from communex._common import make_client
+from communex._common import get_node_url
+from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._ip_limiter import IpLimiterMiddleware
@@ -120,13 +121,18 @@ def _check_signature(headers_dict: dict[str, str], body: bytes):
     return (True, None)
 
 
+def _make_client(node_url: str):
+    return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
+
+
 def _check_key_registered(subnets_whitelist: list[int] | None, headers_dict: dict[str, str], body: bytes):
     key = headers_dict["x-key"]
     key = parse_hex(key)
 
     # TODO: checking for key being registered should be smarter
     # e.g. query and store all registered modules periodically.
-    client = make_client()
+    node_url = get_node_url(None, use_testnet=False)
+    client = _make_client(node_url)  # TODO: get client from outer context
     ss58_format = 42
     ss58 = ss58_encode(key, ss58_format)
     ss58 = check_ss58_address(ss58, ss58_format)

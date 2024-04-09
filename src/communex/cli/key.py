@@ -6,7 +6,7 @@ import typer
 from substrateinterface import Keypair  # type: ignore
 from typer import Context
 
-from communex._common import BalanceUnit, format_balance, make_client
+from communex._common import BalanceUnit, format_balance
 from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict,
                                   print_table_standardize)
@@ -65,7 +65,6 @@ def multi_address(ctx: Context, signatories: list[str], threshold: int):
     """
     Outputs a multisig address from the given signatories.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -81,7 +80,6 @@ def show(ctx: Context, key: str, show_private: bool = False):
     """
     Show information about a key.
     """
-
     context = make_custom_context(ctx)
 
     path = classic_key_path(key)
@@ -101,9 +99,8 @@ def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joul
     """
     Gets balances of all keys.
     """
-
     context = make_custom_context(ctx)
-    client = make_client()
+    client = context.com_client()
 
     with context.console.status("Getting balances of all keys, this might take a while..."):
         key2freebalance, key2stake = local_keys_allbalance(client, netuid)
@@ -164,7 +161,6 @@ def stakefrom(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = Balan
     """
     Gets what keys is key staked from.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -183,7 +179,6 @@ def staketo(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = Balance
     """
     Gets stake to a key.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -202,7 +197,6 @@ def total_free_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule):
     """
     Returns total balance of all keys on a disk
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -219,7 +213,6 @@ def total_staked_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule, ne
     """
     Returns total stake of all keys on a disk
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -236,7 +229,6 @@ def total_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule, netuid: i
     """
     Returns total tokens of all keys on a disk
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 

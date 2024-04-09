@@ -62,6 +62,6 @@ def sign_with_metadate(keypair: Keypair, data: bytes):
     return {
         'address': keypair.ss58_address,
         'crypto_type': keypair.crypto_type,
-        'data': data.decode(),  # TODO: this might fail depending on the string? use b64?
+        'data': data.decode(),
         'signature': sig_hex,
     }

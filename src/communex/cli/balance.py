@@ -16,11 +16,10 @@ def show(ctx: Context, key: str, unit: BalanceUnit = BalanceUnit.joule):
     """
     Gets the balances of a key.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    key_address = resolve_key_ss58(key)  # TODO: commune.compat.key.classic_resolve_key_ss58
+    key_address = resolve_key_ss58(key)
 
     with context.progress_status(f"Getting balance of key {key_address}..."):
         subnets = client.query_map_subnet_names()
@@ -48,7 +47,6 @@ def free_balance(ctx: Context, key: str, unit: BalanceUnit = BalanceUnit.joule):
     """
     Gets free balance of a key.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -65,7 +63,6 @@ def staked_balance(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = 
     """
     Gets staked balance of key.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -84,7 +81,6 @@ def all_balance(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = Bal
     """
     Gets entire balance of a key (free balance + staked balance).
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -104,7 +100,6 @@ def get_staked(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = Bala
     """
     Gets total stake of a key.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -121,7 +116,6 @@ def transfer(ctx: Context, key: str, amount: float, dest: str):
     """
     Transfer amount to destination using key
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -146,7 +140,6 @@ def transfer_stake(ctx: Context, key: str, amount: float, from_key: str, dest: s
     """
     Transfers stake of key from point A to point B
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -177,7 +170,6 @@ def stake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
     """
     Stake amount to destination using key
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -199,7 +191,6 @@ def unstake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
     """
     Unstake amount from destination using key
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 

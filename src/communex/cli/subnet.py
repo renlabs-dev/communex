@@ -19,7 +19,6 @@ def list(ctx: Context):
     """
     Gets subnets.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -47,7 +46,6 @@ def info(ctx: Context, netuid: int):
     """
     Gets subnet info.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -87,7 +85,6 @@ def update(ctx: Context,
     """
     Updates a subnet.
     """
-
     context = make_custom_context(ctx)
     client = context.com_client()
 

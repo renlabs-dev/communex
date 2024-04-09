@@ -1,27 +1,24 @@
 from typing import Any, cast
 
 import typer
-from rich.console import Console
 from typer import Context
 
+from communex.cli._common import make_custom_context, print_table_from_plain_dict
 from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.misc import get_global_params
 from communex.types import NetworkParams, SubnetParams
 
-from .._common import make_client
-from ._common import make_custom_context, print_table_from_plain_dict
 
 network_app = typer.Typer()
 
 
 @network_app.command()
-def last_block(hash: bool = False):
+def last_block(ctx: Context, hash: bool = False):
     """
     Gets the last block
     """
-
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
     info = "number" if not hash else "hash"
 
@@ -30,42 +27,42 @@ def last_block(hash: bool = False):
     if block:
         block_info = block["header"][info]
 
-    console.print(block_info)
+    context.output(str(block_info))
 
 
 @network_app.command()
-def params():
+def params(ctx: Context):
     """
     Gets global params
     """
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
-    console = Console()
-    client = make_client()
-
-    with console.status(
-        "Getting global network params ...",
-    ):
+    with context.progress_status("Getting global network params ..."):
         global_params = get_global_params(client)
 
     general_params: dict[str, Any] = cast(dict[str, Any], global_params)
-    print_table_from_plain_dict(general_params, ["Global params", "Value"], console)
+    print_table_from_plain_dict(general_params, ["Global params", "Value"], context.console)
 
 
 @network_app.command()
-def list_proposals():
-    console = Console()
-    client = make_client()
+def list_proposals(ctx: Context):
+    """
+    Gets proposals
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
-    with console.status("Getting proposals..."):
+    with context.progress_status("Getting proposals..."):
         try:
             proposals = client.query_map_proposals()
         except IndexError:
-            console.print("No proposals found.")
+            context.info("No proposals found.")
             return
 
     for _, batch_proposal in proposals.items():
         for proposal_id, proposal in batch_proposal.items():
-            print_table_from_plain_dict(proposal, [f"Proposal id: {proposal_id}", "Params"], console)
+            print_table_from_plain_dict(proposal, [f"Proposal id: {proposal_id}", "Params"], context.console)
 
 
 @network_app.command()
@@ -95,9 +92,8 @@ def propose_globally(
     """
     Adds a global proposal to the network.
     """
-
-    client = make_client()
     context = make_custom_context(ctx)
+    client = context.com_client()
 
     resolved_key = classic_load_key(key)
 
@@ -132,6 +128,7 @@ def propose_globally(
 
 @network_app.command()
 def propose_on_subnet(
+    ctx: Context,
     key: str,
     name: str,
     founder: str,
@@ -152,9 +149,8 @@ def propose_on_subnet(
     """
     Adds a proposal to a specific subnet.
     """
-
-    console = Console()
-    client = make_client()
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
     resolve_founder = resolve_key_ss58(founder)
     resolved_key = classic_load_key(key)
@@ -177,30 +173,31 @@ def propose_on_subnet(
         "max_weight_age": max_weight_age,
     }
 
-    with console.status("Adding a proposal..."):
+    with context.progress_status("Adding a proposal..."):
         client.add_subnet_proposal(resolved_key, proposal)
 
 
 @network_app.command()
-def vote_proposal(key: str, proposal_id: int):
-    console = Console()
-    client = make_client()
+def vote_proposal(ctx: Context, key: str, proposal_id: int):
+    """
+    Casts a vote on a specified proposal.
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
     resolved_key = classic_load_key(key)
-    with console.status(f"Voting on a proposal {proposal_id}..."):
+    with context.progress_status(f"Voting on a proposal {proposal_id}..."):
         client.vote_on_proposal(resolved_key, proposal_id)
 
 
 @network_app.command()
-def unvote_proposal(key: str, proposal_id: int):
-    console = Console()
-    client = make_client()
+def unvote_proposal(ctx: Context, key: str, proposal_id: int):
+    """
+    Retracts a previously cast vote on a specified proposal.
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
 
     resolved_key = classic_load_key(key)
-    with console.status(f"Unvoting on a proposal {proposal_id}..."):
+    with context.progress_status(f"Unvoting on a proposal {proposal_id}..."):
         client.unvote_on_proposal(resolved_key, proposal_id)
-
-
-if __name__ == "__main__":
-    client = make_client()
-    proposals = client.query_map_proposals()

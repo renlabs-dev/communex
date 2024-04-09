@@ -31,6 +31,7 @@ class CustomCtx:
     def com_client(self) -> CommuneClient:
         use_testnet = self.ctx.obj.use_testnet
         node_url = get_node_url(None, use_testnet=use_testnet)
+        self.info(f"Using node: {node_url}")
         if self._com_client is None:
             self._com_client = CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
         return self._com_client
