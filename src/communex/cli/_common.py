@@ -48,6 +48,9 @@ class CustomCtx:
     def progress_status(self, message: str):
         return self.console_err.status(message)
 
+    def confirm(self, message: str) -> bool:
+        return typer.confirm(message)
+
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:
     return CustomCtx(
