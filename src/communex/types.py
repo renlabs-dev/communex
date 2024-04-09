@@ -16,7 +16,7 @@ chains.
 """
 
 
-# TODO: replace with dataclasses(?)
+# TODO: replace with dataclasses
 
 
 class NetworkParams(TypedDict):
