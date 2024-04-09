@@ -1,7 +1,7 @@
-import os.path
-from typing import Any
-
 import ipaddress
+import os.path
+from typing import Any, Callable, TypeVar, Generic, Protocol
+
 
 def check_str(x: Any) -> str:
     assert isinstance(x, str)
@@ -52,3 +52,25 @@ def is_ip_valid(ip: str) -> bool:
     except ValueError:
         return False
 
+
+T = TypeVar("T")
+
+
+class SetterGetterFn(Generic[T], Protocol):
+    def __call__(self, x: T = ..., /) -> T:
+        ...
+
+
+def create_state_fn(default: Callable[..., T]) -> SetterGetterFn[T]:
+    """
+    Creates a state function that can be used to get or set a value.
+    """
+    value = default()
+
+    def state_function(input: T | None = None):
+        nonlocal value
+        if input is not None:
+            value = input
+        return value
+
+    return state_function

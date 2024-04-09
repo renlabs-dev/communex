@@ -3,9 +3,9 @@ from enum import Enum
 
 from pydantic_settings import BaseSettings
 
+from communex._global import get_use_testnet
 from communex.balance import from_nano
 from communex.client import CommuneClient
-from communex.cli._common import get_use_testnet
 
 
 class ComxSettings(BaseSettings):
