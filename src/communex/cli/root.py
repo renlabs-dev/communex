@@ -1,7 +1,9 @@
+from typing import Annotated, Optional
+
 import typer
-from typing import Optional, Annotated
 
 from communex import __version__
+from communex._global import get_use_testnet
 
 from .balance import balance_app
 from .key import key_app
@@ -9,7 +11,6 @@ from .misc import misc_app
 from .module import module_app
 from .network import network_app
 from .subnet import subnet_app
-from ._common import get_use_testnet
 
 app = typer.Typer()
 
