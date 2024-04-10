@@ -3,7 +3,8 @@ Server for Commune modules.
 """
 
 import re
-from typing import Awaitable, Callable
+from functools import partial
+from typing import Awaitable, Callable, Any
 
 import fastapi
 import starlette.datastructures
@@ -16,11 +17,12 @@ from scalecodec.utils.ss58 import ss58_encode  # type: ignore
 from substrateinterface import Keypair  # type: ignore
 import json
 
+
 from communex._common import make_client
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._ip_limiter import IpLimiterMiddleware
-from communex.module.module import Module, endpoint
+from communex.module.module import Module, endpoint, EndpointDefinition
 
 # Regular expression to match a hexadecimal number
 HEX_PATTERN = re.compile(r"^[0-9a-fA-F]+$")
@@ -183,15 +185,16 @@ class ModuleServer:
 
     def register_endpoints(self, router: APIRouter):
         endpoints = self._module.get_endpoints()
-        for name, endpoint_def in endpoints.items():
 
+        for name, endpoint_def in endpoints.items():
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
 
-            def handler(body: Body):
-                return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
+            def handler(end_def: EndpointDefinition[Any, ...], body: Body):
+                return end_def.fn(self._module, **body.params.model_dump())  # type: ignore
 
-            router.post(f"/method/{name}")(handler)
+            defined_handler = partial(handler, endpoint_def)
+            router.post(f"/method/{name}")(defined_handler)
 
     def register_extra_middleware(self):
         async def check_lists(request: Request, call_next: Callback):
