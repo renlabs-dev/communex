@@ -900,7 +900,7 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        amount = amount - self.get_existential_deposit()
+        amount = amount - self.get_existential_deposit()  # TODO: this should not be default
 
         params = {'dest': dest, 'value': amount}
 
