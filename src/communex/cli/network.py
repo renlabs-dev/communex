@@ -201,17 +201,16 @@ def vote_proposal(
     proposal_id: int,
     key: Optional[str] = None,
     agree: bool = typer.Option(True, "--disagree"),
-    all_keys: bool = typer.Option(False, "--all-keys")
 ):
     """
-    Casts a vote on a specified proposal.
+    Casts a vote on a specified proposal. Without specifying a key, all keys on disk will be used.
     """
     context = make_custom_context(ctx)
     client = context.com_client()
     proposals = client.query_map_proposals()
     proposal = proposals[proposal_id]
 
-    if all_keys or key is None:
+    if key is None:
         context.info("Voting with all keys on disk...")
         keys_stake = get_valid_voting_keys(client, proposal)
     else:
