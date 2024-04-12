@@ -1,11 +1,11 @@
-from typing import Any, cast
-
 import typer
 from typer import Context
+from rich.progress import track
+
 
 from communex.cli._common import make_custom_context, print_table_from_plain_dict
 from communex.compat.key import classic_load_key, resolve_key_ss58
-from communex.misc import get_global_params
+from communex.misc import get_global_params, local_keys_to_stakedbalance
 from communex.types import NetworkParams, SubnetParams
 
 
@@ -143,7 +143,6 @@ def propose_on_subnet(
     tempo: int,
     trust_ratio: int,
     vote_mode: str,
-    vote_threshold: int,
     max_weight_age: int,
 ):
     """
@@ -169,7 +168,6 @@ def propose_on_subnet(
         "tempo": tempo,
         "trust_ratio": trust_ratio,
         "vote_mode": vote_mode,
-        "vote_threshold": vote_threshold,
         "max_weight_age": max_weight_age,
     }
 
@@ -178,16 +176,36 @@ def propose_on_subnet(
 
 
 @network_app.command()
-def vote_proposal(ctx: Context, key: str, proposal_id: int):
+def vote_proposal(
+    ctx: Context, 
+    key: str,
+    proposal_id: int, 
+    agree: bool = typer.Option(True, "--disagree"),
+    all_keys: bool = typer.Option(False, "--all-keys")
+    ):
+
     """
     Casts a vote on a specified proposal.
     """
     context = make_custom_context(ctx)
     client = context.com_client()
+    proposals = client.query_map_proposals()
+    proposal = proposals[proposal_id]
+    if proposal.get('SubnetParams'):
+        proposal_netuid = proposal["SubnetParams"]["netuid"]
+    proposal_netuid = 0
 
-    resolved_key = classic_load_key(key)
-    with context.progress_status(f"Voting on a proposal {proposal_id}..."):
-        client.vote_on_proposal(resolved_key, proposal_id)
+    keys_stake = local_keys_to_stakedbalance(client, proposal_netuid) if all_keys else {key: 5}
+    keys_stake = {key: stake for key, stake in keys_stake.items() if stake >= 5}
+
+    for key in track(keys_stake.keys(), description="Voting..."):
+        resolved_key = classic_load_key(key)
+        try:
+            client.vote_on_proposal(resolved_key, proposal_id, agree)
+        except Exception as e:
+            print(f"Error while voting with key {key}: ", e)
+            print("Skipping...")
+            continue
 
 
 @network_app.command()
