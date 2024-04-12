@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional, cast
 import typer
 from typer import Context
 from rich.progress import track
@@ -43,7 +43,8 @@ def params(ctx: Context):
         global_params = get_global_params(client)
 
     general_params: dict[str, Any] = cast(dict[str, Any], global_params)
-    print_table_from_plain_dict(general_params, ["Global params", "Value"], context.console)
+    print_table_from_plain_dict(
+        general_params, ["Global params", "Value"], context.console)
 
 
 @network_app.command()
@@ -62,8 +63,8 @@ def list_proposals(ctx: Context):
             return
 
     for proposal_id, batch_proposal in proposals.items():
-        print_table_from_plain_dict(batch_proposal, [f"Proposal id: {proposal_id}", "Params"], context.console)
-            
+        print_table_from_plain_dict(
+            batch_proposal, [f"Proposal id: {proposal_id}", "Params"], context.console)
 
 
 @network_app.command()
@@ -186,21 +187,22 @@ def get_valid_voting_keys(client: CommuneClient, proposal: dict[str, Any]) -> di
         for netuid in track(subnets.keys(), description="Checking valid keys..."):
             subnet_stake = local_keys_to_stakedbalance(client, netuid)
             keys_stake = {
-                key: keys_stake.get(key, 0) + subnet_stake.get(key, 0) 
+                key: keys_stake.get(key, 0) + subnet_stake.get(key, 0)
                 for key in set(keys_stake) | set(subnet_stake)
-                }
-    keys_stake = {key: stake for key, stake in keys_stake.items() if stake >= 5}
+            }
+    keys_stake = {key: stake for key,
+                  stake in keys_stake.items() if stake >= 5}
     return keys_stake
+
 
 @network_app.command()
 def vote_proposal(
-    ctx: Context, 
-    key: str,
-    proposal_id: int, 
+    ctx: Context,
+    proposal_id: int,
+    key: Optional[str] = None,
     agree: bool = typer.Option(True, "--disagree"),
     all_keys: bool = typer.Option(False, "--all-keys")
-    ):
-
+):
     """
     Casts a vote on a specified proposal.
     """
@@ -208,11 +210,15 @@ def vote_proposal(
     client = context.com_client()
     proposals = client.query_map_proposals()
     proposal = proposals[proposal_id]
-    keys_stake = get_valid_voting_keys(client, proposal) if all_keys else {key: None}
 
+    if all_keys or key is None:
+        context.info("Voting with all keys on disk...")
+        keys_stake = get_valid_voting_keys(client, proposal)
+    else:
+        keys_stake = {key: None}
 
-    for key in track(keys_stake.keys(), description="Voting..."):
-        resolved_key = classic_load_key(key)
+    for voting_key in track(keys_stake.keys(), description="Voting..."):
+        resolved_key = classic_load_key(voting_key)
         try:
             client.vote_on_proposal(resolved_key, proposal_id, agree)
         except Exception as e:
@@ -233,6 +239,7 @@ def unvote_proposal(ctx: Context, key: str, proposal_id: int):
     with context.progress_status(f"Unvoting on a proposal {proposal_id}..."):
         client.unvote_on_proposal(resolved_key, proposal_id)
 
+
 @network_app.command()
 def add_custom_proposal(
     ctx: Context,
@@ -251,6 +258,6 @@ def add_custom_proposal(
     proposal = {
         "data": data
     }
-    
+
     with context.progress_status("Adding a proposal..."):
         client.add_custom_proposal(resolved_key, proposal)
