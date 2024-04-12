@@ -6,10 +6,11 @@ from typer import Context
 from communex.balance import from_nano
 from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict)
-from communex.compat.key import classic_load_key
+from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_subnets_params
 from communex.types import Ss58Address, SubnetParams
+
 
 subnet_app = typer.Typer()
 
@@ -115,3 +116,78 @@ def update(ctx: Context,
         context.info(f"Successfully updated subnet {name} with netuid {netuid}")
     else:
         raise ChainTransactionError(response.error_message)  # type: ignore
+
+@subnet_app.command()
+def propose_on_subnet(
+    ctx: Context,
+    netuid: int,
+    key: str,
+    name: str,
+    founder: str,
+    founder_share: int,
+    immunity_period: int,
+    incentive_ratio: int,
+    max_allowed_uids: int,
+    max_allowed_weights: int,
+    min_allowed_weights: int,
+    max_stake: int,
+    min_stake: int,
+    tempo: int,
+    trust_ratio: int,
+    vote_mode: str,
+    vote_threshold: int,
+    max_weight_age: int,
+):
+    """
+    Adds a proposal to a specific subnet.
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    resolve_founder = resolve_key_ss58(founder)
+    resolved_key = classic_load_key(key)
+
+    proposal: SubnetParams = {
+        "name": name,
+        "founder": resolve_founder,
+        "founder_share": founder_share,
+        "immunity_period": immunity_period,
+        "incentive_ratio": incentive_ratio,
+        "max_allowed_uids": max_allowed_uids,
+        "max_allowed_weights": max_allowed_weights,
+        "min_allowed_weights": min_allowed_weights,
+        "max_stake": max_stake,
+        "min_stake": min_stake,
+        "tempo": tempo,
+        "trust_ratio": trust_ratio,
+        "vote_mode": vote_mode,
+        "vote_threshold": vote_threshold,
+        "max_weight_age": max_weight_age,
+    }
+
+    with context.progress_status("Adding a proposal..."):
+        client.add_subnet_proposal(resolved_key, proposal, netuid=netuid)
+
+
+@subnet_app.command()
+def add_custom_proposal(
+    ctx: Context,
+    netuid: int,
+    key: str,
+    data: str
+):
+    """
+    Adds a proposal to a specific subnet.
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    # _ = resolve_key_ss58(founder)
+    resolved_key = classic_load_key(key)
+
+    proposal = {
+        "data": data
+    }
+    
+    with context.progress_status("Adding a proposal..."):
+        client.add_custom_proposal(resolved_key, proposal, netuid=netuid)

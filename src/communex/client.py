@@ -1400,6 +1400,22 @@ class CommuneClient:
 
         return response
 
+    def add_custom_proposal(
+            self,
+            key: Keypair,
+            params: dict[Any, Any],
+            netuid: int = 0,
+            ) -> ExtrinsicReceipt:
+        
+        proposal = params
+        proposal['netuid'] = netuid
+        response = self.compose_call(
+            fn="add_custom_proposal",
+            params=params,
+            key=key
+            )
+        return response
+
     def add_global_proposal(self,
                             key: Keypair,
                             params: NetworkParams,
