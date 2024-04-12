@@ -1,12 +1,13 @@
+from typing import Any
 import typer
 from typer import Context
 from rich.progress import track
-
 
 from communex.cli._common import make_custom_context, print_table_from_plain_dict
 from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.misc import get_global_params, local_keys_to_stakedbalance
 from communex.types import NetworkParams, SubnetParams
+from communex.client import CommuneClient
 
 
 network_app = typer.Typer()
@@ -175,6 +176,22 @@ def propose_on_subnet(
         client.add_subnet_proposal(resolved_key, proposal)
 
 
+def get_valid_voting_keys(client: CommuneClient, proposal: dict[str, Any]) -> dict[str, int]:
+    if proposal.get('SubnetParams'):
+        proposal_netuid = proposal["SubnetParams"]["netuid"]
+        keys_stake = local_keys_to_stakedbalance(client, proposal_netuid)
+    else:
+        keys_stake: dict[str, int] = {}
+        subnets = client.query_map_subnet_names()
+        for netuid in track(subnets.keys(), description="Checking valid keys..."):
+            subnet_stake = local_keys_to_stakedbalance(client, netuid)
+            keys_stake = {
+                key: keys_stake.get(key, 0) + subnet_stake.get(key, 0) 
+                for key in set(keys_stake) | set(subnet_stake)
+                }
+    keys_stake = {key: stake for key, stake in keys_stake.items() if stake >= 5}
+    return keys_stake
+
 @network_app.command()
 def vote_proposal(
     ctx: Context, 
@@ -191,12 +208,8 @@ def vote_proposal(
     client = context.com_client()
     proposals = client.query_map_proposals()
     proposal = proposals[proposal_id]
-    if proposal.get('SubnetParams'):
-        proposal_netuid = proposal["SubnetParams"]["netuid"]
-    proposal_netuid = 0
+    keys_stake = get_valid_voting_keys(client, proposal) if all_keys else {key: None}
 
-    keys_stake = local_keys_to_stakedbalance(client, proposal_netuid) if all_keys else {key: 5}
-    keys_stake = {key: stake for key, stake in keys_stake.items() if stake >= 5}
 
     for key in track(keys_stake.keys(), description="Voting..."):
         resolved_key = classic_load_key(key)
