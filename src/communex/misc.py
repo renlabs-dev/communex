@@ -118,7 +118,6 @@ def get_map_subnets_params(
                 ("FounderShare", []),
                 ('IncentiveRatio', []),
                 ('TrustRatio', []),
-                ('VoteThresholdSubnet', []),
                 ('VoteModeSubnet', []),
                 ('SubnetNames', []),
                 ('MaxWeightAge', [])
@@ -133,7 +132,7 @@ def get_map_subnets_params(
         netuid_to_max_allowed_uids, netuid_to_min_stake,
         netuid_to_max_stake, netuid_to_founder, netuid_to_founder_share,
         netuid_to_incentive_ratio, netuid_to_trust_ratio,
-        netuid_to_vote_treshold_subnet, netuid_to_vote_mode_subnet,
+        netuid_to_vote_mode_subnet,
         netuid_to_subnet_names,
         netuid_to_weight_age
     ) = (
@@ -143,7 +142,7 @@ def get_map_subnets_params(
         bulk_query["MinStake"], bulk_query["MaxStake"],
         bulk_query["Founder"], bulk_query["FounderShare"],
         bulk_query["IncentiveRatio"], bulk_query["TrustRatio"],
-        bulk_query["VoteThresholdSubnet"], bulk_query["VoteModeSubnet"],
+        bulk_query["VoteModeSubnet"],
         bulk_query["SubnetNames"], bulk_query["MaxWeightAge"]
     )
 
@@ -163,7 +162,6 @@ def get_map_subnets_params(
         tempo = netuid_to_tempo[netuid]
         trust_ratio = netuid_to_trust_ratio[netuid]
         vote_mode = netuid_to_vote_mode_subnet[netuid]
-        vote_threshold = netuid_to_vote_treshold_subnet[netuid]
         emission = netuid_to_emission[netuid]
         max_weight_age = netuid_to_weight_age[netuid]
 
@@ -181,7 +179,6 @@ def get_map_subnets_params(
             "tempo": tempo,
             "trust_ratio": trust_ratio,
             "vote_mode": vote_mode,
-            "vote_threshold": vote_threshold,
             "emission": emission,
             "max_weight_age": max_weight_age,
         }

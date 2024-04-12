@@ -1454,6 +1454,7 @@ class CommuneClient:
     def vote_on_proposal(self,
                          key: Keypair,
                          proposal_id: int,
+                         agree: bool,
                          ) -> ExtrinsicReceipt:
         """
         Casts a vote on a specified proposal within the network.
@@ -1472,7 +1473,8 @@ class CommuneClient:
         """
 
         params = {
-            'proposal_id': proposal_id
+            'proposal_id': proposal_id,
+            'agree': agree
         }
 
         response = self.compose_call('vote_proposal', key=key, params=params)
@@ -1952,22 +1954,6 @@ class CommuneClient:
 
         return self.query_map("TrustRatio", extract_value=False)["TrustRatio"]
 
-    def query_map_vote_threshold_subnet(self) -> dict[int, int]:
-        """
-        Retrieves a mapping of vote thresholds for subnets within the network.
-
-        Queries the network for vote thresholds specific to various
-        subnets, which are the treshold intervals for setting weights.
-
-        Returns:
-            A dictionary mapping network UIDs to their 
-            vote thresholds for subnets.
-
-        Raises:
-            QueryError: If the query to the network fails or is invalid.
-        """
-
-        return self.query_map("VoteThresholdSubnet", extract_value=False)["VoteThresholdSubnet"]
 
     def query_map_vote_mode_subnet(self) -> dict[int, str]:
         """

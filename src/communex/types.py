@@ -55,7 +55,6 @@ class SubnetParams(TypedDict):
     tempo: int
     trust_ratio: int
     vote_mode: str
-    vote_threshold: int
     max_weight_age: int
 
 

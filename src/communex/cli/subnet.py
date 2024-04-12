@@ -79,7 +79,6 @@ def update(ctx: Context,
            tempo: int,
            trust_ratio: int,
            vote_mode: str,
-           vote_threshold: int,
            key: str,
            max_weight_age: int,
     ):
@@ -103,7 +102,6 @@ def update(ctx: Context,
         "tempo": tempo,
         "trust_ratio": trust_ratio,
         "vote_mode": vote_mode,
-        "vote_threshold": vote_threshold,
         "max_weight_age": max_weight_age,
     }
 
