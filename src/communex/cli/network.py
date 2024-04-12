@@ -60,9 +60,9 @@ def list_proposals(ctx: Context):
             context.info("No proposals found.")
             return
 
-    for _, batch_proposal in proposals.items():
-        for proposal_id, proposal in batch_proposal.items():
-            print_table_from_plain_dict(proposal, [f"Proposal id: {proposal_id}", "Params"], context.console)
+    for proposal_id, batch_proposal in proposals.items():
+        print_table_from_plain_dict(batch_proposal, [f"Proposal id: {proposal_id}", "Params"], context.console)
+            
 
 
 @network_app.command()
@@ -201,3 +201,25 @@ def unvote_proposal(ctx: Context, key: str, proposal_id: int):
     resolved_key = classic_load_key(key)
     with context.progress_status(f"Unvoting on a proposal {proposal_id}..."):
         client.unvote_on_proposal(resolved_key, proposal_id)
+
+@network_app.command()
+def add_custom_proposal(
+    ctx: Context,
+    key: str,
+    data: str
+):
+    """
+    Adds a proposal to a specific subnet.
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    # _ = resolve_key_ss58(founder)
+    resolved_key = classic_load_key(key)
+
+    proposal = {
+        "data": data
+    }
+    
+    with context.progress_status("Adding a proposal..."):
+        client.add_custom_proposal(resolved_key, proposal)
