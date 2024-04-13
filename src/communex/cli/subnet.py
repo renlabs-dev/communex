@@ -181,9 +181,9 @@ def add_custom_proposal(
     # _ = resolve_key_ss58(founder)
     resolved_key = classic_load_key(key)
 
+    ipfs = "ipfs://" + cid
     proposal = {
-        "data": cid
+        "data": ipfs
     }
-    
     with context.progress_status("Adding a proposal..."):
         client.add_custom_proposal(resolved_key, proposal, netuid=netuid)
