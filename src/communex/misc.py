@@ -208,7 +208,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("BurnRate", []),
             ("MinBurn", []),
             ("MaxBurn", []),
-            ("Burn", []),
             ("MinStake", []),
             ("MinWeightStake", []),
             ("AdjustmentAlpha", []),
