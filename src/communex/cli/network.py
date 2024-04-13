@@ -1,4 +1,5 @@
 from typing import Any, cast, Optional
+import re
 
 import typer
 from typer import Context
@@ -6,7 +7,7 @@ from rich.progress import track
 
 from communex.cli._common import make_custom_context, print_table_from_plain_dict
 from communex.compat.key import classic_load_key, resolve_key_ss58
-from communex.misc import get_global_params, local_keys_to_stakedbalance, get_map_subnets_params
+from communex.misc import get_global_params, local_keys_to_stakedbalance, get_map_subnets_params, IPFS_REGEX
 from communex.types import NetworkParams, SubnetParams
 from communex.client import CommuneClient
 
@@ -231,19 +232,22 @@ def unvote_proposal(ctx: Context, key: str, proposal_id: int):
 def add_custom_proposal(
     ctx: Context,
     key: str,
-    data: str
+    cid: str
 ):
     """
     Adds a proposal to a specific subnet.
     """
     context = make_custom_context(ctx)
+    if not re.match(IPFS_REGEX, cid):
+        context.error(f"CID provided is invalid: {cid}")
+        exit(1)
     client = context.com_client()
 
     # _ = resolve_key_ss58(founder)
     resolved_key = classic_load_key(key)
 
     proposal = {
-        "data": data
+        "data": cid
     }
 
     with context.progress_status("Adding a proposal..."):

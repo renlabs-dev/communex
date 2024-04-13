@@ -1,5 +1,5 @@
 from typing import Any, cast
-from typeguard import check_type
+import re
 
 import typer
 from typer import Context
@@ -9,8 +9,8 @@ from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict)
 from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.errors import ChainTransactionError
-from communex.misc import get_map_subnets_params
-from communex.types import Ss58Address, SubnetParams
+from communex.misc import get_map_subnets_params, IPFS_REGEX
+from communex.types import SubnetParams
 
 subnet_app = typer.Typer()
 
@@ -166,19 +166,23 @@ def add_custom_proposal(
     ctx: Context,
     netuid: int,
     key: str,
-    data: str
+    cid: str
 ):
     """
     Adds a proposal to a specific subnet.
     """
+        
     context = make_custom_context(ctx)
+    if not re.match(IPFS_REGEX, cid):
+        context.error(f"CID provided is invalid: {cid}")
+        exit(1)
     client = context.com_client()
 
     # _ = resolve_key_ss58(founder)
     resolved_key = classic_load_key(key)
 
     proposal = {
-        "data": data
+        "data": cid
     }
     
     with context.progress_status("Adding a proposal..."):
