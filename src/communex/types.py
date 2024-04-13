@@ -20,7 +20,6 @@ chains.
 
 
 class NetworkParams(TypedDict):
-    max_allowed_subnets: int
     max_allowed_modules: int
     max_registrations_per_block: int
     target_registrations_interval: int  #  in blocks
@@ -30,16 +29,15 @@ class NetworkParams(TypedDict):
     burn_rate: int
     min_burn: int  # min burn to register
     max_burn: int  # max burn to register
-    burn: int  # this is the actual burn to register
     min_stake: int
     min_weight_stake: int
+    max_allowed_subnets: int
     adjustment_alpha: int
     floor_delegation_fee: int
     max_allowed_weights: int
     proposal_cost: int
     proposal_expiration: int
     proposal_participation_threshold: int
-
 
 class SubnetParams(TypedDict):
     founder: Ss58Address
@@ -50,12 +48,12 @@ class SubnetParams(TypedDict):
     max_allowed_weights: int
     min_allowed_weights: int
     max_stake: int
+    max_weight_age: int
     min_stake: int
+    name: str
     tempo: int
     trust_ratio: int
     vote_mode: str
-    name: str
-    max_weight_age: int
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.
