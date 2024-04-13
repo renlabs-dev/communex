@@ -28,6 +28,7 @@ fastapi = "^0.110.0"
 starlette = "^0.36.3"
 uvicorn = "^0.29.0"
 keylimiter = "^0.1.5"
+typeguard = "^4.2.1"
 
 
 [tool.poetry.group.dev]
