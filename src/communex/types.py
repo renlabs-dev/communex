@@ -26,10 +26,6 @@ class NetworkParams(TypedDict):
     target_registrations_interval: int  #  in blocks
     target_registrations_per_interval: int
     unit_emission: int
-    tx_rate_limit: int
-    vote_threshold: int
-    vote_mode: str
-    max_proposals: int
     max_name_length: int
     burn_rate: int
     min_burn: int  # min burn to register
