@@ -35,7 +35,7 @@ class NetworkParams(TypedDict):
     min_weight_stake: int
     adjustment_alpha: int
     floor_delegation_fee: int
-    #max_allowed_weights: int
+    max_allowed_weights: int
     proposal_cost: int
     proposal_expiration: int
     proposal_participation_threshold: int
