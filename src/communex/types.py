@@ -35,10 +35,13 @@ class NetworkParams(TypedDict):
     min_weight_stake: int
     adjustment_alpha: int
     floor_delegation_fee: int
+    #max_allowed_weights: int
+    proposal_cost: int
+    proposal_expiration: int
+    proposal_participation_threshold: int
 
 
 class SubnetParams(TypedDict):
-    name: str
     founder: Ss58Address
     founder_share: int
     immunity_period: int
@@ -51,6 +54,7 @@ class SubnetParams(TypedDict):
     tempo: int
     trust_ratio: int
     vote_mode: str
+    name: str
     max_weight_age: int
 
 

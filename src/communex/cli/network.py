@@ -92,6 +92,10 @@ def propose_globally(
     adjustment_alpha: int = typer.Option(None),
     floor_delegation_fee: int = typer.Option(None),
     max_allowed_subnets: int = typer.Option(None),
+    max_allowed_weights: int = typer.Option(None),
+    proposal_cost: int = typer.Option(None),
+    proposal_expiration: int = typer.Option(None),
+    proposal_participation_threshold: int = typer.Option(None),
 ):
     provided_params = locals().copy()
     provided_params.pop("ctx")
@@ -107,63 +111,11 @@ def propose_globally(
     provided_params = cast(NetworkParams, provided_params)
     global_params = get_global_params(client)
     global_params.update(provided_params)
-
     with context.progress_status("Adding a proposal..."):
         client.add_global_proposal(resolved_key, global_params)
 
 
 # ! THESE ARE BETA COMMANDS (might not have full substrate support)
-
-
-@network_app.command()
-def propose_on_subnet(
-    ctx: Context,
-    key: str,
-    name: str = typer.Option(None),
-    founder: str = typer.Option(None),
-    founder_share: int = typer.Option(None),
-    immunity_period: int = typer.Option(None),
-    incentive_ratio: int = typer.Option(None),
-    max_allowed_uids: int = typer.Option(None),
-    max_allowed_weights: int = typer.Option(None),
-    min_allowed_weights: int = typer.Option(None),
-    max_stake: int = typer.Option(None),
-    min_stake: int = typer.Option(None),
-    tempo: int = typer.Option(None),
-    trust_ratio: int = typer.Option(None),
-    vote_mode: str = typer.Option(None),
-    max_weight_age: int = typer.Option(None),
-):
-    """
-    Adds a proposal to a specific subnet.
-    """
-    #TODO: shouldn't this be only on subnet?
-
-    provided_params = locals().copy()
-    provided_params.pop("ctx")
-    provided_params.pop("key")
-    provided_params.pop("netuid")
-    if provided_params["founder"] is not None:
-        resolve_founder = resolve_key_ss58(founder)
-        provided_params["founder"] = resolve_founder
-    provided_params = {key: value for key, value in provided_params.items() if value is not None}
-
-    context = make_custom_context(ctx)
-    client = context.com_client()
-    subnets_info = get_map_subnets_params(client)
-    subnet_params = subnets_info[0]
-    subnet_params = dict(subnet_params)
-    subnet_params.pop("emission")
-    subnet_params = cast(SubnetParams, subnet_params)
-    provided_params = cast(SubnetParams, provided_params)
-    subnet_params.update(provided_params)
-    context = make_custom_context(ctx)
-    client = context.com_client()
-
-    resolved_key = classic_load_key(key)
-
-    with context.progress_status("Adding a proposal..."):
-        client.add_subnet_proposal(resolved_key, subnet_params)
 
 
 def get_valid_voting_keys(client: CommuneClient, proposal: dict[str, Any]) -> dict[str, int]:

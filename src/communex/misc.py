@@ -213,6 +213,10 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("MinWeightStake", []),
             ("AdjustmentAlpha", []),
             ("FloorDelegationFee", []),
+            ("MaxAllowedWeights", []),
+            ("ProposalCost", []),
+            ("ProposalExpiration", []),
+            ("ProposalParticipationThreshold", [])
         ],
     })
 
@@ -232,6 +236,10 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
+        "max_allowed_weights": int(query_all["MaxAllowedWeights"]),
+        "proposal_cost": int(query_all["ProposalCost"]),
+        "proposal_expiration": int(query_all["ProposalExpiration"]),
+        "proposal_participation_threshold": int(query_all["ProposalParticipationThreshold"]),
     }
 
     return global_params
