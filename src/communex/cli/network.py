@@ -6,7 +6,7 @@ from rich.progress import track
 
 from communex.cli._common import make_custom_context, print_table_from_plain_dict
 from communex.compat.key import classic_load_key, resolve_key_ss58
-from communex.misc import get_global_params, local_keys_to_stakedbalance
+from communex.misc import get_global_params, local_keys_to_stakedbalance, get_map_subnets_params
 from communex.types import NetworkParams, SubnetParams
 from communex.client import CommuneClient
 
@@ -118,49 +118,51 @@ def propose_globally(
 def propose_on_subnet(
     ctx: Context,
     key: str,
-    name: str,
-    founder: str,
-    founder_share: int,
-    immunity_period: int,
-    incentive_ratio: int,
-    max_allowed_uids: int,
-    max_allowed_weights: int,
-    min_allowed_weights: int,
-    max_stake: int,
-    min_stake: int,
-    tempo: int,
-    trust_ratio: int,
-    vote_mode: str,
-    max_weight_age: int,
+    name: str = typer.Option(None),
+    founder: str = typer.Option(None),
+    founder_share: int = typer.Option(None),
+    immunity_period: int = typer.Option(None),
+    incentive_ratio: int = typer.Option(None),
+    max_allowed_uids: int = typer.Option(None),
+    max_allowed_weights: int = typer.Option(None),
+    min_allowed_weights: int = typer.Option(None),
+    max_stake: int = typer.Option(None),
+    min_stake: int = typer.Option(None),
+    tempo: int = typer.Option(None),
+    trust_ratio: int = typer.Option(None),
+    vote_mode: str = typer.Option(None),
+    max_weight_age: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.
     """
+    #TODO: shouldn't this be only on subnet?
+
+    provided_params = locals().copy()
+    provided_params.pop("ctx")
+    provided_params.pop("key")
+    provided_params.pop("netuid")
+    if provided_params["founder"] is not None:
+        resolve_founder = resolve_key_ss58(founder)
+        provided_params["founder"] = resolve_founder
+    provided_params = {key: value for key, value in provided_params.items() if value is not None}
+
+    context = make_custom_context(ctx)
+    client = context.com_client()
+    subnets_info = get_map_subnets_params(client)
+    subnet_params = subnets_info[0]
+    subnet_params = dict(subnet_params)
+    subnet_params.pop("emission")
+    subnet_params = cast(SubnetParams, subnet_params)
+    provided_params = cast(SubnetParams, provided_params)
+    subnet_params.update(provided_params)
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    resolve_founder = resolve_key_ss58(founder)
     resolved_key = classic_load_key(key)
 
-    proposal: SubnetParams = {
-        "name": name,
-        "founder": resolve_founder,
-        "founder_share": founder_share,
-        "immunity_period": immunity_period,
-        "incentive_ratio": incentive_ratio,
-        "max_allowed_uids": max_allowed_uids,
-        "max_allowed_weights": max_allowed_weights,
-        "min_allowed_weights": min_allowed_weights,
-        "max_stake": max_stake,
-        "min_stake": min_stake,
-        "tempo": tempo,
-        "trust_ratio": trust_ratio,
-        "vote_mode": vote_mode,
-        "max_weight_age": max_weight_age,
-    }
-
     with context.progress_status("Adding a proposal..."):
-        client.add_subnet_proposal(resolved_key, proposal)
+        client.add_subnet_proposal(resolved_key, subnet_params)
 
 
 def get_valid_voting_keys(client: CommuneClient, proposal: dict[str, Any]) -> dict[str, int]:
