@@ -1,4 +1,5 @@
 from typing import Any, cast
+from typeguard import check_type
 
 import typer
 from typer import Context
@@ -10,7 +11,6 @@ from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_subnets_params
 from communex.types import Ss58Address, SubnetParams
-
 
 subnet_app = typer.Typer()
 
@@ -66,52 +66,47 @@ def info(ctx: Context, netuid: int):
 @subnet_app.command()
 def update(ctx: Context,
            netuid: int,
-           name: str,
-           founder: str,
-           founder_share: int,
-           immunity_period: int,
-           incentive_ratio: int,
-           max_allowed_uids: int,
-           max_allowed_weights: int,
-           min_allowed_weights: int,
-           max_stake: int,
-           min_stake: int,
-           tempo: int,
-           trust_ratio: int,
-           vote_mode: str,
            key: str,
-           max_weight_age: int,
+           name: str = typer.Option(None),
+           founder: str = typer.Option(None),
+           founder_share: int = typer.Option(None),
+           immunity_period: int = typer.Option(None),
+           incentive_ratio: int = typer.Option(None),
+           max_allowed_uids: int = typer.Option(None),
+           max_allowed_weights: int = typer.Option(None),
+           min_allowed_weights: int = typer.Option(None),
+           max_stake: int = typer.Option(None),
+           min_stake: int = typer.Option(None),
+           tempo: int = typer.Option(None),
+           trust_ratio: int = typer.Option(None),
+           vote_mode: str = typer.Option(None),
+           max_weight_age: int = typer.Option(None),
     ):
     """
     Updates a subnet.
     """
+    provided_params = locals().copy()
+    provided_params.pop("ctx")
+    provided_params.pop("key")
+    provided_params.pop("netuid")
+    provided_params = {key: value for key, value in provided_params.items() if value is not None}
+
     context = make_custom_context(ctx)
     client = context.com_client()
-
-    params: SubnetParams = {
-        "name": name,
-        "founder": Ss58Address(founder),
-        "founder_share": founder_share,
-        "immunity_period": immunity_period,
-        "incentive_ratio": incentive_ratio,
-        "max_allowed_uids": max_allowed_uids,
-        "max_allowed_weights": max_allowed_weights,
-        "min_allowed_weights": min_allowed_weights,
-        "max_stake": max_stake,
-        "min_stake": min_stake,
-        "tempo": tempo,
-        "trust_ratio": trust_ratio,
-        "vote_mode": vote_mode,
-        "max_weight_age": max_weight_age,
-    }
-
+    subnets_info = get_map_subnets_params(client)
+    subnet_params = subnets_info[netuid]
+    subnet_params = dict(subnet_params)
+    subnet_params.pop("emission")
+    subnet_params = cast(SubnetParams, subnet_params)
+    provided_params = cast(SubnetParams, provided_params)
+    subnet_params.update(provided_params)
     resolved_key = classic_load_key(key)
 
     with context.progress_status("Updating subnet ..."):
-        response = client.update_subnet(key=resolved_key, params=params, netuid=netuid)
+        response = client.update_subnet(key=resolved_key, params=subnet_params, netuid=netuid)
 
     if response.is_success:
-        context.info(f"Successfully updated subnet {name} with netuid {netuid}")
+        context.info(f"Successfully updated subnet {subnet_params['name']} with netuid {netuid}")
     else:
         raise ChainTransactionError(response.error_message)  # type: ignore
 
@@ -133,38 +128,37 @@ def propose_on_subnet(
     tempo: int,
     trust_ratio: int,
     vote_mode: str,
-    vote_threshold: int,
     max_weight_age: int,
 ):
     """
     Adds a proposal to a specific subnet.
     """
+
+    provided_params = locals().copy()
+    provided_params.pop("ctx")
+    provided_params.pop("key")
+    provided_params.pop("netuid")
+    if provided_params["founder"] is not None:
+        resolve_founder = resolve_key_ss58(founder)
+        provided_params["founder"] = resolve_founder
+    provided_params = {key: value for key, value in provided_params.items() if value is not None}
+
+    context = make_custom_context(ctx)
+    client = context.com_client()
+    subnets_info = get_map_subnets_params(client)
+    subnet_params = subnets_info[netuid]
+    subnet_params = dict(subnet_params)
+    subnet_params.pop("emission")
+    subnet_params = cast(SubnetParams, subnet_params)
+    provided_params = cast(SubnetParams, provided_params)
+    subnet_params.update(provided_params)
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    resolve_founder = resolve_key_ss58(founder)
     resolved_key = classic_load_key(key)
 
-    proposal: SubnetParams = {
-        "name": name,
-        "founder": resolve_founder,
-        "founder_share": founder_share,
-        "immunity_period": immunity_period,
-        "incentive_ratio": incentive_ratio,
-        "max_allowed_uids": max_allowed_uids,
-        "max_allowed_weights": max_allowed_weights,
-        "min_allowed_weights": min_allowed_weights,
-        "max_stake": max_stake,
-        "min_stake": min_stake,
-        "tempo": tempo,
-        "trust_ratio": trust_ratio,
-        "vote_mode": vote_mode,
-        "vote_threshold": vote_threshold,
-        "max_weight_age": max_weight_age,
-    }
-
     with context.progress_status("Adding a proposal..."):
-        client.add_subnet_proposal(resolved_key, proposal, netuid=netuid)
+        client.add_subnet_proposal(resolved_key, subnet_params, netuid=netuid)
 
 
 @subnet_app.command()

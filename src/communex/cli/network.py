@@ -1,4 +1,6 @@
-from typing import Any
+from typing import Any, cast
+from typeguard import check_type
+
 import typer
 from typer import Context
 from rich.progress import track
@@ -70,58 +72,43 @@ def list_proposals(ctx: Context):
 def propose_globally(
     ctx: Context,
     key: str,
-    max_allowed_subnets: int,
-    max_allowed_modules: int,
-    max_registrations_per_block: int,
-    target_registrations_interval: int,
-    target_registrations_per_interval: int,
-    unit_emission: int,
-    tx_rate_limit: int,
-    vote_threshold: int,
-    vote_mode: str,
-    max_proposals: int,
-    max_name_length: int,
-    burn_rate: int,
-    min_burn: int,
-    max_burn: int,
-    burn: int,
-    min_stake: int,
-    min_weight_stake: int,
-    adjustment_alpha: int,
-    floor_delegation_fee: int,
+    max_allowed_modules: int = typer.Option(None),
+    max_registrations_per_block: int = typer.Option(None),
+    target_registrations_interval: int = typer.Option(None),
+    target_registrations_per_interval: int = typer.Option(None),
+    unit_emission: int = typer.Option(None),
+    tx_rate_limit: int = typer.Option(None),
+    vote_threshold: int = typer.Option(None),
+    vote_mode: str = typer.Option(None),
+    max_proposals: int = typer.Option(None),
+    max_name_length: int = typer.Option(None),
+    burn_rate: int = typer.Option(None),
+    min_burn: int = typer.Option(None),
+    max_burn: int = typer.Option(None),
+    burn: int = typer.Option(None),
+    min_stake: int = typer.Option(None),
+    min_weight_stake: int = typer.Option(None),
+    adjustment_alpha: int = typer.Option(None),
+    floor_delegation_fee: int = typer.Option(None),
+    max_allowed_subnets: int = typer.Option(None),
 ):
+    provided_params = locals().copy()
+    provided_params.pop("ctx")
+    provided_params.pop("key")
+    provided_params = {key: value for key, value in provided_params.items() if value is not None}
     """
     Adds a global proposal to the network.
     """
     context = make_custom_context(ctx)
-    client = context.com_client()
-
     resolved_key = classic_load_key(key)
-
-    proposal: NetworkParams = {
-        "max_allowed_subnets": max_allowed_subnets,
-        "max_allowed_modules": max_allowed_modules,
-        "max_registrations_per_block": max_registrations_per_block,
-        "target_registrations_interval": target_registrations_interval,
-        "target_registrations_per_interval": target_registrations_per_interval,
-        "unit_emission": unit_emission,
-        "tx_rate_limit": tx_rate_limit,
-        "vote_threshold": vote_threshold,
-        "vote_mode": vote_mode,
-        "max_proposals": max_proposals,
-        "max_name_length": max_name_length,
-        "burn_rate": burn_rate,
-        "min_burn": min_burn,
-        "max_burn": max_burn,
-        "burn": burn,
-        "min_stake": min_stake,
-        "min_weight_stake": min_weight_stake,
-        "adjustment_alpha": adjustment_alpha,
-        "floor_delegation_fee": floor_delegation_fee,
-    }
+    client = context.com_client()
+    
+    provided_params = check_type(provided_params, NetworkParams)
+    global_params = get_global_params(client)
+    global_params.update(provided_params)
 
     with context.progress_status("Adding a proposal..."):
-        client.add_global_proposal(resolved_key, proposal)
+        client.add_global_proposal(resolved_key, global_params)
 
 
 # ! THESE ARE BETA COMMANDS (might not have full substrate support)
