@@ -53,6 +53,7 @@ nix profile install .
   - [x] Module management
   - [x] Client to interact with served modules
   - [x] Module class and server
+  - [x] Governance participation 
 
 ### Planned
 
