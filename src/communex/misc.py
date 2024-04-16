@@ -230,7 +230,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "burn_rate": int(query_all["BurnRate"]),
         "min_burn": int(query_all["MinBurn"]),
         "max_burn": int(query_all["MaxBurn"]),
-        "burn": int(query_all["Burn"]),
         "min_stake": int(query_all["MinStake"]),
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
