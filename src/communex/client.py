@@ -1030,6 +1030,7 @@ class CommuneClient:
     def update_module(
         self,
         key: Keypair,
+        metadata: str | None = None,
         name: str | None = None,
         address: str | None = None,
         delegation_fee: int = 20,
@@ -1063,11 +1064,14 @@ class CommuneClient:
             name = ''
         if not address:
             address = ''
+        if not metadata:
+            metadata = ''
         params = {
             'netuid': netuid,
             'name': name,
             'address': address,
-            'delegation_fee': delegation_fee
+            'delegation_fee': delegation_fee,
+            'metadata': metadata,
         }
 
         response = self.compose_call('update_module', params=params, key=key)
@@ -1077,6 +1081,7 @@ class CommuneClient:
     def register_module(
         self,
         key: Keypair,
+        metadata: str,
         name: str | None = None,
         address: str | None = None,
         subnet: str = 'commune',
@@ -1112,7 +1117,8 @@ class CommuneClient:
             'address': address,
             'name': name,
             'stake': stake,
-            'module_key': key_addr
+            'module_key': key_addr,
+            'metadata': metadata,
         }
         response = self.compose_call('register', params=params, key=key)
         return response
