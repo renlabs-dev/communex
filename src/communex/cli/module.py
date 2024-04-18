@@ -27,9 +27,11 @@ def register(
     ip: str,
     port: int,
     key: str,
+    metadata: str,
     netuid: Optional[int] = None,
     stake: Optional[float] = None,
     new_subnet_name: Optional[str] = None,
+
 ):
     """
     Registers a module.
@@ -38,6 +40,8 @@ def register(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
+    if len(metadata) > 59:
+        raise ValueError("Metadata must be less than 60 characters")
 
     match (netuid, new_subnet_name):
         case (None, None):
@@ -73,7 +77,12 @@ def register(
         address = f"{ip}:{port}"
 
         response = client.register_module(
-            resolved_key, name=name, address=address, subnet=subnet_name, min_stake=stake_nano
+            resolved_key, 
+            name=name, 
+            address=address, 
+            subnet=subnet_name, 
+            min_stake=stake_nano,
+            metadata=metadata
         )
 
         if response.is_success:
@@ -83,13 +92,24 @@ def register(
 
 
 @module_app.command()
-def update(ctx: Context, key: str, name: str, ip: str, port: int, delegation_fee: int = 20, netuid: int = 0):
+def update(
+    ctx: Context, 
+    key: str, 
+    name: str, 
+    ip: str, 
+    port: int,
+    metadata: str,
+    delegation_fee: int = 20, 
+    netuid: int = 0,
+    ):
     """
     Update module with custom parameters.
     """
+
     context = make_custom_context(ctx)
     client = context.com_client()
-
+    if len(metadata) > 59:
+        raise ValueError("Metadata must be less than 60 characters")
     resolved_key = classic_load_key(key)
 
     if not is_ip_valid(ip):
@@ -98,7 +118,14 @@ def update(ctx: Context, key: str, name: str, ip: str, port: int, delegation_fee
     address = f"{ip}:{port}"
 
     with context.progress_status(f"Updating Module on a subnet with netuid '{netuid}' ..."):
-        response = client.update_module(resolved_key, name, address, delegation_fee, netuid=netuid)
+        response = client.update_module(
+            resolved_key, 
+            metadata,
+            name,
+            address, 
+            delegation_fee, 
+            netuid=netuid
+        )
 
     if response.is_success:
         context.info(f"Module {key} updated")
