@@ -1068,11 +1068,9 @@ class CommuneClient:
             'netuid': netuid,
             'name': name,
             'address': address,
-            'delegation_fee': delegation_fee
+            'delegation_fee': delegation_fee,
+            'metadata': metadata,
         }
-
-        if metadata:
-            params['metadata'] = metadata
 
         response = self.compose_call('update_module', params=params, key=key)
 
@@ -1117,11 +1115,9 @@ class CommuneClient:
             'address': address,
             'name': name,
             'stake': stake,
-            'module_key': key_addr
+            'module_key': key_addr,
+            'metadata': metadata,
         }
-
-        if metadata:
-            params['metadata'] = metadata
 
         response = self.compose_call('register', params=params, key=key)
         return response
