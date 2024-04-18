@@ -60,21 +60,6 @@ def regen(ctx: Context, name: str, mnemonic: str):
 
     context.info(f"Key stored with name `{name}` successfully.")
 
-
-def multi_address(ctx: Context, signatories: list[str], threshold: int):
-    """
-    Outputs a multisig address from the given signatories.
-    """
-    context = make_custom_context(ctx)
-    client = context.com_client()
-
-    with client.get_conn() as substrate:
-        multisig_address = (substrate.generate_multisig_account(  # type: ignore
-            signatories, threshold)).ss58_address 
-
-    context.info(f"Multisig address: {multisig_address}")
-
-
 @key_app.command()
 def show(ctx: Context, key: str, show_private: bool = False):
     """
