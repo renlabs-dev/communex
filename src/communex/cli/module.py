@@ -29,6 +29,7 @@ def register(
     key: str,
     netuid: Optional[int] = None,
     stake: Optional[float] = None,
+    metadata: Optional[str] = None,
     new_subnet_name: Optional[str] = None,
 ):
     """
@@ -45,14 +46,15 @@ def register(
         case (netuid, None):
             assert netuid is not None
             subnet_name = client.get_subnet_name(netuid)
+            burn = client.get_burn(netuid)
         case (None, new_subnet_name):
             subnet_name = new_subnet_name
+            burn = client.get_min_burn()
         case (_, _):
             raise ValueError("`netuid` and `new_subnet_name` cannot be provided at the same time")
 
-    burn = client.get_burn()
-
-    do_burn = typer.confirm(f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?")
+    do_burn = typer.confirm(
+        f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?")
 
     if not do_burn:
         print("Not registering")
@@ -73,7 +75,7 @@ def register(
         address = f"{ip}:{port}"
 
         response = client.register_module(
-            resolved_key, name=name, address=address, subnet=subnet_name, min_stake=stake_nano
+            resolved_key, name=name, address=address, subnet=subnet_name, min_stake=stake_nano, metadata=metadata
         )
 
         if response.is_success:
@@ -83,7 +85,7 @@ def register(
 
 
 @module_app.command()
-def update(ctx: Context, key: str, name: str, ip: str, port: int, delegation_fee: int = 20, netuid: int = 0):
+def update(ctx: Context, key: str, name: str, ip: str, port: int, delegation_fee: int = 20, netuid: int = 0, metadata: Optional[str] = None):
     """
     Update module with custom parameters.
     """
@@ -98,7 +100,8 @@ def update(ctx: Context, key: str, name: str, ip: str, port: int, delegation_fee
     address = f"{ip}:{port}"
 
     with context.progress_status(f"Updating Module on a subnet with netuid '{netuid}' ..."):
-        response = client.update_module(resolved_key, name, address, delegation_fee, netuid=netuid)
+        response = client.update_module(key=resolved_key, name=name, address=address,
+                                        delegation_fee=delegation_fee, netuid=netuid, metadata=metadata)
 
     if response.is_success:
         context.info(f"Module {key} updated")

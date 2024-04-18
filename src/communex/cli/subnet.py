@@ -43,6 +43,21 @@ def list(ctx: Context):
 
 
 @subnet_app.command()
+def legit_whitelist(ctx: Context):
+    """
+    Gets the legitimate whitelist of modules for the general subnet 0
+    """
+
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    with context.progress_status("Getting legitimate whitelist ..."):
+        whitelist = cast(dict[str, int], client.query_map_legit_whitelist())
+
+    print_table_from_plain_dict(whitelist, ["Module", "Recommended weight"], context.console)
+
+
+@subnet_app.command()
 def info(ctx: Context, netuid: int):
     """
     Gets subnet info.
@@ -81,7 +96,7 @@ def update(ctx: Context,
            trust_ratio: int = typer.Option(None),
            vote_mode: str = typer.Option(None),
            max_weight_age: int = typer.Option(None),
-    ):
+           ):
     """
     Updates a subnet.
     """
@@ -109,6 +124,7 @@ def update(ctx: Context,
         context.info(f"Successfully updated subnet {subnet_params['name']} with netuid {netuid}")
     else:
         raise ChainTransactionError(response.error_message)  # type: ignore
+
 
 @subnet_app.command()
 def propose_on_subnet(
@@ -171,7 +187,7 @@ def add_custom_proposal(
     """
     Adds a proposal to a specific subnet.
     """
-        
+
     context = make_custom_context(ctx)
     if not re.match(IPFS_REGEX, cid):
         context.error(f"CID provided is invalid: {cid}")

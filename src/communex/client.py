@@ -1032,6 +1032,7 @@ class CommuneClient:
         key: Keypair,
         name: str | None = None,
         address: str | None = None,
+        metadata: str | None = None,
         delegation_fee: int = 20,
         netuid: int = 0,
     ) -> ExtrinsicReceipt:
@@ -1070,6 +1071,9 @@ class CommuneClient:
             'delegation_fee': delegation_fee
         }
 
+        if metadata:
+            params['metadata'] = metadata
+
         response = self.compose_call('update_module', params=params, key=key)
 
         return response
@@ -1081,6 +1085,7 @@ class CommuneClient:
         address: str | None = None,
         subnet: str = 'commune',
         min_stake: int | None = None,
+        metadata: str | None = None,
     ) -> ExtrinsicReceipt:
         """
         Registers a new module in the network.
@@ -1114,6 +1119,10 @@ class CommuneClient:
             'stake': stake,
             'module_key': key_addr
         }
+
+        if metadata:
+            params['metadata'] = metadata
+
         response = self.compose_call('register', params=params, key=key)
         return response
 
@@ -1405,15 +1414,15 @@ class CommuneClient:
             key: Keypair,
             params: dict[Any, Any],
             netuid: int = 0,
-            ) -> ExtrinsicReceipt:
-        
+    ) -> ExtrinsicReceipt:
+
         proposal = params
         proposal['netuid'] = netuid
         response = self.compose_call(
             fn="add_custom_proposal",
             params=params,
             key=key
-            )
+        )
         return response
 
     def add_global_proposal(self,
@@ -1954,7 +1963,6 @@ class CommuneClient:
 
         return self.query_map("TrustRatio", extract_value=False)["TrustRatio"]
 
-
     def query_map_vote_mode_subnet(self) -> dict[int, str]:
         """
         Retrieves a mapping of vote modes for subnets within the network.
@@ -1972,6 +1980,22 @@ class CommuneClient:
         """
 
         return self.query_map("VoteModeSubnet", extract_value=False)["VoteModeSubnet"]
+
+    def query_map_legit_whitelist(self) -> dict[Ss58Address, int]:
+        """
+        Retrieves a mapping of whitelisted addresses for the network.
+
+        Queries the network for a mapping of whitelisted addresses
+        and their respective legitimacy status.
+
+        Returns:
+            A dictionary mapping addresses to their legitimacy status.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query_map("LegitWhitelist", extract_value=False)["LegitWhitelist"]
 
     def query_map_subnet_names(self, extract_value: bool = False) -> dict[int, str]:
         """
@@ -2354,22 +2378,25 @@ class CommuneClient:
 
         return self.query("BurnRate", params=[],)
 
-    def get_burn(self) -> int:
+    def get_burn(self, netuid: int = 0) -> int:
         """
         Queries the network for the burn setting.
 
-        Retrieves the burn value, which represents the amount of 
-        the $COMAI tokens that are 'burned' or permanently 
-        removed from circulation.
+        Retrieves the burn value, which represents the amount of the
+        $COMAI token that is 'burned' or permanently removed from
+        circulation.
+
+        Args:
+            netuid: The network UID for which to query the burn value.
 
         Returns:
-            The burn value for the network.
+            The burn value for the specified network subnet.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query("Burn", params=[],)
+        return self.query("Burn", params=[netuid])
 
     def get_min_burn(self) -> int:
         """
