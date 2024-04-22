@@ -22,6 +22,17 @@ def get_node_url(comx_settings: ComxSettings | None = None, *, use_testnet: bool
             node_url = random.choice(comx_settings.NODE_URLS)
     return node_url
 
+def get_available_nodes(
+        comx_settings: ComxSettings | None = None, *, use_testnet: bool = False
+    ) -> list[str]:
+    comx_settings = comx_settings or ComxSettings()
+
+    match use_testnet:
+        case True:
+            node_urls = comx_settings.TESTNET_NODE_URLS
+        case False:
+            node_urls = comx_settings.NODE_URLS
+    return node_urls
 
 class BalanceUnit(str, Enum):
     joule = "joule"
