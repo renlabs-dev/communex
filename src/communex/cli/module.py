@@ -27,9 +27,9 @@ def register(
     ip: str,
     port: int,
     key: str,
-    metadata: str,
     netuid: Optional[int] = None,
     stake: Optional[float] = None,
+    metadata: Optional[str] = None,
     new_subnet_name: Optional[str] = None,
 
 ):
@@ -40,7 +40,7 @@ def register(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-    if len(metadata) > 59:
+    if metadata and len(metadata) > 59:
         raise ValueError("Metadata must be less than 60 characters")
 
     match (netuid, new_subnet_name):
@@ -49,14 +49,15 @@ def register(
         case (netuid, None):
             assert netuid is not None
             subnet_name = client.get_subnet_name(netuid)
+            burn = client.get_burn(netuid)
         case (None, new_subnet_name):
             subnet_name = new_subnet_name
+            burn = client.get_min_burn()
         case (_, _):
             raise ValueError("`netuid` and `new_subnet_name` cannot be provided at the same time")
 
-    burn = client.get_burn()
-
-    do_burn = typer.confirm(f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?")
+    do_burn = typer.confirm(
+        f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?")
 
     if not do_burn:
         print("Not registering")
@@ -93,22 +94,16 @@ def register(
 
 @module_app.command()
 def update(
-    ctx: Context, 
-    key: str, 
-    name: str, 
-    ip: str, 
-    port: int,
-    metadata: str,
-    delegation_fee: int = 20, 
-    netuid: int = 0,
-    ):
+    ctx: Context, key: str, name: str, ip: str, port: int, 
+    delegation_fee: int = 20, netuid: int = 0, metadata: Optional[str] = None
+):
     """
     Update module with custom parameters.
     """
 
     context = make_custom_context(ctx)
     client = context.com_client()
-    if len(metadata) > 59:
+    if metadata and len(metadata) > 59:
         raise ValueError("Metadata must be less than 60 characters")
     resolved_key = classic_load_key(key)
 
@@ -119,12 +114,8 @@ def update(
 
     with context.progress_status(f"Updating Module on a subnet with netuid '{netuid}' ..."):
         response = client.update_module(
-            resolved_key, 
-            metadata,
-            name,
-            address, 
-            delegation_fee, 
-            netuid=netuid
+            key=resolved_key, name=name, address=address,
+            delegation_fee=delegation_fee, netuid=netuid, metadata=metadata
         )
 
     if response.is_success:

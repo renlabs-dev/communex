@@ -6,9 +6,9 @@ from typer import Context
 from rich.progress import track
 
 from communex.cli._common import make_custom_context, print_table_from_plain_dict
-from communex.compat.key import classic_load_key, resolve_key_ss58
-from communex.misc import get_global_params, local_keys_to_stakedbalance, get_map_subnets_params, IPFS_REGEX
-from communex.types import NetworkParams, SubnetParams
+from communex.compat.key import classic_load_key
+from communex.misc import get_global_params, local_keys_to_stakedbalance, IPFS_REGEX
+from communex.types import NetworkParams
 from communex.client import CommuneClient
 
 
@@ -88,6 +88,7 @@ def propose_globally(
     adjustment_alpha: int = typer.Option(None),
     floor_delegation_fee: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
+    nominator: str = typer.Option(None),
     proposal_cost: int = typer.Option(None),
     proposal_expiration: int = typer.Option(None),
     proposal_participation_threshold: int = typer.Option(None),
@@ -102,7 +103,7 @@ def propose_globally(
     context = make_custom_context(ctx)
     resolved_key = classic_load_key(key)
     client = context.com_client()
-    
+
     provided_params = cast(NetworkParams, provided_params)
     global_params = get_global_params(client)
     global_params.update(provided_params)

@@ -10,6 +10,7 @@ from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
 
 IPFS_REGEX = re.compile(r'^Qm[1-9A-HJ-NP-Za-km-z]{44}$')
 
+
 def get_map_modules(
     client: CommuneClient,
     netuid: int = 0,
@@ -217,6 +218,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("AdjustmentAlpha", []),
             ("FloorDelegationFee", []),
             ("MaxAllowedWeights", []),
+            ("Nominator", []),
             ("ProposalCost", []),
             ("ProposalExpiration", []),
             ("ProposalParticipationThreshold", []),
@@ -244,6 +246,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
         "max_allowed_weights": int(query_all["MaxAllowedWeights"]),
+        "nominator": Ss58Address(query_all["Nominator"]),
         "proposal_cost": int(query_all["ProposalCost"]),
         "proposal_expiration": int(query_all["ProposalExpiration"]),
         "proposal_participation_threshold": int(query_all["ProposalParticipationThreshold"]),
