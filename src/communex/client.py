@@ -1058,6 +1058,8 @@ class CommuneClient:
             name = ''
         if not address:
             address = ''
+        if not metadata:
+            metadata = ''
         params = {
             'netuid': netuid,
             'name': name,

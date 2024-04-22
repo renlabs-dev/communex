@@ -26,6 +26,7 @@ class NetworkParams(TypedDict):
     target_registrations_per_interval: int
     unit_emission: int
     max_name_length: int
+    min_name_length: int
     burn_rate: int
     min_burn: int  # min burn to register
     max_burn: int  # max burn to register
@@ -39,6 +40,10 @@ class NetworkParams(TypedDict):
     proposal_cost: int
     proposal_expiration: int
     proposal_participation_threshold: int
+    nominator: str
+    subnet_stake_threshold: int
+
+    
 
 class SubnetParams(TypedDict):
     founder: Ss58Address
@@ -80,6 +85,7 @@ class ModuleInfo(TypedDict):
     last_update: int  # block number
     stake: int
     delegation_fee: int
+    metadata: str
 
 
 class ModuleInfoWithBalance(ModuleInfo):
