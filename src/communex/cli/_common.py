@@ -33,7 +33,17 @@ class CustomCtx:
         if self._com_client is None:
             node_url = get_node_url(None, use_testnet=use_testnet)
             self.info(f"Using node: {node_url}")
-            self._com_client = CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
+            for _ in range(5):
+                try:
+                    self._com_client = CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
+                except Exception:
+                    self.info(f"Failed to connect to node: {node_url}")
+                    node_url = get_node_url(None, use_testnet=use_testnet)
+                    self.info(f"Will retry with node {node_url}")
+                    continue
+            if self._com_client is None:
+                    raise ConnectionError("Could not connect to any node")
+            
         return self._com_client
 
     def output(self, message: str) -> None:
