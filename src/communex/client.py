@@ -900,8 +900,6 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        amount = amount - self.get_existential_deposit()  # TODO: this should not be default
-
         params = {'dest': dest, 'value': amount}
 
         return self.compose_call(
@@ -983,8 +981,6 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        amount = amount - self.get_existential_deposit()
-
         params = {
             'amount': amount,
             'netuid': netuid,
@@ -1017,8 +1013,6 @@ class CommuneClient:
               staked tokens by the signer key.
             ChainTransactionError: If the transaction fails.
         """
-
-        amount = amount - self.get_existential_deposit()
 
         params = {
             'amount': amount,
@@ -1269,8 +1263,6 @@ class CommuneClient:
 
         assert len(keys) == len(amounts)
 
-        # extract existential deposit from amounts
-        amounts = [a - self.get_existential_deposit() for a in amounts]
 
         params = {
             "netuid": netuid,
