@@ -71,7 +71,7 @@ def get_map_modules(
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
         delegation_fee = ss58_to_delegationfee.get(key, 20)  # 20% default delegation fee
-        metadata = uid_to_metadata[uid]
+        metadata = uid_to_metadata.get(uid, None)
 
         balance = None
         if include_balances and ss58_to_balances is not None:
@@ -213,7 +213,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("BurnRate", []),
             ("MinBurn", []),
             ("MaxBurn", []),
-            ("MinStake", []),
+            ("MinStakeGlobal", []),
             ("MinWeightStake", []),
             ("AdjustmentAlpha", []),
             ("FloorDelegationFee", []),
@@ -223,7 +223,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("ProposalExpiration", []),
             ("ProposalParticipationThreshold", []),
             ("Nominator", []),
-            ("MinStake", []),
             ("SubnetStakeThreshold", []),
             ("MinWeightStake", []),
             ("MinNameLength", []),
@@ -241,7 +240,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "burn_rate": int(query_all["BurnRate"]),
         "min_burn": int(query_all["MinBurn"]),
         "max_burn": int(query_all["MaxBurn"]),
-        "min_stake": int(query_all["MinStake"]),
+        "min_stake": int(query_all["MinStakeGlobal"]),
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
@@ -250,7 +249,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "proposal_cost": int(query_all["ProposalCost"]),
         "proposal_expiration": int(query_all["ProposalExpiration"]),
         "proposal_participation_threshold": int(query_all["ProposalParticipationThreshold"]),
-        "nominator": query_all["Nominator"],
         "subnet_stake_threshold": int(query_all["SubnetStakeThreshold"]),
         "min_name_length": int(query_all["MinNameLength"]),
     }
