@@ -1024,8 +1024,8 @@ class CommuneClient:
     def update_module(
         self,
         key: Keypair,
-        name: str | None = None,
-        address: str | None = None,
+        name: str,
+        address: str,
         metadata: str | None = None,
         delegation_fee: int = 20,
         netuid: int = 0,
@@ -1054,12 +1054,6 @@ class CommuneClient:
 
         assert isinstance(delegation_fee, int)
 
-        if not name:
-            name = ''
-        if not address:
-            address = ''
-        if not metadata:
-            metadata = ''
         params = {
             'netuid': netuid,
             'name': name,
@@ -1075,8 +1069,8 @@ class CommuneClient:
     def register_module(
         self,
         key: Keypair,
-        name: str | None = None,
-        address: str | None = None,
+        name: str,
+        address: str,
         subnet: str = 'commune',
         min_stake: int | None = None,
         metadata: str | None = None,
@@ -1264,7 +1258,6 @@ class CommuneClient:
         """
 
         assert len(keys) == len(amounts)
-
 
         params = {
             "netuid": netuid,
