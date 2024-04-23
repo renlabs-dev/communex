@@ -69,17 +69,10 @@ class ModuleClient:
                 match response.content_type:
                     case 'application/json':
                         result = await asyncio.wait_for(response.json(), timeout=timeout)
-                        # TODO: desserialize result
+                        # TODO: deserialize result
                         return result
                     case _:
                         raise Exception(f"Unknown content type: {response.content_type}")
-
-    def process_output(self, result: Any) -> Any:
-        if isinstance(result, str):
-            result = json.loads(result)
-
-        # TODO: deserialize result
-        return result
 
 
 if __name__ == "__main__":

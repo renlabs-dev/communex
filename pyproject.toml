@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "communex"
-version = "0.1.9"
+version = "0.1.15"
 description = "A library for Commune network focused on simplicity"
 authors = ["agicommies <info@agicommies.org>"]
 license = "MIT"
@@ -28,6 +28,7 @@ fastapi = "^0.110.0"
 starlette = "^0.36.3"
 uvicorn = "^0.29.0"
 keylimiter = "^0.1.5"
+typeguard = "^4.2.1"
 
 
 [tool.poetry.group.dev]

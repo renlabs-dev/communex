@@ -1,24 +1,20 @@
+from typing import Annotated, Optional
+
 import typer
-from typing import Optional, Annotated
 
 from communex import __version__
 
+from ._common import ExtraCtxData
 from .balance import balance_app
 from .key import key_app
 from .misc import misc_app
 from .module import module_app
 from .network import network_app
 from .subnet import subnet_app
-from .._common import get_use_testnet
+
 
 app = typer.Typer()
 
-balance_app.callback()(get_use_testnet)
-key_app.callback()(get_use_testnet)
-misc_app.callback()(get_use_testnet)
-module_app.callback()(get_use_testnet)
-network_app.callback()(get_use_testnet)
-subnet_app.callback()(get_use_testnet)
 app.add_typer(key_app, name="key", help="Key operations")
 app.add_typer(balance_app, name="balance", help="Balance operations")
 app.add_typer(misc_app, name="misc", help="Other operations")
@@ -35,14 +31,19 @@ def _version_callback(value: bool):
 
 @app.callback()
 def main(
-    json: Optional[bool] = False,
-    version: Annotated[Optional[bool], typer.Option("--version", callback=_version_callback)] = None,
+    ctx: typer.Context,
+    json: Annotated[bool, typer.Option(envvar="COMX_OUTPUT_JSON", help="Output machine-readable JSON.")] = False,
+    testnet: Annotated[bool, typer.Option(envvar="COMX_USE_TESTNET", help="Use testnet endpoints.")] = False,
+    version: Annotated[Optional[bool], typer.Option(callback=_version_callback)] = None,
 ):
     """
     CommuneX CLI {version}
 
     This command line interface is under development and subject to change.
     """
+
+    # Pass the extra context data to the subcommands.
+    ctx.obj = ExtraCtxData(output_json=json, use_testnet=testnet)
 
 
 if main.__doc__ is not None:

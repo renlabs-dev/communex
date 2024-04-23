@@ -489,7 +489,7 @@ class CommuneClient:
             response, function_parameters, prefix_list
         ):
             if not res:
-                return {}
+                continue
             res = res[0]
             changes = res["changes"]  # type: ignore
             value_type, param_types, key_hashers, params, storage_function = fun_params_tuple
@@ -900,8 +900,6 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        amount = amount - self.get_existential_deposit()
-
         params = {'dest': dest, 'value': amount}
 
         return self.compose_call(
@@ -983,8 +981,6 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        amount = amount - self.get_existential_deposit()
-
         params = {
             'amount': amount,
             'netuid': netuid,
@@ -1018,8 +1014,6 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        amount = amount - self.get_existential_deposit()
-
         params = {
             'amount': amount,
             'netuid': netuid,
@@ -1030,8 +1024,9 @@ class CommuneClient:
     def update_module(
         self,
         key: Keypair,
-        name: str | None = None,
-        address: str | None = None,
+        name: str,
+        address: str,
+        metadata: str | None = None,
         delegation_fee: int = 20,
         netuid: int = 0,
     ) -> ExtrinsicReceipt:
@@ -1059,15 +1054,12 @@ class CommuneClient:
 
         assert isinstance(delegation_fee, int)
 
-        if not name:
-            name = ''
-        if not address:
-            address = ''
         params = {
             'netuid': netuid,
             'name': name,
             'address': address,
-            'delegation_fee': delegation_fee
+            'delegation_fee': delegation_fee,
+            'metadata': metadata,
         }
 
         response = self.compose_call('update_module', params=params, key=key)
@@ -1077,10 +1069,11 @@ class CommuneClient:
     def register_module(
         self,
         key: Keypair,
-        name: str | None = None,
-        address: str | None = None,
+        name: str,
+        address: str,
         subnet: str = 'commune',
         min_stake: int | None = None,
+        metadata: str | None = None,
     ) -> ExtrinsicReceipt:
         """
         Registers a new module in the network.
@@ -1112,8 +1105,10 @@ class CommuneClient:
             'address': address,
             'name': name,
             'stake': stake,
-            'module_key': key_addr
+            'module_key': key_addr,
+            'metadata': metadata,
         }
+
         response = self.compose_call('register', params=params, key=key)
         return response
 
@@ -1264,9 +1259,6 @@ class CommuneClient:
 
         assert len(keys) == len(amounts)
 
-        # extract existential deposit from amounts
-        amounts = [a - self.get_existential_deposit() for a in amounts]
-
         params = {
             "netuid": netuid,
             "module_keys": keys,
@@ -1400,6 +1392,22 @@ class CommuneClient:
 
         return response
 
+    def add_custom_proposal(
+            self,
+            key: Keypair,
+            params: dict[Any, Any],
+            netuid: int = 0,
+    ) -> ExtrinsicReceipt:
+
+        proposal = params
+        proposal['netuid'] = netuid
+        response = self.compose_call(
+            fn="add_custom_proposal",
+            params=params,
+            key=key
+        )
+        return response
+
     def add_global_proposal(self,
                             key: Keypair,
                             params: NetworkParams,
@@ -1438,6 +1446,7 @@ class CommuneClient:
     def vote_on_proposal(self,
                          key: Keypair,
                          proposal_id: int,
+                         agree: bool,
                          ) -> ExtrinsicReceipt:
         """
         Casts a vote on a specified proposal within the network.
@@ -1456,7 +1465,8 @@ class CommuneClient:
         """
 
         params = {
-            'proposal_id': proposal_id
+            'proposal_id': proposal_id,
+            'agree': agree
         }
 
         response = self.compose_call('vote_proposal', key=key, params=params)
@@ -1936,23 +1946,6 @@ class CommuneClient:
 
         return self.query_map("TrustRatio", extract_value=False)["TrustRatio"]
 
-    def query_map_vote_threshold_subnet(self) -> dict[int, int]:
-        """
-        Retrieves a mapping of vote thresholds for subnets within the network.
-
-        Queries the network for vote thresholds specific to various
-        subnets, which are the treshold intervals for setting weights.
-
-        Returns:
-            A dictionary mapping network UIDs to their 
-            vote thresholds for subnets.
-
-        Raises:
-            QueryError: If the query to the network fails or is invalid.
-        """
-
-        return self.query_map("VoteThresholdSubnet", extract_value=False)["VoteThresholdSubnet"]
-
     def query_map_vote_mode_subnet(self) -> dict[int, str]:
         """
         Retrieves a mapping of vote modes for subnets within the network.
@@ -1970,6 +1963,22 @@ class CommuneClient:
         """
 
         return self.query_map("VoteModeSubnet", extract_value=False)["VoteModeSubnet"]
+
+    def query_map_legit_whitelist(self) -> dict[Ss58Address, int]:
+        """
+        Retrieves a mapping of whitelisted addresses for the network.
+
+        Queries the network for a mapping of whitelisted addresses
+        and their respective legitimacy status.
+
+        Returns:
+            A dictionary mapping addresses to their legitimacy status.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query_map("LegitWhitelist", extract_value=False)["LegitWhitelist"]
 
     def query_map_subnet_names(self, extract_value: bool = False) -> dict[int, str]:
         """
@@ -2352,22 +2361,25 @@ class CommuneClient:
 
         return self.query("BurnRate", params=[],)
 
-    def get_burn(self) -> int:
+    def get_burn(self, netuid: int = 0) -> int:
         """
         Queries the network for the burn setting.
 
-        Retrieves the burn value, which represents the amount of 
-        the $COMAI tokens that are 'burned' or permanently 
-        removed from circulation.
+        Retrieves the burn value, which represents the amount of the
+        $COMAI token that is 'burned' or permanently removed from
+        circulation.
+
+        Args:
+            netuid: The network UID for which to query the burn value.
 
         Returns:
-            The burn value for the network.
+            The burn value for the specified network subnet.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query("Burn", params=[],)
+        return self.query("Burn", params=[netuid])
 
     def get_min_burn(self) -> int:
         """

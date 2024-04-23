@@ -1,10 +1,14 @@
 from typing import Any
+import re
 
 from communex.client import CommuneClient
 from communex.compat.key import local_key_addresses
 from communex.key import check_ss58_address
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsWithEmission)
+
+
+IPFS_REGEX = re.compile(r'^Qm[1-9A-HJ-NP-Za-km-z]{44}$')
 
 
 def get_map_modules(
@@ -28,6 +32,7 @@ def get_map_modules(
             ('Incentive', []),
             ("Dividends", []),
             ('LastUpdate', []),
+            ("Metadata", [netuid]),
         ],
     }
     if include_balances:
@@ -36,9 +41,9 @@ def get_map_modules(
     bulk_query = client.query_batch_map(request_dict)
     ss58_to_stakefrom, uid_to_key, uid_to_name, uid_to_address, uid_to_regblock, \
         ss58_to_delegationfee, uid_to_emission, uid_to_incentive, uid_to_dividend, \
-        uid_to_lastupdate, ss58_to_balances = (
-            bulk_query["StakeFrom"],
-            bulk_query["Keys"],
+        uid_to_lastupdate, ss58_to_balances, uid_to_metadata = (
+            bulk_query.get("StakeFrom", {}),
+            bulk_query.get("Keys", {}),
             bulk_query["Name"],
             bulk_query["Address"],
             bulk_query["RegistrationBlock"],
@@ -47,7 +52,9 @@ def get_map_modules(
             bulk_query["Incentive"],
             bulk_query["Dividends"],
             bulk_query["LastUpdate"],
-            bulk_query.get("Account", None),
+            bulk_query.get("Account", {}),
+            bulk_query.get("Metadata", {}),
+
         )
 
     result_modules: dict[str, ModuleInfoWithOptionalBalance] = {}
@@ -64,6 +71,7 @@ def get_map_modules(
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
         delegation_fee = ss58_to_delegationfee.get(key, 20)  # 20% default delegation fee
+        metadata = uid_to_metadata.get(uid, None)
 
         balance = None
         if include_balances and ss58_to_balances is not None:
@@ -89,6 +97,7 @@ def get_map_modules(
             "balance": balance,
             "stake": stake,
             "delegation_fee": delegation_fee,
+            "metadata": metadata
         }
 
         result_modules[key] = module
@@ -118,7 +127,6 @@ def get_map_subnets_params(
                 ("FounderShare", []),
                 ('IncentiveRatio', []),
                 ('TrustRatio', []),
-                ('VoteThresholdSubnet', []),
                 ('VoteModeSubnet', []),
                 ('SubnetNames', []),
                 ('MaxWeightAge', [])
@@ -133,7 +141,7 @@ def get_map_subnets_params(
         netuid_to_max_allowed_uids, netuid_to_min_stake,
         netuid_to_max_stake, netuid_to_founder, netuid_to_founder_share,
         netuid_to_incentive_ratio, netuid_to_trust_ratio,
-        netuid_to_vote_treshold_subnet, netuid_to_vote_mode_subnet,
+        netuid_to_vote_mode_subnet,
         netuid_to_subnet_names,
         netuid_to_weight_age
     ) = (
@@ -143,10 +151,9 @@ def get_map_subnets_params(
         bulk_query["MinStake"], bulk_query["MaxStake"],
         bulk_query["Founder"], bulk_query["FounderShare"],
         bulk_query["IncentiveRatio"], bulk_query["TrustRatio"],
-        bulk_query["VoteThresholdSubnet"], bulk_query["VoteModeSubnet"],
+        bulk_query["VoteModeSubnet"],
         bulk_query["SubnetNames"], bulk_query["MaxWeightAge"]
     )
-
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
     for netuid, name in netuid_to_subnet_names.items():
@@ -163,7 +170,6 @@ def get_map_subnets_params(
         tempo = netuid_to_tempo[netuid]
         trust_ratio = netuid_to_trust_ratio[netuid]
         vote_mode = netuid_to_vote_mode_subnet[netuid]
-        vote_threshold = netuid_to_vote_treshold_subnet[netuid]
         emission = netuid_to_emission[netuid]
         max_weight_age = netuid_to_weight_age[netuid]
 
@@ -181,7 +187,6 @@ def get_map_subnets_params(
             "tempo": tempo,
             "trust_ratio": trust_ratio,
             "vote_mode": vote_mode,
-            "vote_threshold": vote_threshold,
             "emission": emission,
             "max_weight_age": max_weight_age,
         }
@@ -204,19 +209,23 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ("TargetRegistrationsInterval", []),
             ("TargetRegistrationsPerInterval", []),
             ("UnitEmission", []),
-            ("TxRateLimit", []),
-            ("GlobalVoteThreshold", []),
-            ("VoteModeGlobal", []),
-            ("MaxProposals", []),
             ("MaxNameLength", []),
             ("BurnRate", []),
             ("MinBurn", []),
             ("MaxBurn", []),
-            ("Burn", []),
-            ("MinStake", []),
+            ("MinStakeGlobal", []),
             ("MinWeightStake", []),
             ("AdjustmentAlpha", []),
             ("FloorDelegationFee", []),
+            ("MaxAllowedWeights", []),
+            ("Nominator", []),
+            ("ProposalCost", []),
+            ("ProposalExpiration", []),
+            ("ProposalParticipationThreshold", []),
+            ("Nominator", []),
+            ("SubnetStakeThreshold", []),
+            ("MinWeightStake", []),
+            ("MinNameLength", []),
         ],
     })
 
@@ -227,19 +236,21 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "target_registrations_interval": int(query_all["TargetRegistrationsInterval"]),
         "target_registrations_per_interval": int(query_all["TargetRegistrationsPerInterval"]),
         "unit_emission": int(query_all["UnitEmission"]),
-        "tx_rate_limit": int(query_all["TxRateLimit"]),
-        "vote_threshold": int(query_all["GlobalVoteThreshold"]),
-        "vote_mode": str(query_all["VoteModeGlobal"]),
-        "max_proposals": int(query_all["MaxProposals"]),
         "max_name_length": int(query_all["MaxNameLength"]),
         "burn_rate": int(query_all["BurnRate"]),
         "min_burn": int(query_all["MinBurn"]),
         "max_burn": int(query_all["MaxBurn"]),
-        "burn": int(query_all["Burn"]),
-        "min_stake": int(query_all["MinStake"]),
+        "min_stake": int(query_all["MinStakeGlobal"]),
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
+        "max_allowed_weights": int(query_all["MaxAllowedWeights"]),
+        "nominator": Ss58Address(query_all["Nominator"]),
+        "proposal_cost": int(query_all["ProposalCost"]),
+        "proposal_expiration": int(query_all["ProposalExpiration"]),
+        "proposal_participation_threshold": int(query_all["ProposalParticipationThreshold"]),
+        "subnet_stake_threshold": int(query_all["SubnetStakeThreshold"]),
+        "min_name_length": int(query_all["MinNameLength"]),
     }
 
     return global_params

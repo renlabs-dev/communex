@@ -2,44 +2,42 @@ import random
 from enum import Enum
 from typing import Optional
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from communex.balance import from_nano
-from communex.client import CommuneClient
 
 
 class ComxSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="COMX_")
+    # TODO: improve node lists
     NODE_URLS: list[str] = ["wss://commune-api-node-1.communeai.net"]
     TESTNET_NODE_URLS: list[str] = ["wss://testnet-commune-api-node-0.communeai.net"]
 
-    class Config:
-        env_prefix = "COMX_"
+      
+def get_node_url(comx_settings: ComxSettings | None = None, *, use_testnet: bool = False) -> str:
 
-
-def create_use_testnet_getter():
-    use_testnet = False
-    def state_function(testnet: Optional[bool]=None):
-        nonlocal use_testnet
-        if testnet is not None:
-            use_testnet = testnet
-        return use_testnet
-
-    return state_function
-
-get_use_testnet = create_use_testnet_getter()
-
-
-def get_node_url(comx_settings: ComxSettings | None = None) -> str:
     comx_settings = comx_settings or ComxSettings()
-    match get_use_testnet():
+    match use_testnet:
         case True:
             node_url = random.choice(comx_settings.TESTNET_NODE_URLS)
         case False:
             node_url = random.choice(comx_settings.NODE_URLS)
-    print(f"Using node: {node_url}")
     return node_url
 
+  
+def get_available_nodes(
+        comx_settings: ComxSettings | None = None, *, use_testnet: bool = False
+    ) -> list[str]:
+    comx_settings = comx_settings or ComxSettings()
 
+    match use_testnet:
+        case True:
+            node_urls = comx_settings.TESTNET_NODE_URLS
+        case False:
+            node_urls = comx_settings.NODE_URLS
+    return node_urls
+
+  
 def make_client(node_url: str | None = None):
     """
     Create a client to the Commune network.

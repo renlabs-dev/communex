@@ -1,17 +1,52 @@
 from dataclasses import dataclass
-from typing import Any, Mapping
+
+from typing import Any, Mapping, cast
+
 
 import rich
 import typer
 from rich.console import Console
 from rich.table import Table
+from typer import Context
+
+from communex._common import get_node_url
+from communex.client import CommuneClient
+
+
+@dataclass
+class ExtraCtxData:
+    output_json: bool
+    use_testnet: bool
+
+
+class ExtendedContext(Context):
+    obj: ExtraCtxData
 
 
 @dataclass
 class CustomCtx:
-    typer_ctx: typer.Context
+    ctx: ExtendedContext
     console: rich.console.Console
     console_err: rich.console.Console
+    _com_client: CommuneClient | None = None
+
+    def com_client(self) -> CommuneClient:
+        use_testnet = self.ctx.obj.use_testnet
+        if self._com_client is None:
+            node_url = get_node_url(None, use_testnet=use_testnet)
+            self.info(f"Using node: {node_url}")
+            for _ in range(5):
+                try:
+                    self._com_client = CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
+                except Exception:
+                    self.info(f"Failed to connect to node: {node_url}")
+                    node_url = get_node_url(None, use_testnet=use_testnet)
+                    self.info(f"Will retry with node {node_url}")
+                    continue
+            if self._com_client is None:
+                    raise ConnectionError("Could not connect to any node")
+            
+        return self._com_client
 
     def output(self, message: str) -> None:
         self.console.print(message)
@@ -26,10 +61,13 @@ class CustomCtx:
     def progress_status(self, message: str):
         return self.console_err.status(message)
 
+    def confirm(self, message: str) -> bool:
+        return typer.confirm(message)
+
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:
     return CustomCtx(
-        typer_ctx=ctx,
+        ctx=cast(ExtendedContext, ctx),
         console=Console(),
         console_err=Console(stderr=True),
     )
@@ -81,3 +119,4 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
         table.add_row(*row, style="white")
 
     console.print(table)
+
