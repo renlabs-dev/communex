@@ -42,8 +42,8 @@ def get_map_modules(
     ss58_to_stakefrom, uid_to_key, uid_to_name, uid_to_address, uid_to_regblock, \
         ss58_to_delegationfee, uid_to_emission, uid_to_incentive, uid_to_dividend, \
         uid_to_lastupdate, ss58_to_balances, uid_to_metadata = (
-            bulk_query["StakeFrom"],
-            bulk_query["Keys"],
+            bulk_query.get("StakeFrom", {}),
+            bulk_query.get("Keys", {}),
             bulk_query["Name"],
             bulk_query["Address"],
             bulk_query["RegistrationBlock"],
@@ -52,8 +52,8 @@ def get_map_modules(
             bulk_query["Incentive"],
             bulk_query["Dividends"],
             bulk_query["LastUpdate"],
-            bulk_query.get("Account", None),
-            bulk_query["Metadata"],
+            bulk_query.get("Account", {}),
+            bulk_query.get("Metadata", {}),
 
         )
 
