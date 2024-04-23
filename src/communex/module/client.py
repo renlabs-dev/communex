@@ -48,6 +48,7 @@ class ModuleClient:
         }
 
         serialized_data = serialize(request_data)
+        timestamp = iso_timestamp_now()
         request_data["timestamp"] = timestamp
         serialized_stamped_data = serialize(request_data)
         signature = sign(self.key, serialized_stamped_data)

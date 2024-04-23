@@ -66,7 +66,7 @@ def build_input_handler_route_class(
 
         @staticmethod
         def _check_inputs(request: Request, body: bytes, module_key: Ss58Address):
-            required_headers = ["x-signature", "x-key", "x-crypto"]
+            required_headers = ["x-signature", "x-key", "x-crypto", "x-timestamp"]
 
             # TODO: we'll replace this by a Result ADT :)
             match _get_headers_dict(request.headers, required_headers):
