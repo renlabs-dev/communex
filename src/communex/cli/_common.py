@@ -1,7 +1,5 @@
 from dataclasses import dataclass
-
 from typing import Any, Mapping, cast
-
 
 import rich
 import typer
@@ -119,4 +117,3 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
         table.add_row(*row, style="white")
 
     console.print(table)
-
