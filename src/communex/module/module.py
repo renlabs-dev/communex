@@ -13,11 +13,16 @@ T = TypeVar('T')
 P = ParamSpec('P')
 
 
+class EndpointParams(BaseModel):
+    class config:
+        extra = "allow"
+
+
 @dataclass
 class EndpointDefinition(Generic[T, P]):
     name: str
     fn: Callable[P, T]
-    params_model: type[BaseModel]
+    params_model: type[EndpointParams]
 
 
 def endpoint(fn: Callable[P, T]) -> Callable[P, T]:
@@ -31,7 +36,7 @@ def endpoint(fn: Callable[P, T]) -> Callable[P, T]:
     return fn
 
 
-def function_params_to_model(signature: inspect.Signature) -> type[BaseModel]:
+def function_params_to_model(signature: inspect.Signature) -> type[EndpointParams]:
     fields: dict[str, tuple[type] | tuple[type, Any]] = {}
     for i, param in enumerate(signature.parameters.values()):
         name = param.name
@@ -47,8 +52,9 @@ def function_params_to_model(signature: inspect.Signature) -> type[BaseModel]:
         else:
             fields[name] = (annotation, param.default)
 
-    model: type[BaseModel] = cast(
-        type[BaseModel], pydantic.create_model('Params', **fields))  # type: ignore
+    model: type[EndpointParams] = cast(
+        type[EndpointParams], pydantic.create_model('Params', **fields, __base__=EndpointParams) # type: ignore
+        )  # type: ignore
 
     return model
 
