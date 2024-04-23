@@ -16,7 +16,6 @@ def keys_to_uids(keys: dict[int, Ss58Address], target_keys: list[Ss58Address]) -
 def validaiton(client: CommuneClient, key: Keypair):
     # Query the modules, nominated by DAO.
     keys = client.query_map_key(netuid=GENERAL_NETUID)
-    breakpoint()
     legit_whitelist = client.query_map(
         "LegitWhitelist", params=[], extract_value=False)["LegitWhitelist"]
     # TODO: test on production query, to verify the format, now I am going to assume it is a dict.
