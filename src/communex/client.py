@@ -489,7 +489,7 @@ class CommuneClient:
             response, function_parameters, prefix_list
         ):
             if not res:
-                return {}
+                continue
             res = res[0]
             changes = res["changes"]  # type: ignore
             value_type, param_types, key_hashers, params, storage_function = fun_params_tuple
