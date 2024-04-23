@@ -36,7 +36,7 @@ class IpLimiterMiddleware(BaseHTTPMiddleware):
 
         if not is_allowed:
             response = JSONResponse(
-                status_code=400, 
+                status_code=429, 
                 headers={"X-RateLimit-Remaining": str(self._limiter.remaining(ip))},
                 content={"error": "Rate limit exceeded"}
                 )

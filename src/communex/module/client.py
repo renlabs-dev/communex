@@ -35,17 +35,20 @@ class ModuleClient:
         self.key = key
 
     async def call(self, fn: str, params: Any = None, timeout: int = 16) -> Any:
+        timestamp = iso_timestamp_now()
         request_data = {
             "params": params,
         }
 
         serialized_data = serialize(request_data)
-        signature = sign(self.key, serialized_data)
+        request_data["timestamp"] = timestamp
+        serialized_stamped_data = serialize(request_data)
+        signature = sign(self.key, serialized_stamped_data)
         # signed_data = sign_to_dict(self.key, serialized_data)
         headers = {
             "Content-Type": "application/json",
             "X-Signature": signature.hex(),
-            "X-Timestamp": iso_timestamp_now(),
+            "X-Timestamp": timestamp,
             "X-Key": self.key.public_key.hex(),
             "X-Crypto": str(self.key.crypto_type),
         }

@@ -12,6 +12,7 @@ from .module import module_app
 from .network import network_app
 from .subnet import subnet_app
 
+
 app = typer.Typer()
 
 app.add_typer(key_app, name="key", help="Key operations")
