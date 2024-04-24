@@ -224,10 +224,12 @@ class ModuleServer:
 
     def register_extra_middleware(self):
         async def check_lists(request: Request, call_next: Callback):
-            if request.url.path == '/docs' or request.url.path == '/openapi.json':
+
+            if not request.url.path.startswith('/method'):
                 return await call_next(request)
             key = request.headers.get("x-key")
-            assert key
+            if not key:
+                return _json_error(400, "Missing header: X-Key")
             ss58_format = 42
             ss58 = ss58_encode(key, ss58_format)
             ss58 = check_ss58_address(ss58, ss58_format)
