@@ -24,9 +24,9 @@ module_app = typer.Typer()
 def register(
     ctx: Context,
     name: str,
-    ip: str,
-    port: int,
     key: str,
+    ip: Optional[str] = None,
+    port: Optional[int] = None,
     netuid: Optional[int] = None,
     stake: Optional[float] = None,
     metadata: Optional[str] = None,
@@ -71,9 +71,6 @@ def register(
             stake_nano = min_stake + burn
 
         resolved_key = classic_load_key(key)
-
-        if not is_ip_valid(ip):
-            raise ValueError("Invalid ip address")
 
         address = f"{ip}:{port}"
 

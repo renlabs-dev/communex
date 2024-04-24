@@ -1070,7 +1070,7 @@ class CommuneClient:
         self,
         key: Keypair,
         name: str,
-        address: str,
+        address: str | None = None,
         subnet: str = 'commune',
         min_stake: int | None = None,
         metadata: str | None = None,
