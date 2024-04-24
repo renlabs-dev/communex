@@ -34,9 +34,7 @@ def register(
 
 ):
     """
-    Registers a module.
-
-    Asks to generate a key if not provided.
+    Registers a module on the Commune network.
     """
     context = make_custom_context(ctx)
     client = context.com_client()
