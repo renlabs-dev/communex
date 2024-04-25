@@ -43,7 +43,8 @@ def register(
 
     match (netuid, new_subnet_name):
         case (None, None):
-            raise ValueError("`netuid` or `new_subnet_name` must be provided")
+            raise ValueError("`--netuid` or `--new_subnet_name` argument must be passed into the CLI command \n"
+                             "f.e comx module register <name> <ip> <port> <key> --netuid <netuid>")
         case (netuid, None):
             assert netuid is not None
             subnet_name = client.get_subnet_name(netuid)
@@ -52,7 +53,7 @@ def register(
             subnet_name = new_subnet_name
             burn = client.get_min_burn()
         case (_, _):
-            raise ValueError("`netuid` and `new_subnet_name` cannot be provided at the same time")
+            raise ValueError("`--netuid` and `--new_subnet_name` cannot be provided at the same time")
 
     do_burn = typer.confirm(
         f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?")
