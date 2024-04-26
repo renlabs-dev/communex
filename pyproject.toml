@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "communex"
-version = "0.1.16"
+version = "0.1.17"
 description = "A library for Commune network focused on simplicity"
 authors = ["agicommies <info@agicommies.org>"]
 license = "MIT"
