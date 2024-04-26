@@ -3,7 +3,11 @@ Server for Commune modules.
 """
 
 import re
-from typing import Awaitable, Callable
+
+from typing import Awaitable, Callable, Any
+import json
+from functools import partial
+
 
 import fastapi
 import starlette.datastructures
@@ -20,7 +24,10 @@ from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._ip_limiter import IpLimiterMiddleware
-from communex.module.module import Module, endpoint
+
+from communex.module.module import Module, endpoint, EndpointDefinition
+from communex.types import Ss58Address
+
 
 # Regular expression to match a hexadecimal number
 HEX_PATTERN = re.compile(r"^[0-9a-fA-F]+$")
@@ -38,7 +45,10 @@ def parse_hex(hex_str: str) -> bytes:
         return bytes.fromhex(hex_str)
 
 
-def build_input_handler_route_class(subnets_whitelist: list[int] | None) -> type[APIRoute]:
+def build_input_handler_route_class(
+        subnets_whitelist: list[int] | None, 
+        module_key: Ss58Address
+    ) -> type[APIRoute]:
     class InputHandlerRoute(APIRoute):
         def get_route_handler(self):
             original_route_handler = super().get_route_handler()
@@ -47,7 +57,7 @@ def build_input_handler_route_class(subnets_whitelist: list[int] | None) -> type
                 body = await request.body()
 
                 # TODO: we'll replace this by a Result ADT :)
-                match self._check_inputs(request, body):
+                match self._check_inputs(request, body, module_key):
                     case (False, error):
                         return error
                     case (True, _):
@@ -59,8 +69,9 @@ def build_input_handler_route_class(subnets_whitelist: list[int] | None) -> type
             return custom_route_handler
 
         @staticmethod
-        def _check_inputs(request: Request, body: bytes):
-            required_headers = ["x-signature", "x-key", "x-crypto"]
+        def _check_inputs(request: Request, body: bytes, module_key: Ss58Address):
+            required_headers = ["x-signature", "x-key", "x-crypto", "x-timestamp"]
+
 
             # TODO: we'll replace this by a Result ADT :)
             match _get_headers_dict(request.headers, required_headers):
@@ -70,7 +81,7 @@ def build_input_handler_route_class(subnets_whitelist: list[int] | None) -> type
                     pass
 
             # TODO: we'll replace this by a Result ADT :)
-            match _check_signature(headers_dict, body):
+            match _check_signature(headers_dict, body, module_key):
                 case (False, error):
                     return (False, error)
                 case (True, _):
@@ -104,7 +115,11 @@ def _get_headers_dict(headers: starlette.datastructures.Headers, required: list[
 
 
 # TODO: type `headers_dict` better
-def _check_signature(headers_dict: dict[str, str], body: bytes):
+def _check_signature(
+        headers_dict: dict[str, str], 
+        body: bytes, 
+        module_key: Ss58Address
+    ):
     key = headers_dict["x-key"]
     signature = headers_dict["x-signature"]
     crypto = int(headers_dict["x-crypto"])  # TODO: better handling of this
@@ -117,6 +132,12 @@ def _check_signature(headers_dict: dict[str, str], body: bytes):
     verified = signer.verify(key, crypto, body, signature)
     if not verified:
         return (False, _json_error(401, "Signatures doesn't match"))
+    
+    body_dict: dict[str, dict[str, Any]] = json.loads(body)
+    target_key = body_dict['params'].get("target_key", None)
+    if not target_key or target_key != module_key:
+        return (False, _json_error(401, "Wrong target_key in body"))
+
 
     return (True, None)
 
@@ -144,6 +165,8 @@ def _check_key_registered(subnets_whitelist: list[int] | None, headers_dict: dic
             uids = client.get_uids(ss58, subnet)
             if not uids:
                 return (False, _json_error(403, "Key is not registered on the network"))
+
+
 
     return (True, None)
 
@@ -175,7 +198,12 @@ class ModuleServer:
         self.register_extra_middleware()
 
         # Routes
-        self._router = APIRouter(route_class=build_input_handler_route_class(self._subnets_whitelist))
+        self._router = APIRouter(
+            route_class=build_input_handler_route_class(
+                self._subnets_whitelist, 
+                check_ss58_address(self.key.ss58_address),
+                )
+            )
         self.register_endpoints(self._router)
         self._app.include_router(self._router)
 
@@ -196,8 +224,13 @@ class ModuleServer:
 
     def register_extra_middleware(self):
         async def check_lists(request: Request, call_next: Callback):
+
+            if not request.url.path.startswith('/method'):
+                return await call_next(request)
+
             key = request.headers.get("x-key")
-            assert key
+            if not key:
+                return _json_error(400, "Missing header: X-Key")
             ss58_format = 42
             ss58 = ss58_encode(key, ss58_format)
             ss58 = check_ss58_address(ss58, ss58_format)
@@ -224,7 +257,7 @@ def main():
 
     a_mod = Amod()
     keypair = Keypair.create_from_mnemonic(signer.TESTING_MNEMONIC)
-    server = ModuleServer(a_mod, keypair, subnets_whitelist=[0])
+    server = ModuleServer(a_mod, keypair, subnets_whitelist=None)
     app = server.get_fastapi_app()
 
     import uvicorn

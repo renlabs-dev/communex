@@ -1066,8 +1066,8 @@ class CommuneClient:
         self,
         key: Keypair,
         name: str,
-        address: str,
-        subnet: str = "commune",
+        address: str | None = None,
+        subnet: str = 'commune',
         min_stake: int | None = None,
         metadata: str | None = None,
     ) -> ExtrinsicReceipt:

@@ -11,6 +11,7 @@ import aiohttp
 from substrateinterface import Keypair  # type: ignore
 
 from ._signer import sign, TESTING_MNEMONIC
+from communex.types import Ss58Address
 
 
 def iso_timestamp_now() -> str:
@@ -34,13 +35,26 @@ class ModuleClient:
         self.port = port
         self.key = key
 
-    async def call(self, fn: str, params: Any = None, timeout: int = 16) -> Any:
+    async def call(
+            self, 
+            fn: str,
+            target_key: Ss58Address,
+            params: Any = {}, 
+            timeout: int = 16,
+            ) -> Any:
+        params["target_key"] = target_key
+
         request_data = {
             "params": params,
         }
 
         serialized_data = serialize(request_data)
-        signature = sign(self.key, serialized_data)
+
+        timestamp = iso_timestamp_now()
+        request_data["timestamp"] = timestamp
+        serialized_stamped_data = serialize(request_data)
+        signature = sign(self.key, serialized_stamped_data)
+
         # signed_data = sign_to_dict(self.key, serialized_data)
         headers = {
             "Content-Type": "application/json",
@@ -77,5 +91,5 @@ if __name__ == "__main__":
         TESTING_MNEMONIC
     )
     client = ModuleClient("localhost", 8000, keypair)
-    result = asyncio.run(client.call("do_the_thing", {"awesomness": 45}))
+    result = asyncio.run(client.call("do_the_thing", keypair.ss58_address, {"awesomness": 45, "extra": "hi"}))
     print(result)
