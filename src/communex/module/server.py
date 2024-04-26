@@ -3,9 +3,11 @@ Server for Commune modules.
 """
 
 import re
+
 from typing import Awaitable, Callable, Any
 import json
 from functools import partial
+
 
 import fastapi
 import starlette.datastructures
@@ -22,8 +24,10 @@ from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._ip_limiter import IpLimiterMiddleware
+
 from communex.module.module import Module, endpoint, EndpointDefinition
 from communex.types import Ss58Address
+
 
 # Regular expression to match a hexadecimal number
 HEX_PATTERN = re.compile(r"^[0-9a-fA-F]+$")
@@ -67,6 +71,7 @@ def build_input_handler_route_class(
         @staticmethod
         def _check_inputs(request: Request, body: bytes, module_key: Ss58Address):
             required_headers = ["x-signature", "x-key", "x-crypto", "x-timestamp"]
+
 
             # TODO: we'll replace this by a Result ADT :)
             match _get_headers_dict(request.headers, required_headers):
@@ -118,18 +123,13 @@ def _check_signature(
     key = headers_dict["x-key"]
     signature = headers_dict["x-signature"]
     crypto = int(headers_dict["x-crypto"])  # TODO: better handling of this
-    timestamp = headers_dict["x-timestamp"]
 
     if not is_hex_string(key):
         return (False, _json_error(400, "X-Key should be a hex value"))
 
     signature = parse_hex(signature)
     key = parse_hex(key)
-    json_body = json.loads(body)
-    json_body["timestamp"] = timestamp
-    stamped_body = json.dumps(json_body).encode()
-    verified = signer.verify(key, crypto, stamped_body, signature)
-    verified = True
+    verified = signer.verify(key, crypto, body, signature)
     if not verified:
         return (False, _json_error(401, "Signatures doesn't match"))
     
@@ -137,6 +137,7 @@ def _check_signature(
     target_key = body_dict['params'].get("target_key", None)
     if not target_key or target_key != module_key:
         return (False, _json_error(401, "Wrong target_key in body"))
+
 
     return (True, None)
 
@@ -211,22 +212,22 @@ class ModuleServer:
 
     def register_endpoints(self, router: APIRouter):
         endpoints = self._module.get_endpoints()
-
         for name, endpoint_def in endpoints.items():
+
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
 
-            def handler(end_def: EndpointDefinition[Any, ...], body: Body):
-                return end_def.fn(self._module, **body.params.model_dump())  # type: ignore
+            def handler(body: Body):
+                return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
 
-            defined_handler = partial(handler, endpoint_def)
-            router.post(f"/method/{name}")(defined_handler)
+            router.post(f"/method/{name}")(handler)
 
     def register_extra_middleware(self):
         async def check_lists(request: Request, call_next: Callback):
 
             if not request.url.path.startswith('/method'):
                 return await call_next(request)
+
             key = request.headers.get("x-key")
             if not key:
                 return _json_error(400, "Missing header: X-Key")
