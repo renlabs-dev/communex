@@ -48,8 +48,6 @@ class ModuleClient:
             "params": params,
         }
 
-        serialized_data = serialize(request_data)
-
         timestamp = iso_timestamp_now()
         request_data["timestamp"] = timestamp
         serialized_stamped_data = serialize(request_data)
@@ -67,7 +65,7 @@ class ModuleClient:
         async with aiohttp.ClientSession(timeout=out) as session:
             async with session.post(
                 f"http://{self.host}:{self.port}/method/{fn}",
-                json=json.loads(serialized_data),
+                json=json.loads(serialized_stamped_data),
                 headers=headers,
             ) as response:
                 match response.status:
