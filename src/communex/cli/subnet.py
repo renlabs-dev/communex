@@ -180,9 +180,9 @@ def propose_on_subnet(
 @subnet_app.command()
 def add_custom_proposal(
     ctx: Context,
-    netuid: int,
     key: str,
-    cid: str
+    cid: str,
+    netuid: int,
 ):
     """
     Adds a custom proposal to a specific subnet.
@@ -198,8 +198,5 @@ def add_custom_proposal(
     resolved_key = classic_load_key(key)
 
     ipfs = "ipfs://" + cid
-    proposal = {
-        "data": ipfs
-    }
     with context.progress_status("Adding a proposal..."):
-        client.add_custom_proposal(resolved_key, proposal, netuid=netuid)
+        client.add_custom_subnet_proposal(resolved_key, ipfs, netuid=netuid)

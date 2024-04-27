@@ -5,8 +5,8 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, TypeVar, Mapping
- 
-from substrateinterface import ( # type: ignore
+
+from substrateinterface import (  #  type: ignore
     ExtrinsicReceipt,
     Keypair,  # type: ignore
     SubstrateInterface,
@@ -379,7 +379,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i : i + max_n_keys]
+                        splitted_keys = result_keys[i: i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -515,7 +515,7 @@ class CommuneClient:
 
                     item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
-                        scale_bytes="0x" + item[0][len(prefix) :],
+                        scale_bytes="0x" + item[0][len(prefix):],
                         return_scale_obj=True,
                         block_hash=block_hash,
                     )
@@ -1376,13 +1376,49 @@ class CommuneClient:
     def add_custom_proposal(
         self,
         key: Keypair,
-        params: dict[Any, Any],
-        netuid: int = 0,
+        cid: str,
     ) -> ExtrinsicReceipt:
 
-        proposal = params
-        proposal["netuid"] = netuid
+        params = {
+            "data": cid
+        }
+
         response = self.compose_call(fn="add_custom_proposal", params=params, key=key)
+        return response
+
+    def add_custom_subnet_proposal(
+        self,
+        key: Keypair,
+        cid: str,
+        netuid: int = 0,
+    ) -> ExtrinsicReceipt:
+        """
+        Submits a proposal for creating or modifying a custom subnet within the
+        network.
+
+        The proposal includes various parameters like the name, founder, share
+        allocations, and other subnet-specific settings.
+
+        Args:
+            key: The keypair used for signing the proposal transaction.
+            params: The parameters for the subnet proposal.
+            netuid: The network identifier.
+
+        Returns:
+            A receipt of the subnet proposal transaction.
+        """
+
+        params = {
+            "data": cid,
+            "netuid": netuid,
+        }
+
+        response = self.compose_call(
+            fn="add_custom_subnet_proposal",
+            params=params,
+            key=key,
+        )
+
         return response
 
     def add_global_proposal(
