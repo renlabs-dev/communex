@@ -185,7 +185,7 @@ def add_custom_proposal(
     cid: str
 ):
     """
-    Adds a proposal to a specific subnet.
+    Adds a custom proposal to a specific subnet.
     """
 
     context = make_custom_context(ctx)

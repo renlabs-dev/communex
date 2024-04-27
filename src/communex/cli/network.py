@@ -111,8 +111,6 @@ def propose_globally(
         client.add_global_proposal(resolved_key, global_params)
 
 
-# ! THESE ARE BETA COMMANDS (might not have full substrate support)
-
 
 def get_valid_voting_keys(client: CommuneClient, proposal: dict[str, Any]) -> dict[str, int]:
     if proposal.get('SubnetParams'):
@@ -183,7 +181,7 @@ def add_custom_proposal(
     cid: str
 ):
     """
-    Adds a proposal to a specific subnet.
+    Adds a custom proposal.
     """
     context = make_custom_context(ctx)
     if not re.match(IPFS_REGEX, cid):
