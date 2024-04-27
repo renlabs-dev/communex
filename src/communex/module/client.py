@@ -57,7 +57,6 @@ class ModuleClient:
         headers = {
             "Content-Type": "application/json",
             "X-Signature": signature.hex(),
-            "X-Timestamp": iso_timestamp_now(),
             "X-Key": self.key.public_key.hex(),
             "X-Crypto": str(self.key.crypto_type),
         }

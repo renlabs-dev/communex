@@ -66,8 +66,10 @@ def build_input_handler_route_class(
                         pass
                 body_dict: dict[str, dict[str, Any]] = json.loads(body)
                 timestamp = body_dict['params'].get("timestamp", None)
+                legacy_timestamp = request.headers.get("X-Timestamp", None)
                 try:
-                    request_time = datetime.fromisoformat(timestamp)
+                    timestamp_to_use = timestamp if not legacy_timestamp else legacy_timestamp
+                    request_time = datetime.fromisoformat(timestamp_to_use)
                 except Exception:
                     return JSONResponse(status_code=400, content={"error": "Invalid ISO timestamp given"})
                 if (datetime.now(timezone.utc) - request_time).total_seconds() > request_staleness:
@@ -80,10 +82,10 @@ def build_input_handler_route_class(
         @staticmethod
         def _check_inputs(request: Request, body: bytes, module_key: Ss58Address):
             required_headers = ["x-signature", "x-key", "x-crypto"]
-
+            optional_headers = ["x-timestamp"]
 
             # TODO: we'll replace this by a Result ADT :)
-            match _get_headers_dict(request.headers, required_headers):
+            match _get_headers_dict(request.headers, required_headers, optional_headers):
                 case (False, error):
                     return (False, error)
                 case (True, headers_dict):
@@ -112,7 +114,11 @@ def _json_error(code: int, message: str):
     return JSONResponse(status_code=code, content={"error": {"code": code, "message": message}})
 
 
-def _get_headers_dict(headers: starlette.datastructures.Headers, required: list[str]):
+def _get_headers_dict(
+        headers: starlette.datastructures.Headers, 
+        required: list[str],
+        optional: list[str],
+    ):
     headers_dict: dict[str, str] = {}
     for required_header in required:
         value = headers.get(required_header)
@@ -120,6 +126,11 @@ def _get_headers_dict(headers: starlette.datastructures.Headers, required: list[
             code = 400
             return False, _json_error(code, f"Missing header: {required_header}")
         headers_dict[required_header] = value
+    for optional_header in optional:
+        value = headers.get(optional_header)
+        if value:
+            headers_dict[optional_header] = value
+
     return True, headers_dict
 
 
@@ -138,8 +149,18 @@ def _check_signature(
 
     signature = parse_hex(signature)
     key = parse_hex(key)
+
+    timestamp = headers_dict.get("x-timestamp")
+    legacy_verified = False
+    if timestamp:
+        # tries to do a legacy verification
+        json_body = json.loads(body)
+        json_body["timestamp"] = timestamp
+        stamped_body = json.dumps(json_body).encode()
+        legacy_verified = signer.verify(key, crypto, stamped_body, signature)
+
     verified = signer.verify(key, crypto, body, signature)
-    if not verified:
+    if not verified or legacy_verified:
         return (False, _json_error(401, "Signatures doesn't match"))
     
     body_dict: dict[str, dict[str, Any]] = json.loads(body)
