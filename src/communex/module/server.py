@@ -7,6 +7,7 @@ import re
 from typing import Awaitable, Callable, Any
 import json
 from functools import partial
+from datetime import datetime, timezone
 
 
 import fastapi
@@ -47,7 +48,8 @@ def parse_hex(hex_str: str) -> bytes:
 
 def build_input_handler_route_class(
         subnets_whitelist: list[int] | None, 
-        module_key: Ss58Address
+        module_key: Ss58Address,
+        request_staleness: int,
     ) -> type[APIRoute]:
     class InputHandlerRoute(APIRoute):
         def get_route_handler(self):
@@ -62,7 +64,14 @@ def build_input_handler_route_class(
                         return error
                     case (True, _):
                         pass
-
+                body_dict: dict[str, dict[str, Any]] = json.loads(body)
+                timestamp = body_dict['params'].get("timestamp", None)
+                try:
+                    request_time = datetime.fromisoformat(timestamp)
+                except Exception:
+                    return JSONResponse(status_code=400, content={"error": "Invalid ISO timestamp given"})
+                if (datetime.now(timezone.utc) - request_time).total_seconds() > request_staleness:
+                    return JSONResponse(status_code=400, content={"error": "Request is too stale"})
                 response: Response = await original_route_handler(request)
                 return response
 
@@ -70,7 +79,7 @@ def build_input_handler_route_class(
 
         @staticmethod
         def _check_inputs(request: Request, body: bytes, module_key: Ss58Address):
-            required_headers = ["x-signature", "x-key", "x-crypto", "x-timestamp"]
+            required_headers = ["x-signature", "x-key", "x-crypto"]
 
 
             # TODO: we'll replace this by a Result ADT :)
@@ -179,7 +188,7 @@ class ModuleServer:
         self,
         module: Module,
         key: Keypair,
-        max_request_staleness: int = 60,
+        max_request_staleness: int = 120,
         ip_limiter: KeyLimiter | None = None,
         whitelist: list[str] | None = None,
         blacklist: list[str] | None = None,
@@ -202,6 +211,7 @@ class ModuleServer:
             route_class=build_input_handler_route_class(
                 self._subnets_whitelist, 
                 check_ss58_address(self.key.ss58_address),
+                self.max_request_staleness,
                 )
             )
         self.register_endpoints(self._router)
@@ -217,10 +227,11 @@ class ModuleServer:
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
 
-            def handler(body: Body):
-                return endpoint_def.fn(self._module, **body.params.model_dump())  # type: ignore
+            def handler(end_def: EndpointDefinition[Any, ...], body: Body):
+                return end_def.fn(self._module, **body.params.model_dump())  # type: ignore
 
-            router.post(f"/method/{name}")(handler)
+            defined_handler = partial(handler, endpoint_def)
+            router.post(f"/method/{name}")(defined_handler)
 
     def register_extra_middleware(self):
         async def check_lists(request: Request, call_next: Callback):

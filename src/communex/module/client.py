@@ -42,18 +42,16 @@ class ModuleClient:
             params: Any = {}, 
             timeout: int = 16,
             ) -> Any:
+        timestamp = iso_timestamp_now()
         params["target_key"] = target_key
+        params["timestamp"] = timestamp
 
         request_data = {
             "params": params,
         }
 
         serialized_data = serialize(request_data)
-
-        timestamp = iso_timestamp_now()
-        request_data["timestamp"] = timestamp
-        serialized_stamped_data = serialize(request_data)
-        signature = sign(self.key, serialized_stamped_data)
+        signature = sign(self.key, serialized_data)
 
         # signed_data = sign_to_dict(self.key, serialized_data)
         headers = {
