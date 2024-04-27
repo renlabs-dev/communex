@@ -130,6 +130,8 @@ def serve(
     subnets_whitelist: Optional[list[int]] = [0],
     whitelist: Optional[list[str]] = None,
     blacklist: Optional[list[str]] = None,
+    test_mode: Optional[bool] = False,
+    request_staleness: int = typer.Option(120),
 ):
     """
     Serves a module on `127.0.0.1` on port `port`. `class_path` should specify
@@ -163,8 +165,10 @@ def serve(
         raise typer.Exit(code=1)
 
     keypair = classic_load_key(key)
+    if test_mode:
+        subnets_whitelist = None
     server = ModuleServer(
-        class_obj(), keypair, whitelist=whitelist, blacklist=blacklist, subnets_whitelist=subnets_whitelist
+        class_obj(), keypair, whitelist=whitelist, blacklist=blacklist, subnets_whitelist=subnets_whitelist, max_request_staleness=request_staleness
     )
     app = server.get_fastapi_app()
     host = ip or "127.0.0.1"
