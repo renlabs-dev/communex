@@ -1,6 +1,6 @@
 import json
 from enum import Enum
-from typing import Any, cast
+from typing import Any, cast, Optional
 
 import typer
 from substrateinterface import Keypair  # type: ignore
@@ -80,7 +80,7 @@ def show(ctx: Context, key: str, show_private: bool = False):
 
 
 @key_app.command()
-def balances(ctx: Context, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule, sort_balance: SortBalance = SortBalance.all,):
+def balances(ctx: Context, netuid: Optional[int] = None, unit: BalanceUnit = BalanceUnit.joule, sort_balance: SortBalance = SortBalance.all,):
     """
     Gets balances of all keys.
     """
@@ -210,7 +210,7 @@ def total_staked_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule, ne
 
 
 @key_app.command()
-def total_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule, netuid: int = 0):
+def total_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule, netuid: Optional[int] = None):
     """
     Returns total tokens of all keys on a disk
     """
