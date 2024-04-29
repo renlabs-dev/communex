@@ -44,14 +44,16 @@ class ModuleClient:
             ) -> Any:
         timestamp = iso_timestamp_now()
         params["target_key"] = target_key
-        params["timestamp"] = timestamp
+        # params["timestamp"] = timestamp
 
         request_data = {
             "params": params,
         }
 
         serialized_data = serialize(request_data)
-        signature = sign(self.key, serialized_data)
+        request_data["timestamp"] = timestamp
+        serialized_stamped_data = serialize(request_data)
+        signature = sign(self.key, serialized_stamped_data)
 
         # signed_data = sign_to_dict(self.key, serialized_data)
         headers = {
@@ -59,6 +61,7 @@ class ModuleClient:
             "X-Signature": signature.hex(),
             "X-Key": self.key.public_key.hex(),
             "X-Crypto": str(self.key.crypto_type),
+            "X-Timestamp": timestamp,
         }
         out = aiohttp.ClientTimeout(total=timeout)
         async with aiohttp.ClientSession(timeout=out) as session:
