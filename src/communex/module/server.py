@@ -160,7 +160,7 @@ def _check_signature(
         legacy_verified = signer.verify(key, crypto, stamped_body, signature)
 
     verified = signer.verify(key, crypto, body, signature)
-    if not verified or not legacy_verified:
+    if not verified and not legacy_verified:
         return (False, _json_error(401, "Signatures doesn't match"))
     
     body_dict: dict[str, dict[str, Any]] = json.loads(body)
