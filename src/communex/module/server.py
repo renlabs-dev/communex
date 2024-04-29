@@ -14,7 +14,6 @@ import starlette.datastructures
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from keylimiter import KeyLimiter
 from pydantic import BaseModel
 from scalecodec.utils.ss58 import ss58_encode  # type: ignore
 from substrateinterface import Keypair  # type: ignore
@@ -23,8 +22,12 @@ from communex._common import get_node_url
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
-from communex.module._ip_limiter import IpLimiterMiddleware
-from communex.module.module import EndpointDefinition, Module, endpoint
+from communex.module._rate_limiters.limiters import (
+    IpLimiterMiddleware, StakeLimiterMiddleware, 
+    StakeLimiterParams, IpLimiterParams
+    )
+
+from communex.module.module import Module, endpoint, EndpointDefinition
 from communex.types import Ss58Address
 from communex.util.memo import TTLDict
 
@@ -63,6 +66,7 @@ def build_input_handler_route_class(
                         return error
                     case (True, _):
                         pass
+               
                 body_dict: dict[str, dict[str, Any]] = json.loads(body)
                 timestamp = body_dict['params'].get("timestamp", None)
                 legacy_timestamp = request.headers.get("X-Timestamp", None)
@@ -224,12 +228,12 @@ class ModuleServer:
         module: Module,
         key: Keypair,
         max_request_staleness: int = 120,
-        ip_limiter: KeyLimiter | None = None,
         whitelist: list[str] | None = None,
         blacklist: list[str] | None = None,
         subnets_whitelist: list[int] | None = None,
         lower_ttl: int = 600,
         upper_ttl: int = 700,
+        limiter: StakeLimiterParams | IpLimiterParams = StakeLimiterParams(),
     ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
@@ -241,8 +245,20 @@ class ModuleServer:
         ttl = random.randint(lower_ttl, upper_ttl)
         self._blockchain_cache = TTLDict[str, list[Ss58Address]](ttl)
 
+
         # Midlewares
-        self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
+
+        if isinstance(limiter, StakeLimiterParams):
+            self._app.add_middleware(
+                StakeLimiterMiddleware, 
+                subnets_whitelist=self._subnets_whitelist,
+                params=limiter,
+                )
+        else:
+            self._app.add_middleware(
+                IpLimiterMiddleware, params=limiter
+                )
+
         self.register_extra_middleware()
 
         # Routes

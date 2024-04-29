@@ -5,6 +5,7 @@ from typing import Any, Callable, Generic, Optional, Protocol, TypeVar
 
 import requests
 
+import re
 
 def check_str(x: Any) -> str:
     assert isinstance(x, str)
@@ -107,3 +108,16 @@ def convert_cid_on_proposal(proposals: dict[int, dict[str, Any]]):
             data["Custom"] = queried_cid
         unwrapped[prop_id] = proposal
     return unwrapped
+HEX_PATTERN = re.compile(r"^[0-9a-fA-F]+$")
+
+
+# TODO: merge `is_hex_string` into `parse_hex`
+def is_hex_string(string: str):
+    return bool(HEX_PATTERN.match(string))
+
+
+def parse_hex(hex_str: str) -> bytes:
+    if hex_str[0:2] == "0x":
+        return bytes.fromhex(hex_str[2:])
+    else:
+        return bytes.fromhex(hex_str)
