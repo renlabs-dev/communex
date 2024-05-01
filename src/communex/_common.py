@@ -9,11 +9,18 @@ from communex.balance import from_nano
 class ComxSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="COMX_")
     # TODO: improve node lists
-    NODE_URLS: list[str] = ["wss://commune-api-node-1.communeai.net"]
+    NODE_URLS: list[str] = [
+        "wss://commune-api-node-1.communeai.net",
+        "wss://commune-node-2.agicommies.or",
+        "wss://commune-archive-node-1.agicommies.org",
+        "wss://commune-archive-node-2.agicommies.org",
+    ]
     TESTNET_NODE_URLS: list[str] = ["wss://testnet-commune-api-node-0.communeai.net"]
 
 
-def get_node_url(comx_settings: ComxSettings | None = None, *, use_testnet: bool = False) -> str:
+def get_node_url(
+    comx_settings: ComxSettings | None = None, *, use_testnet: bool = False
+) -> str:
     comx_settings = comx_settings or ComxSettings()
     match use_testnet:
         case True:
@@ -22,9 +29,10 @@ def get_node_url(comx_settings: ComxSettings | None = None, *, use_testnet: bool
             node_url = random.choice(comx_settings.NODE_URLS)
     return node_url
 
+
 def get_available_nodes(
-        comx_settings: ComxSettings | None = None, *, use_testnet: bool = False
-    ) -> list[str]:
+    comx_settings: ComxSettings | None = None, *, use_testnet: bool = False
+) -> list[str]:
     comx_settings = comx_settings or ComxSettings()
 
     match use_testnet:
@@ -33,6 +41,7 @@ def get_available_nodes(
         case False:
             node_urls = comx_settings.NODE_URLS
     return node_urls
+
 
 class BalanceUnit(str, Enum):
     joule = "joule"

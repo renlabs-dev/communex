@@ -197,6 +197,10 @@ def add_custom_proposal(
     # _ = resolve_key_ss58(founder)
     resolved_key = classic_load_key(key)
 
-    ipfs = "ipfs://" + cid
+    # append the ipfs hash
+    ipfs_prefix = "ipfs://"
+    cid = ipfs_prefix + cid
+
+
     with context.progress_status("Adding a proposal..."):
-        client.add_custom_subnet_proposal(resolved_key, ipfs, netuid=netuid)
+        client.add_custom_subnet_proposal(resolved_key, cid, netuid=netuid)

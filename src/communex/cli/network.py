@@ -46,7 +46,8 @@ def params(ctx: Context):
 
     general_params: dict[str, Any] = cast(dict[str, Any], global_params)
     print_table_from_plain_dict(
-        general_params, ["Global params", "Value"], context.console)
+        general_params, ["Global params", "Value"], context.console
+    )
 
 
 @network_app.command()
@@ -66,7 +67,8 @@ def list_proposals(ctx: Context):
 
     for proposal_id, batch_proposal in proposals.items():
         print_table_from_plain_dict(
-            batch_proposal, [f"Proposal id: {proposal_id}", "Params"], context.console)
+            batch_proposal, [f"Proposal id: {proposal_id}", "Params"], context.console
+        )
 
 
 @network_app.command()
@@ -96,7 +98,9 @@ def propose_globally(
     provided_params = locals().copy()
     provided_params.pop("ctx")
     provided_params.pop("key")
-    provided_params = {key: value for key, value in provided_params.items() if value is not None}
+    provided_params = {
+        key: value for key, value in provided_params.items() if value is not None
+    }
     """
     Adds a global proposal to the network.
     """
@@ -111,9 +115,10 @@ def propose_globally(
         client.add_global_proposal(resolved_key, global_params)
 
 
-
-def get_valid_voting_keys(client: CommuneClient, proposal: dict[str, Any]) -> dict[str, int]:
-    if proposal.get('SubnetParams'):
+def get_valid_voting_keys(
+    client: CommuneClient, proposal: dict[str, Any]
+) -> dict[str, int]:
+    if proposal.get("SubnetParams"):
         proposal_netuid = proposal["SubnetParams"]["netuid"]
         keys_stake = local_keys_to_stakedbalance(client, proposal_netuid)
     else:
@@ -125,8 +130,7 @@ def get_valid_voting_keys(client: CommuneClient, proposal: dict[str, Any]) -> di
                 key: keys_stake.get(key, 0) + subnet_stake.get(key, 0)
                 for key in set(keys_stake) | set(subnet_stake)
             }
-    keys_stake = {key: stake for key,
-                  stake in keys_stake.items() if stake >= 5}
+    keys_stake = {key: stake for key, stake in keys_stake.items() if stake >= 5}
     return keys_stake
 
 
@@ -175,11 +179,7 @@ def unvote_proposal(ctx: Context, key: str, proposal_id: int):
 
 
 @network_app.command()
-def add_custom_proposal(
-    ctx: Context,
-    key: str,
-    cid: str
-):
+def add_custom_proposal(ctx: Context, key: str, cid: str):
     """
     Adds a custom proposal.
     """
@@ -189,9 +189,11 @@ def add_custom_proposal(
         exit(1)
     client = context.com_client()
 
-    # _ = resolve_key_ss58(founder)
-    resolved_key = classic_load_key(key)
+    # append the ipfs hash
+    ipfs_prefix = "ipfs://"
+    cid = ipfs_prefix + cid
 
+    resolved_key = classic_load_key(key)
 
     with context.progress_status("Adding a proposal..."):
         client.add_custom_proposal(resolved_key, cid)
