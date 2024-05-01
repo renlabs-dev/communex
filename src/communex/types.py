@@ -36,11 +36,11 @@ class NetworkParams(TypedDict):
     adjustment_alpha: int
     floor_delegation_fee: int
     max_allowed_weights: int
-    nominator: Ss58Address
+    curator: Ss58Address
     proposal_cost: int
     proposal_expiration: int
     proposal_participation_threshold: int
-    nominator: str
+    curator: str
     subnet_stake_threshold: int
 
     

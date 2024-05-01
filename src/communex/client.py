@@ -379,7 +379,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i: i + max_n_keys]
+                        splitted_keys = result_keys[i : i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -515,7 +515,7 @@ class CommuneClient:
 
                     item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
-                        scale_bytes="0x" + item[0][len(prefix):],
+                        scale_bytes="0x" + item[0][len(prefix) :],
                         return_scale_obj=True,
                         block_hash=block_hash,
                     )
@@ -1067,7 +1067,7 @@ class CommuneClient:
         key: Keypair,
         name: str,
         address: str | None = None,
-        subnet: str = 'commune',
+        subnet: str = "commune",
         min_stake: int | None = None,
         metadata: str | None = None,
     ) -> ExtrinsicReceipt:
@@ -1379,9 +1379,7 @@ class CommuneClient:
         cid: str,
     ) -> ExtrinsicReceipt:
 
-        params = {
-            "data": cid
-        }
+        params = {"data": cid}
 
         response = self.compose_call(fn="add_custom_proposal", params=params, key=key)
         return response
@@ -1516,7 +1514,33 @@ class CommuneClient:
 
         return response
 
-    def query_map_proposals(self, extract_value: bool = False) -> dict[int, dict[str, Any]]:
+    def add_dao_application(
+        self, key: Keypair, application_key: Ss58Address, data: str
+    ) -> ExtrinsicReceipt:
+        """
+        Submits a new application to the general subnet DAO.
+
+        Args:
+            key: The keypair used for signing the application transaction.
+            application_key: The SS58 address of the application key.
+            data: The data associated with the application.
+
+        Returns:
+            A receipt of the application transaction.
+
+        Raises:
+            ChainTransactionError: If the transaction fails.
+        """
+
+        params = {"application_key": application_key, "data": data}
+
+        response = self.compose_call("add_dao_application", key=key, params=params)
+
+        return response
+
+    def query_map_proposals(
+        self, extract_value: bool = False
+    ) -> dict[int, dict[str, Any]]:
         """
         Retrieves a mappping of proposals from the network.
 
@@ -1533,7 +1557,9 @@ class CommuneClient:
 
         return self.query_map("Proposals", extract_value=extract_value)["Proposals"]
 
-    def query_map_weights(self, netuid: int = 0, extract_value: bool = False) -> dict[int, list[int]]:
+    def query_map_weights(
+        self, netuid: int = 0, extract_value: bool = False
+    ) -> dict[int, list[int]]:
         """
         Retrieves a mapping of weights for keys on the network.
 
@@ -1550,7 +1576,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Weights", [netuid], extract_value=extract_value)["Weights"]
+        return self.query_map("Weights", [netuid], extract_value=extract_value)[
+            "Weights"
+        ]
 
     def query_map_key(
         self,
@@ -1575,7 +1603,9 @@ class CommuneClient:
         """
         return self.query_map("Keys", [netuid], extract_value=extract_value)["Keys"]
 
-    def query_map_address(self, netuid: int = 0, extract_value: bool = False) -> dict[int, str]:
+    def query_map_address(
+        self, netuid: int = 0, extract_value: bool = False
+    ) -> dict[int, str]:
         """
         Retrieves a map of key addresses from the network.
 
@@ -1591,7 +1621,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Address", [netuid], extract_value=extract_value)["Address"]
+        return self.query_map("Address", [netuid], extract_value=extract_value)[
+            "Address"
+        ]
 
     def query_map_emission(self, extract_value: bool = False) -> dict[int, list[int]]:
         """
@@ -1641,7 +1673,9 @@ class CommuneClient:
 
         return self.query_map("Dividends", extract_value=extract_value)["Dividends"]
 
-    def query_map_regblock(self, netuid: int = 0, extract_value: bool = False) -> dict[int, int]:
+    def query_map_regblock(
+        self, netuid: int = 0, extract_value: bool = False
+    ) -> dict[int, int]:
         """
         Retrieves a mapping of registration blocks for keys on the network.
 
@@ -1658,9 +1692,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("RegistrationBlock", [netuid], extract_value=extract_value)[
-            "RegistrationBlock"
-        ]
+        return self.query_map(
+            "RegistrationBlock", [netuid], extract_value=extract_value
+        )["RegistrationBlock"]
 
     def query_map_lastupdate(self, extract_value: bool = False) -> dict[int, list[int]]:
         """

@@ -90,7 +90,7 @@ def propose_globally(
     adjustment_alpha: int = typer.Option(None),
     floor_delegation_fee: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
-    nominator: str = typer.Option(None),
+    curator: str = typer.Option(None),
     proposal_cost: int = typer.Option(None),
     proposal_expiration: int = typer.Option(None),
     proposal_participation_threshold: int = typer.Option(None),
