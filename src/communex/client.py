@@ -1537,7 +1537,12 @@ class CommuneClient:
         response = self.compose_call("add_dao_application", key=key, params=params)
 
         return response
-
+    
+    def query_map_curator_applications(self) -> dict[str, dict[str, str]]:
+        query_result = self.query_map("CuratorApplications", params=[], extract_value=False)
+        applications = query_result.get("CuratorApplications", {})
+        return applications
+    
     def query_map_proposals(
         self, extract_value: bool = False
     ) -> dict[int, dict[str, Any]]:
