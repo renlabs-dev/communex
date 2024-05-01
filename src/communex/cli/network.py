@@ -10,6 +10,7 @@ from communex.compat.key import classic_load_key
 from communex.misc import get_global_params, local_keys_to_stakedbalance, IPFS_REGEX
 from communex.types import NetworkParams
 from communex.client import CommuneClient
+from communex.util import convert_cid_on_proposal
 
 
 network_app = typer.Typer()
@@ -51,7 +52,7 @@ def params(ctx: Context):
 
 
 @network_app.command()
-def list_proposals(ctx: Context):
+def list_proposals(ctx: Context, query_cid: bool = typer.Option(True)):
     """
     Gets proposals
     """
@@ -61,6 +62,8 @@ def list_proposals(ctx: Context):
     with context.progress_status("Getting proposals..."):
         try:
             proposals = client.query_map_proposals()
+            if query_cid:
+                proposals = convert_cid_on_proposal(proposals)
         except IndexError:
             context.info("No proposals found.")
             return
