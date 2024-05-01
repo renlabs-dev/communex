@@ -1,7 +1,8 @@
 import ipaddress
 import os.path
 from typing import Any, Callable, Generic, Optional, Protocol, TypeVar
-
+import requests
+import json
 
 def check_str(x: Any) -> str:
     assert isinstance(x, str)
@@ -74,3 +75,32 @@ def create_state_fn(default: Callable[..., T]) -> SetterGetterFn[T]:
         return value
 
     return state_function
+
+
+def get_json_from_cid(cid: str) -> dict[Any, Any] | None:
+    gateway = "https://ipfs.io/ipfs/"
+    try:
+        result = requests.get(gateway + cid)
+        if result.ok:
+            return result.json()
+        return None
+    except Exception as e:
+        return None
+    
+def convert_cid_on_proposal(proposals: dict[int, dict[str, Any]]):
+    unwrapped: dict[int, dict[str, Any]] = {}
+    for prop_id, proposal in proposals.items():
+       data = proposal.get("data")
+       if data and "Custom" in data:
+            cid = data["Custom"].split("ipfs://")[-1]
+            queried_cid = get_json_from_cid(cid)
+            if queried_cid:
+                body = queried_cid.get("body")
+                if body:
+                    try:
+                        queried_cid["body"] = json.loads(body)
+                    except Exception:
+                        pass
+            data["Custom"] = queried_cid
+       unwrapped[prop_id] = proposal
+    return unwrapped
