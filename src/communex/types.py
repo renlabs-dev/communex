@@ -40,7 +40,6 @@ class NetworkParams(TypedDict):
     proposal_cost: int
     proposal_expiration: int
     proposal_participation_threshold: int
-    curator: str
     subnet_stake_threshold: int
 
     

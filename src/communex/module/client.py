@@ -12,6 +12,7 @@ from substrateinterface import Keypair  # type: ignore
 
 from ._signer import sign, TESTING_MNEMONIC
 from communex.types import Ss58Address
+from communex.key import check_ss58_address
 
 
 def iso_timestamp_now() -> str:
@@ -91,5 +92,6 @@ if __name__ == "__main__":
         TESTING_MNEMONIC
     )
     client = ModuleClient("localhost", 8000, keypair)
-    result = asyncio.run(client.call("do_the_thing", keypair.ss58_address, {"awesomness": 45, "extra": "hi"}))
+    ss58_address = check_ss58_address(keypair.ss58_address)
+    result = asyncio.run(client.call("do_the_thing", ss58_address, {"awesomness": 45, "extra": "hi"}))
     print(result)

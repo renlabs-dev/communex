@@ -84,7 +84,7 @@ def get_json_from_cid(cid: str) -> dict[Any, Any] | None:
         if result.ok:
             return result.json()
         return None
-    except Exception as e:
+    except Exception:
         return None
     
 def convert_cid_on_proposal(proposals: dict[int, dict[str, Any]]):

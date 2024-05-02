@@ -33,7 +33,7 @@ class OpenAIModule(Module):
         answers: list[dict[str, str]] = []
         for msg in response.choices:
             finish_reason = msg.finish_reason
-            if finish_reason != "stop":
+            if finish_reason != "stop": 
                 raise HTTPException(418, finish_reason)
             content = msg.message.content
             if content:
@@ -52,4 +52,4 @@ if __name__ == "__main__":
     model_server = ModuleServer(model, key)
     app = model_server.get_fastapi_app()
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)  # type: ignore
+    uvicorn.run(app, host="127.0.0.1", port=8000)
