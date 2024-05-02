@@ -11,7 +11,7 @@ class ComxSettings(BaseSettings):
     # TODO: improve node lists
     NODE_URLS: list[str] = [
         "wss://commune-api-node-1.communeai.net",
-        "wss://commune-node-2.agicommies.or",
+        "wss://commune-node-2.agicommies.org",
         "wss://commune-archive-node-1.agicommies.org",
         "wss://commune-archive-node-2.agicommies.org",
     ]
