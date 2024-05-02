@@ -311,7 +311,7 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int | None = None) ->
     all_netuids = list(query_result["SubnetNames"].keys())
 
     # update for all subnets
-    netuids = all_netuids if not netuid else [netuid]
+    netuids = all_netuids if netuid is None else [netuid]
     for uid in netuids:
         query_result = c_client.query_batch_map(
             {
