@@ -14,7 +14,7 @@ from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
 
-module_app = typer.Typer()
+module_app = typer.Typer(no_args_is_help=True)
 
 
 # TODO: refactor module register CLI

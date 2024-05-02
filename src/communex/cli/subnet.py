@@ -11,7 +11,7 @@ from communex.errors import ChainTransactionError
 from communex.misc import get_map_subnets_params, IPFS_REGEX
 from communex.types import SubnetParams
 
-subnet_app = typer.Typer()
+subnet_app = typer.Typer(no_args_is_help=True)
 
 
 @subnet_app.command()

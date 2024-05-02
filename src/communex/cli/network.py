@@ -13,7 +13,7 @@ from communex.client import CommuneClient
 from communex.util import convert_cid_on_proposal
 
 
-network_app = typer.Typer()
+network_app = typer.Typer(no_args_is_help=True)
 
 
 @network_app.command()

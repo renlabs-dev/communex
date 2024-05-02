@@ -6,7 +6,7 @@ from communex.balance import from_nano
 from communex.cli._common import make_custom_context
 from communex.client import CommuneClient
 
-misc_app = typer.Typer()
+misc_app = typer.Typer(no_args_is_help=True)
 
 
 def circulating_tokens(c_client: CommuneClient) -> int:

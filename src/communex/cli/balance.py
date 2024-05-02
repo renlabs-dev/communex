@@ -8,7 +8,7 @@ from communex.cli._common import (make_custom_context,
 from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.errors import ChainTransactionError
 
-balance_app = typer.Typer()
+balance_app = typer.Typer(no_args_is_help=True)
 
 
 @balance_app.command()

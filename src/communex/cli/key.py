@@ -17,7 +17,7 @@ from communex.key import generate_keypair
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
 
-key_app = typer.Typer()
+key_app = typer.Typer(no_args_is_help=True)
 
 
 class SortBalance(str, Enum):
