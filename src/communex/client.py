@@ -524,7 +524,7 @@ class CommuneClient:
                         item_key = item_key_obj.value_object[1]  # type: ignore
                     else:
                         item_key = tuple(  # type: ignore
-                            item_key_obj.value_object[key + 1]
+                            item_key_obj.value_object[key + 1] # type: ignore
                             for key in range(  # type: ignore
                                 len(params), len(param_types) + 1, 2
                             )
@@ -869,7 +869,7 @@ class CommuneClient:
                 call=call,
                 keypair=key,
                 multisig_account=multisig_acc,  # type: ignore
-                era=era,
+                era=era, # type: ignore
             )  # type: ignore
 
             response = substrate.submit_extrinsic(
@@ -1448,7 +1448,7 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        general_params = dict(params)
+        general_params = vars(params)
         response = self.compose_call(
             fn="add_global_proposal",
             params=general_params,

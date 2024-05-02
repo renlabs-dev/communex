@@ -74,7 +74,7 @@ def get_map_modules(
         metadata = uid_to_metadata.get(uid, None)
 
         balance = None
-        if include_balances and ss58_to_balances is not None:
+        if include_balances and ss58_to_balances is not None: # type: ignore
             balance_dict = ss58_to_balances.get(key, None)
             if balance_dict is not None:
                 assert isinstance(balance_dict['data'], dict)
