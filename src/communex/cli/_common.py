@@ -15,6 +15,7 @@ from communex.client import CommuneClient
 class ExtraCtxData:
     output_json: bool
     use_testnet: bool
+    yes_to_all: bool
 
 
 class ExtendedContext(Context):
@@ -60,7 +61,10 @@ class CustomCtx:
         return self.console_err.status(message)
 
     def confirm(self, message: str) -> bool:
-        return typer.confirm(message)
+        if (self.ctx.obj.yes_to_all):
+            print(f"{message} (--yes)")
+            return True
+        return self.ctx.obj.yes_to_all or typer.confirm(message)
 
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:

@@ -31,8 +31,9 @@ def _version_callback(value: bool):
 @app.callback()
 def main(
     ctx: typer.Context,
-    json: Annotated[bool, typer.Option(envvar="COMX_OUTPUT_JSON", help="Output machine-readable JSON.")] = False,
-    testnet: Annotated[bool, typer.Option(envvar="COMX_USE_TESTNET", help="Use testnet endpoints.")] = False,
+    json: Annotated[bool, typer.Option("--json", "-j", is_flag=True, envvar="COMX_OUTPUT_JSON", help="Output machine-readable JSON.")] = False,
+    testnet: Annotated[bool, typer.Option("--testnet", "-t", is_flag=True, envvar="COMX_USE_TESTNET", help="Use testnet endpoints.")] = False,
+    yes_to_all: Annotated[bool, typer.Option("--yes", "-y", is_flag=True, envvar="COMX_YES_TO_ALL", help="Say yes to all confirmation inputs.")] = False,
     version: Annotated[Optional[bool], typer.Option(callback=_version_callback)] = None,
 ):
     """
@@ -40,9 +41,9 @@ def main(
 
     This command line interface is under development and subject to change.
     """
-
+    
     # Pass the extra context data to the subcommands.
-    ctx.obj = ExtraCtxData(output_json=json, use_testnet=testnet)
+    ctx.obj = ExtraCtxData(output_json=json, use_testnet=testnet, yes_to_all=yes_to_all)
 
 
 if main.__doc__ is not None:

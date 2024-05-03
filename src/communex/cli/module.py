@@ -55,7 +55,7 @@ def register(
         case (_, _):
             raise ValueError("`--netuid` and `--new_subnet_name` cannot be provided at the same time")
 
-    do_burn = typer.confirm(
+    do_burn = context.confirm(
         f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?")
 
     if not do_burn:
