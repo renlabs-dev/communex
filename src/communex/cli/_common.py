@@ -3,12 +3,14 @@ from typing import Any, Mapping, cast
 
 import rich
 import typer
+from rich import box
 from rich.console import Console
 from rich.table import Table
 from typer import Context
 
 from communex._common import get_node_url
 from communex.client import CommuneClient
+from communex.types import ModuleInfoWithOptionalBalance
 
 
 @dataclass
@@ -117,3 +119,40 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
         table.add_row(*row, style="white")
 
     console.print(table)
+
+
+def print_module_info(
+        module: list[ModuleInfoWithOptionalBalance], console: Console,
+        title: str | None = None,
+        ) -> None:
+    """
+    Prints information about a module.
+    """
+    if not module:
+        return
+    table = Table(
+        show_header=True, header_style="bold magenta", 
+        box=box.DOUBLE_EDGE, title=title, 
+        caption_style="bright_black",
+        title_style="bold magenta",
+
+    )
+    sample_mod = module[0]
+    to_exclude = ["stake_from"]
+    for key in sample_mod.keys():
+        # add columns
+        if key in to_exclude:
+            continue
+        table.add_column(key, style="white")
+    
+    for mod in module:
+        copied_mod = mod.copy()
+        for key in to_exclude:
+            copied_mod.pop(key) # type: ignore
+        row: list[str] = []
+        for val in copied_mod.values():
+            row.append(str(val))
+        table.add_row(*row)
+    console.print(table)
+    for _ in range(3):
+        console.print()

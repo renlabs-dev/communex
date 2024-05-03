@@ -3,8 +3,12 @@ from typer import Context
 
 from communex._common import BalanceUnit, format_balance
 from communex.balance import from_nano
-from communex.cli._common import make_custom_context
+from communex.cli._common import make_custom_context, print_module_info
 from communex.client import CommuneClient
+from communex.misc import get_map_modules
+from communex.compat.key import local_key_addresses
+from communex.types import ModuleInfoWithOptionalBalance
+
 
 misc_app = typer.Typer(no_args_is_help=True)
 
@@ -79,3 +83,28 @@ def apr(ctx: Context, fee: int = 0):
     _apr = (daily_token_rewards * (1 - fee_to_float) * 365) / total_staked_tokens * 100
 
     context.output(f"Fee {fee} | APR {_apr:.2f}%")
+
+@misc_app.command(name="stats")
+def stats(ctx: Context, balances: bool = False, netuid: int = 0):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    with context.progress_status(f"Getting Modules on a subnet with netuid {netuid}..."):
+        modules = get_map_modules(client, netuid=netuid, include_balances=balances)
+    modules_to_list = [value for _, value in modules.items()]
+    local_keys = local_key_addresses()
+    local_modules = [*filter(lambda module: module["key"] in local_keys.values(), modules_to_list)]
+    local_miners: list[ModuleInfoWithOptionalBalance] = []
+    local_validators: list[ModuleInfoWithOptionalBalance] = []
+    local_inactive: list[ModuleInfoWithOptionalBalance] = []
+    for module in local_modules:
+        if module["incentive"] == module["dividends"] == 0:
+            local_inactive.append(module)
+        elif module["incentive"] > module["dividends"]:
+            local_miners.append(module)
+        else:
+            local_validators.append(module)
+
+    print_module_info(local_inactive, context.console, "inactive")
+    print_module_info(local_miners, context.console, "miners")
+    print_module_info(local_validators, context.console, "validators")
