@@ -5,3 +5,4 @@
 - Show help message when no arguments are provided.
 - Fixed typo on one of the nodes provided
 - Fixed balances listing balance of all subnets when passing --netuid 0
+- Add flag -y (--yes) that says yes to all confirmation inputs
