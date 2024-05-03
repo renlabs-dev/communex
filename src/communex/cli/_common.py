@@ -11,6 +11,7 @@ from typer import Context
 from communex._common import get_node_url
 from communex.client import CommuneClient
 from communex.types import ModuleInfoWithOptionalBalance
+from communex.balance import from_nano, from_horus
 
 
 @dataclass
@@ -133,7 +134,7 @@ def print_module_info(
     table = Table(
         show_header=True, header_style="bold magenta", 
         box=box.DOUBLE_EDGE, title=title, 
-        caption_style="bright_black",
+        caption_style="chartreuse3",
         title_style="bold magenta",
 
     )
@@ -145,14 +146,23 @@ def print_module_info(
             continue
         table.add_column(key, style="white")
     
+    total_stake = 0
+    total_balance = 0
     for mod in module:
         copied_mod = mod.copy()
         for key in to_exclude:
             copied_mod.pop(key) # type: ignore
         row: list[str] = []
+        copied_mod["stake"] = from_nano(copied_mod["stake"]) # type: ignore
+        copied_mod["emission"] = from_horus(copied_mod["emission"]) # type: ignore
+        total_stake += copied_mod["stake"]
+        if copied_mod["balance"] is not None:
+            copied_mod["balance"] = from_nano(copied_mod["balance"]) # type: ignore
+            total_balance += copied_mod["balance"]
         for val in copied_mod.values():
             row.append(str(val))
         table.add_row(*row)
+    table.caption = "total balance: " + f"{total_balance + total_stake}J"
     console.print(table)
     for _ in range(3):
         console.print()
