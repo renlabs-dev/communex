@@ -64,7 +64,7 @@ class CustomCtx:
         if (self.ctx.obj.yes_to_all):
             print(f"{message} (--yes)")
             return True
-        return self.ctx.obj.yes_to_all or typer.confirm(message)
+        return typer.confirm(message)
 
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:
