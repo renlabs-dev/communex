@@ -1,5 +1,4 @@
 import pytest
-from re import match
 from typer.testing import CliRunner, Result # type: ignore
 
 from typer import Typer, Context
