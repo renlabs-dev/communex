@@ -6,8 +6,7 @@ import uvicorn
 from typer import Context
 
 import communex.balance as c_balance
-from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict)
+from communex.cli._common import make_custom_context, print_table_from_plain_dict
 from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_modules
@@ -31,7 +30,6 @@ def register(
     stake: Optional[float] = None,
     metadata: Optional[str] = None,
     new_subnet_name: Optional[str] = None,
-
 ):
     """
     Registers a module on the Commune network.
@@ -43,8 +41,10 @@ def register(
 
     match (netuid, new_subnet_name):
         case (None, None):
-            raise ValueError("`--netuid` or `--new_subnet_name` argument must be passed into the CLI command \n"
-                             "f.e comx module register <name> <ip> <port> <key> --netuid <netuid>")
+            raise ValueError(
+                "`--netuid` or `--new_subnet_name` argument must be passed into the CLI command \n"
+                "f.e comx module register <name> <ip> <port> <key> --netuid <netuid>"
+            )
         case (netuid, None):
             assert netuid is not None
             subnet_name = client.get_subnet_name(netuid)
@@ -53,10 +53,13 @@ def register(
             subnet_name = new_subnet_name
             burn = client.get_min_burn()
         case (_, _):
-            raise ValueError("`--netuid` and `--new_subnet_name` cannot be provided at the same time")
+            raise ValueError(
+                "`--netuid` and `--new_subnet_name` cannot be provided at the same time"
+            )
 
     do_burn = typer.confirm(
-        f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?")
+        f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?"
+    )
 
     if not do_burn:
         print("Not registering")
@@ -67,19 +70,21 @@ def register(
             stake_nano = c_balance.to_nano(stake)
         else:
             min_stake = client.get_min_stake(netuid) if netuid is not None else 0
-            stake_nano = min_stake + burn
+            stake_nano = (
+                min_stake + burn + c_balance.to_nano(0.1)
+            )  # 0.1 extra needed for the call to succeed
 
         resolved_key = classic_load_key(key)
 
         address = f"{ip}:{port}"
 
         response = client.register_module(
-            resolved_key, 
-            name=name, 
-            address=address, 
-            subnet=subnet_name, 
+            resolved_key,
+            name=name,
+            address=address,
+            subnet=subnet_name,
             min_stake=stake_nano,
-            metadata=metadata
+            metadata=metadata,
         )
 
         if response.is_success:
@@ -90,8 +95,14 @@ def register(
 
 @module_app.command()
 def update(
-    ctx: Context, key: str, name: str, ip: str, port: int, 
-    delegation_fee: int = 20, netuid: int = 0, metadata: Optional[str] = None
+    ctx: Context,
+    key: str,
+    name: str,
+    ip: str,
+    port: int,
+    delegation_fee: int = 20,
+    netuid: int = 0,
+    metadata: Optional[str] = None,
 ):
     """
     Update module with custom parameters.
@@ -108,10 +119,16 @@ def update(
 
     address = f"{ip}:{port}"
 
-    with context.progress_status(f"Updating Module on a subnet with netuid '{netuid}' ..."):
+    with context.progress_status(
+        f"Updating Module on a subnet with netuid '{netuid}' ..."
+    ):
         response = client.update_module(
-            key=resolved_key, name=name, address=address,
-            delegation_fee=delegation_fee, netuid=netuid, metadata=metadata
+            key=resolved_key,
+            name=name,
+            address=address,
+            delegation_fee=delegation_fee,
+            netuid=netuid,
+            metadata=metadata,
         )
 
     if response.is_success:
@@ -145,9 +162,13 @@ def serve(
             module_path = ".".join(module_parts)
             if not module_path:
                 # This could do some kind of relative import somehow?
-                raise ValueError(f"Invalid class path: `{class_path}`, module name is missing")
+                raise ValueError(
+                    f"Invalid class path: `{class_path}`, module name is missing"
+                )
             if not class_name:
-                raise ValueError(f"Invalid class path: `{class_path}`, class name is missing")
+                raise ValueError(
+                    f"Invalid class path: `{class_path}`, class name is missing"
+                )
         case _:
             # This is impossible
             raise Exception(f"Invalid class path: `{class_path}`")
@@ -168,7 +189,12 @@ def serve(
     if test_mode:
         subnets_whitelist = None
     server = ModuleServer(
-        class_obj(), keypair, whitelist=whitelist, blacklist=blacklist, subnets_whitelist=subnets_whitelist, max_request_staleness=request_staleness
+        class_obj(),
+        keypair,
+        whitelist=whitelist,
+        blacklist=blacklist,
+        subnets_whitelist=subnets_whitelist,
+        max_request_staleness=request_staleness,
     )
     app = server.get_fastapi_app()
     host = ip or "127.0.0.1"
@@ -183,7 +209,9 @@ def info(ctx: Context, name: str, balance: bool = False, netuid: int = 0):
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    with context.progress_status(f"Getting Module {name} on a subnet with netuid {netuid}…"):
+    with context.progress_status(
+        f"Getting Module {name} on a subnet with netuid {netuid}…"
+    ):
         modules = get_map_modules(client, netuid=netuid, include_balances=balance)
         modules_to_list = [value for _, value in modules.items()]
 
@@ -204,7 +232,9 @@ def inventory(ctx: Context, balances: bool = False, netuid: int = 0):
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    with context.progress_status(f"Getting Modules on a subnet with netuid {netuid}..."):
+    with context.progress_status(
+        f"Getting Modules on a subnet with netuid {netuid}..."
+    ):
         modules = get_map_modules(client, netuid=netuid, include_balances=balances)
         modules_to_list = [value for _, value in modules.items()]
 
