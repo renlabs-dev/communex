@@ -84,6 +84,7 @@ def apr(ctx: Context, fee: int = 0):
 
     context.output(f"Fee {fee} | APR {_apr:.2f}%")
 
+
 @misc_app.command(name="stats")
 def stats(ctx: Context, balances: bool = False, netuid: int = 0):
     context = make_custom_context(ctx)
@@ -105,6 +106,6 @@ def stats(ctx: Context, balances: bool = False, netuid: int = 0):
         else:
             local_validators.append(module)
 
-    print_module_info(local_inactive, context.console, "inactive")
-    print_module_info(local_miners, context.console, "miners")
-    print_module_info(local_validators, context.console, "validators")
+    print_module_info(client, local_inactive, context.console, netuid, "inactive")
+    print_module_info(client, local_miners, context.console, netuid, "miners")
+    print_module_info(client, local_validators, context.console, netuid, "validators")

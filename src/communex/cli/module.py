@@ -6,7 +6,7 @@ import uvicorn
 from typer import Context
 
 import communex.balance as c_balance
-from communex.cli._common import make_custom_context, print_table_from_plain_dict
+from communex.cli._common import make_custom_context, print_module_info, print_table_from_plain_dict
 from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_modules
@@ -232,14 +232,27 @@ def inventory(ctx: Context, balances: bool = False, netuid: int = 0):
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    with context.progress_status(
-        f"Getting Modules on a subnet with netuid {netuid}..."
-    ):
-        modules = get_map_modules(client, netuid=netuid, include_balances=balances)
-        modules_to_list = [value for _, value in modules.items()]
+    # with context.progress_status(
+    #     f"Getting Modules on a subnet with netuid {netuid}..."
+    # ):
+    modules = cast(dict[str, Any], get_map_modules(
+        client, netuid=netuid, include_balances=balances))
 
-    for index, item in enumerate(modules_to_list, start=1):
-        context.info(f"module {index}:")
-        for key, value in item.items():
-            context.info(f"{key}: {value}")
-        context.info("-" * 40)
+    # Convert the values to a human readable format
+    modules_to_list = [value for _, value in modules.items()]
+
+    miners: list[Any] = []
+    validators: list[Any] = []
+    inactive: list[Any] = []
+
+    for module in modules_to_list:
+        if module["incentive"] == module["dividends"] == 0:
+            inactive.append(module)
+        elif module["incentive"] > module["dividends"]:
+            miners.append(module)
+        else:
+            validators.append(module)
+
+    print_module_info(client, miners, context.console, netuid, "miners")
+    print_module_info(client, validators, context.console, netuid, "validators")
+    print_module_info(client, inactive, context.console, netuid, "inactive")

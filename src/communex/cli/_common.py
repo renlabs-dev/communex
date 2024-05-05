@@ -38,15 +38,16 @@ class CustomCtx:
             self.info(f"Using node: {node_url}")
             for _ in range(5):
                 try:
-                    self._com_client = CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
+                    self._com_client = CommuneClient(
+                        url=node_url, num_connections=1, wait_for_finalization=False)
                 except Exception:
                     self.info(f"Failed to connect to node: {node_url}")
                     node_url = get_node_url(None, use_testnet=use_testnet)
                     self.info(f"Will retry with node {node_url}")
                     continue
             if self._com_client is None:
-                    raise ConnectionError("Could not connect to any node")
-            
+                raise ConnectionError("Could not connect to any node")
+
         return self._com_client
 
     def output(self, message: str) -> None:
@@ -122,46 +123,78 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
     console.print(table)
 
 
+def transform_module_into(to_exclude: list[str], last_block: int, immunity_period: int, modules: list[ModuleInfoWithOptionalBalance]):
+    mods = cast(list[dict[str, Any]], modules)
+    transformed_modules: list[dict[str, Any]] = []
+    for mod in mods:
+        module = mod.copy()
+        module_regblock = module["regblock"]
+        module["in_immunity"] = module_regblock + immunity_period > last_block
+
+        for key in to_exclude:
+            del module[key]
+        module["stake"] = round(from_nano(module["stake"]), 2)  # type: ignore
+        module["emission"] = round(from_horus(module["emission"]), 4)  # type: ignore
+        if module.get("balance") is not None:
+            module["balance"] = from_nano(module["balance"])  # type: ignore
+        else:
+            # user should not see None values
+            del module["balance"]
+        transformed_modules.append(module)
+
+    return transformed_modules
+
+
 def print_module_info(
-        module: list[ModuleInfoWithOptionalBalance], console: Console,
-        title: str | None = None,
-        ) -> None:
+        client: CommuneClient, modules: list[ModuleInfoWithOptionalBalance], console: Console,
+        netuid: int, title: str | None = None,
+) -> None:
     """
     Prints information about a module.
     """
-    if not module:
+    if not modules:
         return
+
+    # Get the current block number, we will need this to caluclate immunity period
+    block = client.get_block()
+    if block:
+        last_block = block["header"]["number"]
+    else:
+        raise ValueError("Could not get block info")
+
+    # Get the immunity period on the netuid
+    immunity_period = client.get_immunity_period(netuid)
+
+    # Transform the module dictionary to have immunity_period
     table = Table(
-        show_header=True, header_style="bold magenta", 
-        box=box.DOUBLE_EDGE, title=title, 
+        show_header=True, header_style="bold magenta",
+        box=box.DOUBLE_EDGE, title=title,
         caption_style="chartreuse3",
         title_style="bold magenta",
 
     )
-    sample_mod = module[0]
-    to_exclude = ["stake_from"]
+
+    to_exclude = ["stake_from", "metadata", "last_update", "regblock"]
+    tranformed_modules = transform_module_into(to_exclude, last_block, immunity_period, modules)
+
+    sample_mod = tranformed_modules[0]
     for key in sample_mod.keys():
         # add columns
-        if key in to_exclude:
-            continue
         table.add_column(key, style="white")
-    
+
     total_stake = 0
     total_balance = 0
-    for mod in module:
-        copied_mod = mod.copy()
-        for key in to_exclude:
-            copied_mod.pop(key) # type: ignore
+
+    for mod in tranformed_modules:
+        total_stake += mod["stake"]
+        if mod.get("balance") is not None:
+            total_balance += mod["balance"]
+
         row: list[str] = []
-        copied_mod["stake"] = from_nano(copied_mod["stake"]) # type: ignore
-        copied_mod["emission"] = from_horus(copied_mod["emission"]) # type: ignore
-        total_stake += copied_mod["stake"]
-        if copied_mod["balance"] is not None:
-            copied_mod["balance"] = from_nano(copied_mod["balance"]) # type: ignore
-            total_balance += copied_mod["balance"]
-        for val in copied_mod.values():
+        for val in mod.values():
             row.append(str(val))
         table.add_row(*row)
+
     table.caption = "total balance: " + f"{total_balance + total_stake}J"
     console.print(table)
     for _ in range(3):
