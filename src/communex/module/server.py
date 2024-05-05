@@ -47,7 +47,7 @@ def parse_hex(hex_str: str) -> bytes:
 
 
 def build_input_handler_route_class(
-        subnets_whitelist: list[int] | None, 
+        subnets_whitelist: list[int] | None,
         module_key: Ss58Address,
         request_staleness: int,
     ) -> type[APIRoute]:
@@ -115,7 +115,7 @@ def _json_error(code: int, message: str):
 
 
 def _get_headers_dict(
-        headers: starlette.datastructures.Headers, 
+        headers: starlette.datastructures.Headers,
         required: list[str],
         optional: list[str],
     ):
@@ -136,8 +136,8 @@ def _get_headers_dict(
 
 # TODO: type `headers_dict` better
 def _check_signature(
-        headers_dict: dict[str, str], 
-        body: bytes, 
+        headers_dict: dict[str, str],
+        body: bytes,
         module_key: Ss58Address
     ):
     key = headers_dict["x-key"]
@@ -162,7 +162,7 @@ def _check_signature(
     verified = signer.verify(key, crypto, body, signature)
     if not verified and not legacy_verified:
         return (False, _json_error(401, "Signatures doesn't match"))
-    
+
     body_dict: dict[str, dict[str, Any]] = json.loads(body)
     target_key = body_dict['params'].get("target_key", None)
     if not target_key or target_key != module_key:
@@ -183,6 +183,7 @@ def _check_key_registered(subnets_whitelist: list[int] | None, headers_dict: dic
     # TODO: checking for key being registered should be smarter
     # e.g. query and store all registered modules periodically.
     node_url = get_node_url(None, use_testnet=False)
+    # TODO: client pool for entire module server
     client = _make_client(node_url)  # TODO: get client from outer context
     ss58_format = 42
     ss58 = ss58_encode(key, ss58_format)
@@ -195,8 +196,6 @@ def _check_key_registered(subnets_whitelist: list[int] | None, headers_dict: dic
             uids = client.get_uids(ss58, subnet)
             if not uids:
                 return (False, _json_error(403, "Key is not registered on the network"))
-
-
 
     return (True, None)
 
@@ -230,7 +229,7 @@ class ModuleServer:
         # Routes
         self._router = APIRouter(
             route_class=build_input_handler_route_class(
-                self._subnets_whitelist, 
+                self._subnets_whitelist,
                 check_ss58_address(self.key.ss58_address),
                 self.max_request_staleness,
                 )
