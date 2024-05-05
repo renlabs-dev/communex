@@ -8,6 +8,7 @@ from typing import Awaitable, Callable, Any
 import json
 from functools import partial
 from datetime import datetime, timezone
+import random
 
 
 import fastapi
@@ -25,6 +26,7 @@ from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._ip_limiter import IpLimiterMiddleware
+from communex.util.memo import TTLDict
 
 from communex.module.module import Module, endpoint, EndpointDefinition
 from communex.types import Ss58Address
@@ -50,6 +52,7 @@ def build_input_handler_route_class(
         subnets_whitelist: list[int] | None,
         module_key: Ss58Address,
         request_staleness: int,
+        blockchain_cache: TTLDict[str, list[Ss58Address]],
     ) -> type[APIRoute]:
     class InputHandlerRoute(APIRoute):
         def get_route_handler(self):
@@ -99,7 +102,11 @@ def build_input_handler_route_class(
                     pass
 
             # TODO: we'll replace this by a Result ADT :)
-            match _check_key_registered(subnets_whitelist, headers_dict, body):
+            match _check_key_registered(
+                subnets_whitelist, 
+                headers_dict, 
+                blockchain_cache
+            ):
                 case (False, error):
                     return (False, error)
                 case (True, _):
@@ -176,8 +183,15 @@ def _make_client(node_url: str):
     return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
 
 
-def _check_key_registered(subnets_whitelist: list[int] | None, headers_dict: dict[str, str], body: bytes):
+def _check_key_registered(
+        subnets_whitelist: list[int] | None, 
+        headers_dict: dict[str, str],
+        blockchain_cache: TTLDict[str, list[Ss58Address]],
+
+    ):
     key = headers_dict["x-key"]
+    if not is_hex_string(key):
+        return (False, _json_error(400, "X-Key should be a hex value"))
     key = parse_hex(key)
 
     # TODO: checking for key being registered should be smarter
@@ -191,12 +205,17 @@ def _check_key_registered(subnets_whitelist: list[int] | None, headers_dict: dic
 
     # If subnets whitelist is specified, checks if key is registered in one
     # of the given subnets
+    def query_keys(subnet: int):
+        return [*client.query_map_key(subnet).values()]
     if subnets_whitelist is not None:
         for subnet in subnets_whitelist:
-            uids = client.get_uids(ss58, subnet)
-            if not uids:
+            get_keys_on_subnet = partial(query_keys, subnet)
+            cache_key = f"keys_on_subnet_{subnet}"
+            keys_on_subnet = blockchain_cache.get_or_insert_lazy(
+                cache_key, get_keys_on_subnet
+            )
+            if ss58 not in keys_on_subnet:
                 return (False, _json_error(403, "Key is not registered on the network"))
-
     return (True, None)
 
 
@@ -213,6 +232,8 @@ class ModuleServer:
         whitelist: list[str] | None = None,
         blacklist: list[str] | None = None,
         subnets_whitelist: list[int] | None = None,
+        lower_ttl: int = 600,
+        upper_ttl: int = 700,
     ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
@@ -221,6 +242,8 @@ class ModuleServer:
         self.max_request_staleness = max_request_staleness
         self._blacklist = blacklist
         self._whitelist = whitelist
+        ttl = random.randint(lower_ttl, upper_ttl)
+        self._blockchain_cache = TTLDict[str, list[Ss58Address]](ttl)
 
         # Midlewares
         self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
@@ -232,6 +255,7 @@ class ModuleServer:
                 self._subnets_whitelist,
                 check_ss58_address(self.key.ss58_address),
                 self.max_request_staleness,
+                self._blockchain_cache,
                 )
             )
         self.register_endpoints(self._router)
