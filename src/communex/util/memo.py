@@ -124,8 +124,9 @@ def __test():
     print(m.get("a", default="missing"))
     try:
         print(m["a"])
-    except KeyError as e:
-        print("Key is not present :)")
+
+    except KeyError:
+        print("Key is not present :) yay")
 
     print(len(m))
 
