@@ -60,7 +60,7 @@ class SubnetParams(TypedDict):
     trust_ratio: int
     vote_mode: str
     bonds_ma: int | None
-    maximum_set_weight_calls_per_epoch: int
+    maximum_set_weight_calls_per_epoch: int | None
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.

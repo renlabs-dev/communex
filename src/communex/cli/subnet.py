@@ -130,8 +130,14 @@ def update(
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)
+    # because bonds_ma and maximum_set_weights dont have a default value
+    if subnet_params.get("bonds_ma", None) is None:
+        subnet_params["bonds_ma"] = client.query("BondsMovingAverage")
+    if subnet_params.get("maximum_set_weight_calls_per_epoch", None) is None:
+        subnet_params["maximum_set_weight_calls_per_epoch"] = client.query(
+            "MaximumSetWeightCallsPerEpoch"
+        )
     resolved_key = classic_load_key(key)
-
     with context.progress_status("Updating subnet ..."):
         response = client.update_subnet(
             key=resolved_key, params=subnet_params, netuid=netuid
@@ -191,6 +197,13 @@ def propose_on_subnet(
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)
+    # because bonds_ma and maximum_set_weights dont have a default value
+    if subnet_params.get("bonds_ma", None) is None:
+        subnet_params["bonds_ma"] = client.query("BondsMovingAverage")
+    if subnet_params.get("maximum_set_weight_calls_per_epoch", None) is None:
+        subnet_params["maximum_set_weight_calls_per_epoch"] = client.query(
+            "MaximumSetWeightCallsPerEpoch"
+        )
     context = make_custom_context(ctx)
     client = context.com_client()
 
