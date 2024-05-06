@@ -38,13 +38,16 @@ def list(ctx: Context):
     subnets_with_stakes = [
         {**subnets_with_netuids[i], **subnets_with_stakes[i]} for i in range(len(keys))
     ]
+    subnets_with_netuids = sorted( # type: ignore
+        subnets_with_stakes, key=lambda x: x["emission"], reverse=True # type: ignore
+    ) # type: ignore
+    for subnet_dict in subnets_with_netuids: # type: ignore
+        bonds = subnet_dict["bonds_ma"] # type: ignore
+        if bonds:
+            subnet_dict["bonds_ma"] = str(from_nano(subnet_dict["bonds_ma"])) + " J" # type: ignore
 
-    subnets_with_netuids = sorted(
-        subnets_with_stakes, key=lambda x: x["emission"], reverse=True
-    )
-
-    for dict in subnets_with_netuids:
-        print_table_from_plain_dict(dict, ["Params", "Values"], context.console)
+    for dict in subnets_with_netuids: # type: ignore
+        print_table_from_plain_dict(dict, ["Params", "Values"], context.console) # type: ignore
 
 
 @subnet_app.command()
@@ -245,3 +248,15 @@ def add_custom_proposal(
 
     with context.progress_status("Adding a proposal..."):
         client.add_custom_subnet_proposal(resolved_key, cid, netuid=netuid)
+
+
+@subnet_app.command()
+def list_curator_applications(
+    ctx: Context
+):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    with context.progress_status("Querying applications..."):
+        apps = client.query_map_curator_applications()
+    print(apps)
