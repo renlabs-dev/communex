@@ -1,5 +1,8 @@
 # Changelog
 
+## (unreliased)
+- Add flag -y (--yes) that says yes to all confirmation inputs
+
 ## (0.1.24)
 
 - Cache some ModuleServer requests to Commune network.

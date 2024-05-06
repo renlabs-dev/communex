@@ -28,5 +28,5 @@ jobs:
       - name: install Poetry dependencies
         run: nix develop --command poetry install --with dev,examples
 
-      - name: Run check
+      - name: Run checks (types and linter)
         run: nix develop --command poetry run  make check
