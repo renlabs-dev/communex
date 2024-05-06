@@ -155,7 +155,7 @@ def get_map_subnets_params(
         bulk_query["IncentiveRatio"], bulk_query["TrustRatio"],
         bulk_query["VoteModeSubnet"],
         bulk_query["SubnetNames"], bulk_query["MaxWeightAge"],
-        bulk_query["BondsMovingAverage"],
+        bulk_query.get("BondsMovingAverage", {}),
         bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
     )
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
