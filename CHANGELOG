@@ -1,8 +1,10 @@
 # Changelog
 
-## [unreleased]
+## 0.1.25
 
 - Add flag -y (--yes) that says yes to all confirmation inputs
+- Conforming SubnetParams to new runtime
+- get_dao_treasury query
 
 ## 0.1.24
 
