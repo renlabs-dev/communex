@@ -31,9 +31,10 @@ def flag_option(
     flag: str,
     flag_envvar: str,
     flag_help: str,
+    flag_short: str | None = None,
 ):
     flag_long = f"--{flag}"
-    flag_short = f"-{flag[0]}"
+    flag_short = f"-{flag[0]}" if flag_short == None else f"-{flag_short}"
     return typer.Option(
         flag_long,
         flag_short,
