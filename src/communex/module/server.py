@@ -8,6 +8,7 @@ from typing import Awaitable, Callable, Any
 import json
 from functools import partial
 from datetime import datetime, timezone
+import random
 
 
 import fastapi
@@ -25,6 +26,7 @@ from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._ip_limiter import IpLimiterMiddleware
+from communex.util.memo import TTLDict
 
 from communex.module.module import Module, endpoint, EndpointDefinition
 from communex.types import Ss58Address
@@ -47,9 +49,10 @@ def parse_hex(hex_str: str) -> bytes:
 
 
 def build_input_handler_route_class(
-        subnets_whitelist: list[int] | None, 
+        subnets_whitelist: list[int] | None,
         module_key: Ss58Address,
         request_staleness: int,
+        blockchain_cache: TTLDict[str, list[Ss58Address]],
     ) -> type[APIRoute]:
     class InputHandlerRoute(APIRoute):
         def get_route_handler(self):
@@ -99,7 +102,11 @@ def build_input_handler_route_class(
                     pass
 
             # TODO: we'll replace this by a Result ADT :)
-            match _check_key_registered(subnets_whitelist, headers_dict, body):
+            match _check_key_registered(
+                subnets_whitelist, 
+                headers_dict, 
+                blockchain_cache
+            ):
                 case (False, error):
                     return (False, error)
                 case (True, _):
@@ -115,7 +122,7 @@ def _json_error(code: int, message: str):
 
 
 def _get_headers_dict(
-        headers: starlette.datastructures.Headers, 
+        headers: starlette.datastructures.Headers,
         required: list[str],
         optional: list[str],
     ):
@@ -136,8 +143,8 @@ def _get_headers_dict(
 
 # TODO: type `headers_dict` better
 def _check_signature(
-        headers_dict: dict[str, str], 
-        body: bytes, 
+        headers_dict: dict[str, str],
+        body: bytes,
         module_key: Ss58Address
     ):
     key = headers_dict["x-key"]
@@ -162,7 +169,7 @@ def _check_signature(
     verified = signer.verify(key, crypto, body, signature)
     if not verified and not legacy_verified:
         return (False, _json_error(401, "Signatures doesn't match"))
-    
+
     body_dict: dict[str, dict[str, Any]] = json.loads(body)
     target_key = body_dict['params'].get("target_key", None)
     if not target_key or target_key != module_key:
@@ -176,13 +183,21 @@ def _make_client(node_url: str):
     return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
 
 
-def _check_key_registered(subnets_whitelist: list[int] | None, headers_dict: dict[str, str], body: bytes):
+def _check_key_registered(
+        subnets_whitelist: list[int] | None, 
+        headers_dict: dict[str, str],
+        blockchain_cache: TTLDict[str, list[Ss58Address]],
+
+    ):
     key = headers_dict["x-key"]
+    if not is_hex_string(key):
+        return (False, _json_error(400, "X-Key should be a hex value"))
     key = parse_hex(key)
 
     # TODO: checking for key being registered should be smarter
     # e.g. query and store all registered modules periodically.
     node_url = get_node_url(None, use_testnet=False)
+    # TODO: client pool for entire module server
     client = _make_client(node_url)  # TODO: get client from outer context
     ss58_format = 42
     ss58 = ss58_encode(key, ss58_format)
@@ -190,14 +205,17 @@ def _check_key_registered(subnets_whitelist: list[int] | None, headers_dict: dic
 
     # If subnets whitelist is specified, checks if key is registered in one
     # of the given subnets
+    def query_keys(subnet: int):
+        return [*client.query_map_key(subnet).values()]
     if subnets_whitelist is not None:
         for subnet in subnets_whitelist:
-            uids = client.get_uids(ss58, subnet)
-            if not uids:
+            get_keys_on_subnet = partial(query_keys, subnet)
+            cache_key = f"keys_on_subnet_{subnet}"
+            keys_on_subnet = blockchain_cache.get_or_insert_lazy(
+                cache_key, get_keys_on_subnet
+            )
+            if ss58 not in keys_on_subnet:
                 return (False, _json_error(403, "Key is not registered on the network"))
-
-
-
     return (True, None)
 
 
@@ -214,6 +232,8 @@ class ModuleServer:
         whitelist: list[str] | None = None,
         blacklist: list[str] | None = None,
         subnets_whitelist: list[int] | None = None,
+        lower_ttl: int = 600,
+        upper_ttl: int = 700,
     ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
@@ -222,6 +242,8 @@ class ModuleServer:
         self.max_request_staleness = max_request_staleness
         self._blacklist = blacklist
         self._whitelist = whitelist
+        ttl = random.randint(lower_ttl, upper_ttl)
+        self._blockchain_cache = TTLDict[str, list[Ss58Address]](ttl)
 
         # Midlewares
         self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
@@ -230,9 +252,10 @@ class ModuleServer:
         # Routes
         self._router = APIRouter(
             route_class=build_input_handler_route_class(
-                self._subnets_whitelist, 
+                self._subnets_whitelist,
                 check_ss58_address(self.key.ss58_address),
                 self.max_request_staleness,
+                self._blockchain_cache,
                 )
             )
         self.register_endpoints(self._router)

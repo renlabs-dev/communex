@@ -1,8 +1,25 @@
 # Changelog
 
-## (unreleased)
+## (unreliased)
+- Add flag -y (--yes) that says yes to all confirmation inputs
+
+## (0.1.24)
+
+- Cache some ModuleServer requests to Commune network.
+- fix: Checks if key passed to ModuleServer is a valid hexstring
+
+## (0.1.23.2)
+
+- Fixed registration bug
+
+## (0.1.23.1)
+
+- Formatting balances
+- Outputting total balance
+
+## (0.1.23)
 
 - Show help message when no arguments are provided.
 - Fixed typo on one of the nodes provided
 - Fixed balances listing balance of all subnets when passing --netuid 0
-- Add flag -y (--yes) that says yes to all confirmation inputs
+- stats command

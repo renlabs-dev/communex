@@ -3,12 +3,15 @@ from typing import Any, Mapping, cast
 
 import rich
 import typer
+from rich import box
 from rich.console import Console
 from rich.table import Table
 from typer import Context
 
 from communex._common import get_node_url
 from communex.client import CommuneClient
+from communex.types import ModuleInfoWithOptionalBalance
+from communex.balance import from_nano, from_horus
 
 
 @dataclass
@@ -36,15 +39,16 @@ class CustomCtx:
             self.info(f"Using node: {node_url}")
             for _ in range(5):
                 try:
-                    self._com_client = CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
+                    self._com_client = CommuneClient(
+                        url=node_url, num_connections=1, wait_for_finalization=False)
                 except Exception:
                     self.info(f"Failed to connect to node: {node_url}")
                     node_url = get_node_url(None, use_testnet=use_testnet)
                     self.info(f"Will retry with node {node_url}")
                     continue
             if self._com_client is None:
-                    raise ConnectionError("Could not connect to any node")
-            
+                raise ConnectionError("Could not connect to any node")
+
         return self._com_client
 
     def output(self, message: str) -> None:
@@ -121,3 +125,81 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
         table.add_row(*row, style="white")
 
     console.print(table)
+
+
+def transform_module_into(to_exclude: list[str], last_block: int, immunity_period: int, modules: list[ModuleInfoWithOptionalBalance]):
+    mods = cast(list[dict[str, Any]], modules)
+    transformed_modules: list[dict[str, Any]] = []
+    for mod in mods:
+        module = mod.copy()
+        module_regblock = module["regblock"]
+        module["in_immunity"] = module_regblock + immunity_period > last_block
+
+        for key in to_exclude:
+            del module[key]
+        module["stake"] = round(from_nano(module["stake"]), 2)  # type: ignore
+        module["emission"] = round(from_horus(module["emission"]), 4)  # type: ignore
+        if module.get("balance") is not None:
+            module["balance"] = from_nano(module["balance"])  # type: ignore
+        else:
+            # user should not see None values
+            del module["balance"]
+        transformed_modules.append(module)
+
+    return transformed_modules
+
+
+def print_module_info(
+        client: CommuneClient, modules: list[ModuleInfoWithOptionalBalance], console: Console,
+        netuid: int, title: str | None = None,
+) -> None:
+    """
+    Prints information about a module.
+    """
+    if not modules:
+        return
+
+    # Get the current block number, we will need this to caluclate immunity period
+    block = client.get_block()
+    if block:
+        last_block = block["header"]["number"]
+    else:
+        raise ValueError("Could not get block info")
+
+    # Get the immunity period on the netuid
+    immunity_period = client.get_immunity_period(netuid)
+
+    # Transform the module dictionary to have immunity_period
+    table = Table(
+        show_header=True, header_style="bold magenta",
+        box=box.DOUBLE_EDGE, title=title,
+        caption_style="chartreuse3",
+        title_style="bold magenta",
+
+    )
+
+    to_exclude = ["stake_from", "metadata", "last_update", "regblock"]
+    tranformed_modules = transform_module_into(to_exclude, last_block, immunity_period, modules)
+
+    sample_mod = tranformed_modules[0]
+    for key in sample_mod.keys():
+        # add columns
+        table.add_column(key, style="white")
+
+    total_stake = 0
+    total_balance = 0
+
+    for mod in tranformed_modules:
+        total_stake += mod["stake"]
+        if mod.get("balance") is not None:
+            total_balance += mod["balance"]
+
+        row: list[str] = []
+        for val in mod.values():
+            row.append(str(val))
+        table.add_row(*row)
+
+    table.caption = "total balance: " + f"{total_balance + total_stake}J"
+    console.print(table)
+    for _ in range(3):
+        console.print()
