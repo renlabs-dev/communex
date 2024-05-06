@@ -107,6 +107,8 @@ def update(
     trust_ratio: int = typer.Option(None),
     vote_mode: str = typer.Option(None),
     max_weight_age: int = typer.Option(None),
+    bonds_ma: int = typer.Option(None),
+    maximum_set_weight_calls_per_epoch: int = typer.Option(None),
 ):
     """
     Updates a subnet.
