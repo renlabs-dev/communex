@@ -62,7 +62,7 @@ def regen(ctx: Context, name: str, key_input: str):
         keypair = Keypair.create_from_private_key(key_input, ss58_format=42)
         key_type = "private key"
         # Substrate does not return these.
-        keypair.mnemonic = ""
+        keypair.mnemonic = "" # type: ignore
         keypair.seed_hex = ""
 
     address = keypair.ss58_address
