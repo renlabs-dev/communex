@@ -7,7 +7,6 @@ from communex.key import check_ss58_address
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsWithEmission)
 
-
 IPFS_REGEX = re.compile(r'^Qm[1-9A-HJ-NP-Za-km-z]{44}$')
 
 
@@ -129,12 +128,13 @@ def get_map_subnets_params(
                 ('TrustRatio', []),
                 ('VoteModeSubnet', []),
                 ('SubnetNames', []),
-                ('MaxWeightAge', [])
+                ('MaxWeightAge', []),
+                ("BondsMovingAverage", []),
+                ("MaximumSetWeightCallsPerEpoch", [])
             ],
         },
         block_hash
     )
-
     (
         netuid_to_emission, netuid_to_tempo, netuid_to_immunity_period,
         netuid_to_min_allowed_weights, netuid_to_max_allowed_weights,
@@ -143,7 +143,9 @@ def get_map_subnets_params(
         netuid_to_incentive_ratio, netuid_to_trust_ratio,
         netuid_to_vote_mode_subnet,
         netuid_to_subnet_names,
-        netuid_to_weight_age
+        netuid_to_weight_age,
+        netuid_to_bonds_ma,
+        netuid_to_maximum_weight_calls_per_epoch
     ) = (
         bulk_query["SubnetEmission"], bulk_query["Tempo"],
         bulk_query["ImmunityPeriod"], bulk_query["MinAllowedWeights"],
@@ -152,7 +154,9 @@ def get_map_subnets_params(
         bulk_query["Founder"], bulk_query["FounderShare"],
         bulk_query["IncentiveRatio"], bulk_query["TrustRatio"],
         bulk_query["VoteModeSubnet"],
-        bulk_query["SubnetNames"], bulk_query["MaxWeightAge"]
+        bulk_query["SubnetNames"], bulk_query["MaxWeightAge"],
+        bulk_query.get("BondsMovingAverage", {}),
+        bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
     )
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
@@ -172,7 +176,9 @@ def get_map_subnets_params(
         vote_mode = netuid_to_vote_mode_subnet[netuid]
         emission = netuid_to_emission[netuid]
         max_weight_age = netuid_to_weight_age[netuid]
-
+        bonds_ma = netuid_to_bonds_ma.get(netuid, None)
+        maximum_weight_calls = netuid_to_maximum_weight_calls_per_epoch.get(netuid, None)
+        
         subnet: SubnetParamsWithEmission = {
             "name": name,
             "founder": founder,
@@ -189,6 +195,8 @@ def get_map_subnets_params(
             "vote_mode": vote_mode,
             "emission": emission,
             "max_weight_age": max_weight_age,
+            "bonds_ma": bonds_ma,
+            "maximum_set_weight_calls_per_epoch": maximum_weight_calls
         }
 
         result_subnets[netuid] = subnet

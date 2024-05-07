@@ -1,6 +1,7 @@
 import json
+import re
 from enum import Enum
-from typing import Any, cast, Optional
+from typing import Any, Optional, cast
 
 import typer
 from substrateinterface import Keypair  # type: ignore
@@ -44,17 +45,28 @@ def create(ctx: Context, name: str):
 
 
 @key_app.command()
-def regen(ctx: Context, name: str, mnemonic: str):
+def regen(ctx: Context, name: str, key_input: str):
     """
     Stores the given key on a disk. Works with private key or mnemonic.
     """
     # TODO: secret input from env var and stdin
     context = make_custom_context(ctx)
 
-    keypair = Keypair.create_from_mnemonic(mnemonic)
-    address = keypair.ss58_address
+    # Determine the input type based on the presence of spaces.
+    if re.search(r'\s', key_input):
+        # If mnemonic (contains spaces between words).
+        keypair = Keypair.create_from_mnemonic(key_input)
+        key_type = "mnemonic"
+    else:
+        # If private key (assumes no spaces).
+        keypair = Keypair.create_from_private_key(key_input, ss58_format=42)
+        key_type = "private key"
+        # Substrate does not return these.
+        keypair.mnemonic = ""
+        keypair.seed_hex = ""
 
-    context.info(f"Loaded key with public address `{address}`.")
+    address = keypair.ss58_address
+    context.info(f"Loaded {key_type} with public address `{address}`.")
 
     classic_store_key(keypair, name)
 

@@ -61,7 +61,7 @@ def free_balance(ctx: Context, key: str, unit: BalanceUnit = BalanceUnit.joule):
 @balance_app.command()
 def staked_balance(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
     """
-    Gets staked balance of key.
+    Gets the balance staked on the key itself.
     """
     context = make_custom_context(ctx)
     client = context.com_client()
@@ -98,7 +98,7 @@ def all_balance(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = Bal
 @balance_app.command()
 def get_staked(ctx: Context, key: str, netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule):
     """
-    Gets total stake of a key.
+    Gets total stake of a key it delegated across other keys.
     """
     context = make_custom_context(ctx)
     client = context.com_client()

@@ -2175,6 +2175,9 @@ class CommuneClient:
             params=[netuid],
         )
 
+    def get_max_set_weights_per_epoch(self):
+        return self.query("MaximumSetWeightCallsPerEpoch")
+
     def get_min_allowed_weights(self, netuid: int = 0) -> int:
         """
         Queries the network for the minimum allowed weights setting.
@@ -2270,6 +2273,10 @@ class CommuneClient:
         """
 
         return self.query("SubnetNames", params=[netuid])
+
+
+    def get_global_dao_treasury(self):
+        return self.query("GlobalDaoTreasury")
 
     def get_n(self, netuid: int = 0) -> int:
         """

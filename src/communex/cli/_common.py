@@ -18,6 +18,7 @@ from communex.balance import from_nano, from_horus
 class ExtraCtxData:
     output_json: bool
     use_testnet: bool
+    yes_to_all: bool
 
 
 class ExtendedContext(Context):
@@ -64,6 +65,9 @@ class CustomCtx:
         return self.console_err.status(message)
 
     def confirm(self, message: str) -> bool:
+        if (self.ctx.obj.yes_to_all):
+            print(f"{message} (--yes)")
+            return True
         return typer.confirm(message)
 
 

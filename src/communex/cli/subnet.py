@@ -38,13 +38,16 @@ def list(ctx: Context):
     subnets_with_stakes = [
         {**subnets_with_netuids[i], **subnets_with_stakes[i]} for i in range(len(keys))
     ]
+    subnets_with_netuids = sorted( # type: ignore
+        subnets_with_stakes, key=lambda x: x["emission"], reverse=True # type: ignore
+    ) # type: ignore
+    for subnet_dict in subnets_with_netuids: # type: ignore
+        bonds = subnet_dict["bonds_ma"] # type: ignore
+        if bonds:
+            subnet_dict["bonds_ma"] = str(from_nano(subnet_dict["bonds_ma"])) + " J" # type: ignore
 
-    subnets_with_netuids = sorted(
-        subnets_with_stakes, key=lambda x: x["emission"], reverse=True
-    )
-
-    for dict in subnets_with_netuids:
-        print_table_from_plain_dict(dict, ["Params", "Values"], context.console)
+    for dict in subnets_with_netuids: # type: ignore
+        print_table_from_plain_dict(dict, ["Params", "Values"], context.console) # type: ignore
 
 
 @subnet_app.command()
@@ -104,6 +107,8 @@ def update(
     trust_ratio: int = typer.Option(None),
     vote_mode: str = typer.Option(None),
     max_weight_age: int = typer.Option(None),
+    bonds_ma: int = typer.Option(None),
+    maximum_set_weight_calls_per_epoch: int = typer.Option(None),
 ):
     """
     Updates a subnet.
@@ -125,8 +130,14 @@ def update(
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)
+    # because bonds_ma and maximum_set_weights dont have a default value
+    if subnet_params.get("bonds_ma", None) is None:
+        subnet_params["bonds_ma"] = client.query("BondsMovingAverage")
+    if subnet_params.get("maximum_set_weight_calls_per_epoch", None) is None:
+        subnet_params["maximum_set_weight_calls_per_epoch"] = client.query(
+            "MaximumSetWeightCallsPerEpoch"
+        )
     resolved_key = classic_load_key(key)
-
     with context.progress_status("Updating subnet ..."):
         response = client.update_subnet(
             key=resolved_key, params=subnet_params, netuid=netuid
@@ -159,6 +170,8 @@ def propose_on_subnet(
     trust_ratio: int = typer.Option(None),
     vote_mode: str = typer.Option(None),
     max_weight_age: int = typer.Option(None),
+    bonds_ma: int = typer.Option(None),
+    maximum_set_weight_calls_per_epoch: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.
@@ -184,6 +197,13 @@ def propose_on_subnet(
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)
+    # because bonds_ma and maximum_set_weights dont have a default value
+    if subnet_params.get("bonds_ma", None) is None:
+        subnet_params["bonds_ma"] = client.query("BondsMovingAverage")
+    if subnet_params.get("maximum_set_weight_calls_per_epoch", None) is None:
+        subnet_params["maximum_set_weight_calls_per_epoch"] = client.query(
+            "MaximumSetWeightCallsPerEpoch"
+        )
     context = make_custom_context(ctx)
     client = context.com_client()
 
@@ -245,3 +265,15 @@ def add_custom_proposal(
 
     with context.progress_status("Adding a proposal..."):
         client.add_custom_subnet_proposal(resolved_key, cid, netuid=netuid)
+
+
+@subnet_app.command()
+def list_curator_applications(
+    ctx: Context
+):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    with context.progress_status("Querying applications..."):
+        apps = client.query_map_curator_applications()
+    print(apps)

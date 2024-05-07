@@ -109,3 +109,14 @@ def stats(ctx: Context, balances: bool = False, netuid: int = 0):
     print_module_info(client, local_inactive, context.console, netuid, "inactive")
     print_module_info(client, local_miners, context.console, netuid, "miners")
     print_module_info(client, local_validators, context.console, netuid, "validators")
+
+
+@misc_app.command(name="treasury")
+def get_dao_treasury(ctx: Context):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    with context.progress_status("Getting DAO treasury..."):
+        dao = client.get_global_dao_treasury()
+    j_dao = from_nano(dao)
+    context.output(f"{j_dao:.2f} J")
