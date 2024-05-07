@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.25.1
+- Added option to regen key with the private key
+
 ## 0.1.25
 
 - Add flag -y (--yes) that says yes to all confirmation inputs
