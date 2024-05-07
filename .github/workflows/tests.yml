@@ -26,5 +26,5 @@ jobs:
       - name: install Poetry dependencies
         run: nix develop --command poetry install --with dev
 
-      - name: Run check
+      - name: Run tests
         run: nix develop --command poetry run  make test
