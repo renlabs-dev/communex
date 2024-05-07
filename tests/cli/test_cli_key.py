@@ -82,7 +82,7 @@ def test_cli_key_save(invoke_cli: InvokeCli):
         
         assert result.exit_code == 0
 
-        assert "Loaded key with public address " in result.stdout
+        assert "Loaded mnemonic with public address " in result.stdout
         assert "`5EA6Dd3vejQco2FZomoAQgxacsTp7ZPFuR25TwxTiUKbkep1`." in result.stdout
         assert f"Key stored with name `{TEST_TEMPORARY_KEY}` successfully." in result.stdout
     finally:
