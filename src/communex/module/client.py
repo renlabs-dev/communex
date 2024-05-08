@@ -8,12 +8,14 @@ import json
 from typing import Any
 
 import aiohttp
+import aiohttp.client_exceptions
+import aiohttp.web_exceptions
 from substrateinterface import Keypair  # type: ignore
 
 from ._signer import sign, TESTING_MNEMONIC
 from communex.types import Ss58Address
 from communex.key import check_ss58_address
-
+from communex.errors import NetworkTimeoutError
 
 def iso_timestamp_now() -> str:
     now = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -65,27 +67,29 @@ class ModuleClient:
             "X-Timestamp": timestamp,
         }
         out = aiohttp.ClientTimeout(total=timeout)
-        async with aiohttp.ClientSession(timeout=out) as session:
-            async with session.post(
-                f"http://{self.host}:{self.port}/method/{fn}",
-                json=json.loads(serialized_data),
-                headers=headers,
-            ) as response:
-                match response.status:
-                    case 200:
-                        pass
-                    case status_code:
-                        response_j = await response.json()
-                        raise Exception(
-                            f"Unexpected status code: {status_code}, response: {response_j}")
-                match response.content_type:
-                    case 'application/json':
-                        result = await asyncio.wait_for(response.json(), timeout=timeout)
-                        # TODO: deserialize result
-                        return result
-                    case _:
-                        raise Exception(f"Unknown content type: {response.content_type}")
-
+        try:
+            async with aiohttp.ClientSession(timeout=out) as session:
+                async with session.post(
+                    f"http://{self.host}:{self.port}/method/{fn}",
+                    json=json.loads(serialized_data),
+                    headers=headers,
+                ) as response:
+                    match response.status:
+                        case 200:
+                            pass
+                        case status_code:
+                            response_j = await response.json()
+                            raise Exception(
+                                f"Unexpected status code: {status_code}, response: {response_j}")
+                    match response.content_type:
+                        case 'application/json':
+                            result = await asyncio.wait_for(response.json(), timeout=timeout)
+                            # TODO: deserialize result
+                            return result
+                        case _:
+                            raise Exception(f"Unknown content type: {response.content_type}")
+        except asyncio.exceptions.TimeoutError as e:
+            raise NetworkTimeoutError(f"The call took longer than the timeout of {timeout} second(s)").with_traceback(e.__traceback__)
 
 if __name__ == "__main__":
     keypair = Keypair.create_from_mnemonic(
