@@ -273,7 +273,7 @@ def appraise(
         case (None, None):
             raise ValueError(
                 "`--netuid` or `--new-subnet-name` argument must be passed into the CLI command \n"
-                "f.e `comx appraise --netuid <netuid>` or `comx appraise --new-subnet-name <new_subnet_name>`"
+                "f.e `comx module appraise --netuid <netuid>` or `comx module appraise --new-subnet-name <new_subnet_name>`"
             )
         case (netuid, None):
             assert netuid is not None
