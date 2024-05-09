@@ -19,6 +19,10 @@ TEST_HOST = "127.0.0.1"
 TEST_PORT = 5555
 
 
+def random_keypair():
+    return Keypair.create_from_mnemonic(Keypair.generate_mnemonic())
+
+
 class SomeModule(Module):
     @endpoint
     def prompt(self, msg: str):
@@ -53,16 +57,15 @@ def server_keypair() -> Keypair:
 
 
 @pytest.fixture(scope="module")
-def some_module_app(server_keypair: Keypair):
+def some_module_server(server_keypair: Keypair):
     a_module = SomeModule()
     server = ModuleServer(a_module, server_keypair, subnets_whitelist=None)
-    app = server.get_fastapi_app()
-    return app
+    return server
 
 
 @pytest.fixture(scope="module")
-def serve(some_module_app: FastAPI):
-    config = uvicorn.Config(host=TEST_HOST, port=TEST_PORT, log_level="info", app=some_module_app)
+def serve(some_module_server: ModuleServer):
+    config = uvicorn.Config(host=TEST_HOST, port=TEST_PORT, log_level="info", app=some_module_server.get_fastapi_app())
 
     server = ThreadServer(config=config)
     with server.run_in_thread():
