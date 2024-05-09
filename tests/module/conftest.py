@@ -3,7 +3,6 @@ from threading import Thread
 from time import sleep
 
 from substrateinterface import Keypair
-from fastapi import FastAPI
 import uvicorn
 
 import pytest
