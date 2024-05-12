@@ -1,65 +1,15 @@
 import pytest
 import json
 import requests
-import datetime
-from typing import Any
 
 from tests.module.conftest import TEST_HOST, TEST_PORT, random_keypair
 
 from communex.key import Keypair
 from communex.types import Ss58Address
 from communex.module.server import ModuleServer
-from communex.module._signer import sign, TESTING_MNEMONIC
+from communex.module._signer import TESTING_MNEMONIC
+from communex.module._protocol import create_method_endpoint, create_request_data
 from communex.key import check_ss58_address
-
-
-def serialize(data: Any) -> bytes:
-    txt = json.dumps(data)
-    return txt.encode()
-
-
-def iso_timestamp_now() -> str:
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
-    iso_now = now.isoformat()
-    return iso_now
-
-
-def create_headers(signature: bytes, my_key: Keypair, timestamp_iso: str):
-    headers = {
-        "Content-Type": "application/json",
-        "X-Signature": signature.hex(),
-        "X-Key": my_key.public_key.hex(),
-        "X-Crypto": str(my_key.crypto_type),
-        "X-Timestamp": timestamp_iso,
-    }
-    return headers
-
-
-def create_request_data(
-    my_key: Keypair,
-    target_key: Ss58Address,
-    params: dict
-) -> tuple[bytes, bytes]:
-    timestamp_iso = iso_timestamp_now()
-    
-    params["target_key"] = target_key
-
-    request_data = {
-        "params": params,
-    }
-
-    serialized_data = serialize(request_data)
-    request_data["timestamp"] = timestamp_iso
-    serialized_stamped_data = serialize(request_data)
-    signature = sign(my_key, serialized_stamped_data)
-    
-    headers = create_headers(signature, my_key, timestamp_iso)
-    
-    return serialized_data, headers
-
-
-def create_method_endpoint(host: str, port: str, method_name: str) -> str:
-    return f"http://{host}:{port}/method/{method_name}"
 
 
 def module_endpoint(method_name: str) -> str:
