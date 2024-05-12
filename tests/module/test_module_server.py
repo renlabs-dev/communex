@@ -5,7 +5,6 @@ import requests
 from tests.module.conftest import TEST_HOST, TEST_PORT, random_keypair
 
 from communex.key import Keypair
-from communex.types import Ss58Address
 from communex.module.server import ModuleServer
 from communex.module._signer import TESTING_MNEMONIC
 from communex.module._protocol import create_method_endpoint, create_request_data
