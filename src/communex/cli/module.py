@@ -259,34 +259,17 @@ def inventory(ctx: Context, balances: bool = False, netuid: int = 0):
 
 
 @module_app.command()
-def appraise(
+def cost_appraise(
     ctx: Context,
-    netuid: Optional[int] = None,
-    new_subnet_name: Optional[str] = None
+    netuid: int,
 ):
     """
     Appraises the cost of registering a module on the Commune network.
     """
+
     context = make_custom_context(ctx)
     client = context.com_client()
-    match (netuid, new_subnet_name):
-        case (None, None):
-            raise ValueError(
-                "`--netuid` or `--new-subnet-name` argument must be passed into the CLI command \n"
-                "f.e `comx module appraise --netuid <netuid>` or `comx module appraise --new-subnet-name <new_subnet_name>`"
-            )
-        case (netuid, None):
-            assert netuid is not None
-            subnet_name = client.get_subnet_name(netuid)
-            burn = client.get_burn(netuid)
-            info_str = f"(subnet {netuid})"
-        case (None, new_subnet_name):
-            subnet_name = new_subnet_name
-            burn = client.get_min_burn()
-            info_str = "(new subnet)"
-        case (_, _):
-            raise ValueError(
-                "`--netuid` and `--new-subnet-name` cannot be provided at the same time"
-            )
+    
+    burn = client.get_burn(netuid)
     registration_cost = c_balance.from_nano(burn)
-    context.info(f"The cost to recycle for {subnet_name} {info_str} is {registration_cost} $COMAI")
+    context.info(f"The cost to register for {netuid} is {registration_cost} $COMAI")
