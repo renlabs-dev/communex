@@ -256,3 +256,20 @@ def inventory(ctx: Context, balances: bool = False, netuid: int = 0):
     print_module_info(client, miners, context.console, netuid, "miners")
     print_module_info(client, validators, context.console, netuid, "validators")
     print_module_info(client, inactive, context.console, netuid, "inactive")
+
+
+@module_app.command()
+def cost_appraise(
+    ctx: Context,
+    netuid: int,
+):
+    """
+    Appraises the cost of registering a module on the Commune network.
+    """
+
+    context = make_custom_context(ctx)
+    client = context.com_client()
+    
+    burn = client.get_burn(netuid)
+    registration_cost = c_balance.from_nano(burn)
+    context.info(f"The cost to register for {netuid} is {registration_cost} $COMAI")
