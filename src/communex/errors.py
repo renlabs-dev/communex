@@ -8,3 +8,7 @@ class NetworkError(BaseException):
 
 class NetworkQueryError(NetworkError):
     """Network query related error."""
+
+
+class NetworkTimeoutError(NetworkError):
+    """Timeout error"""
