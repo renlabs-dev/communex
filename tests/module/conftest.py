@@ -2,17 +2,15 @@ from contextlib import contextmanager
 from threading import Thread
 from time import sleep
 
-from substrateinterface import Keypair
-import uvicorn
-
 import pytest
-from tests.key_config import TEST_FAKE_MNEM_DO_NOT_USE_THIS
+import uvicorn
+from substrateinterface import Keypair
 
-from communex.module import Module, endpoint
-from communex.module.server import ModuleServer
-from communex.module.client import ModuleClient
 from communex.key import generate_keypair
-
+from communex.module import Module, endpoint
+from communex.module.client import ModuleClient
+from communex.module.server import ModuleServer
+from tests.key_config import TEST_FAKE_MNEM_DO_NOT_USE_THIS
 
 TEST_HOST = "127.0.0.1"
 TEST_PORT = 5555

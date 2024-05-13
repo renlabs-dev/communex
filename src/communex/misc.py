@@ -1,5 +1,5 @@
-from typing import Any
 import re
+from typing import Any
 
 from communex.client import CommuneClient
 from communex.compat.key import local_key_addresses
@@ -69,11 +69,12 @@ def get_map_modules(
         regblock = uid_to_regblock[uid]
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
-        delegation_fee = ss58_to_delegationfee.get(key, 20)  # 20% default delegation fee
+        delegation_fee = ss58_to_delegationfee.get(
+            key, 20)  # 20% default delegation fee
         metadata = uid_to_metadata.get(uid, None)
 
         balance = None
-        if include_balances and ss58_to_balances is not None: # type: ignore
+        if include_balances and ss58_to_balances is not None:  # type: ignore
             balance_dict = ss58_to_balances.get(key, None)
             if balance_dict is not None:
                 assert isinstance(balance_dict['data'], dict)
@@ -177,8 +178,9 @@ def get_map_subnets_params(
         emission = netuid_to_emission[netuid]
         max_weight_age = netuid_to_weight_age[netuid]
         bonds_ma = netuid_to_bonds_ma.get(netuid, None)
-        maximum_weight_calls = netuid_to_maximum_weight_calls_per_epoch.get(netuid, None)
-        
+        maximum_weight_calls = netuid_to_maximum_weight_calls_per_epoch.get(
+            netuid, None)
+
         subnet: SubnetParamsWithEmission = {
             "name": name,
             "founder": founder,

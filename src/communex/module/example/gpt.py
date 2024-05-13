@@ -26,14 +26,15 @@ class OpenAIModule(Module):
             model=model,
             response_format={"type": "json_object"},
             messages=[
-                {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
+                {"role": "system",
+                    "content": "You are a helpful assistant designed to output JSON."},
                 {"role": "user", "content": text},
             ],
         )
         answers: list[dict[str, str]] = []
         for msg in response.choices:
             finish_reason = msg.finish_reason
-            if finish_reason != "stop": 
+            if finish_reason != "stop":
                 raise HTTPException(418, finish_reason)
             content = msg.message.content
             if content:

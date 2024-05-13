@@ -6,7 +6,8 @@ import uvicorn
 from typer import Context
 
 import communex.balance as c_balance
-from communex.cli._common import make_custom_context, print_module_info, print_table_from_plain_dict
+from communex.cli._common import (make_custom_context, print_module_info,
+                                  print_table_from_plain_dict)
 from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_modules
@@ -69,7 +70,8 @@ def register(
         if stake is not None:
             stake_nano = c_balance.to_nano(stake)
         else:
-            min_stake = client.get_min_stake(netuid) if netuid is not None else 0
+            min_stake = client.get_min_stake(
+                netuid) if netuid is not None else 0
             stake_nano = (
                 min_stake + burn + c_balance.to_nano(0.1)
             )  # 0.1 extra needed for the call to succeed
@@ -212,16 +214,19 @@ def info(ctx: Context, name: str, balance: bool = False, netuid: int = 0):
     with context.progress_status(
         f"Getting Module {name} on a subnet with netuid {netuid}…"
     ):
-        modules = get_map_modules(client, netuid=netuid, include_balances=balance)
+        modules = get_map_modules(
+            client, netuid=netuid, include_balances=balance)
         modules_to_list = [value for _, value in modules.items()]
 
-        module = next((item for item in modules_to_list if item["name"] == name), None)
+        module = next(
+            (item for item in modules_to_list if item["name"] == name), None)
 
     if module is None:
         raise ValueError("Module not found")
 
     general_module = cast(dict[str, Any], module)
-    print_table_from_plain_dict(general_module, ["Params", "Values"], context.console)
+    print_table_from_plain_dict(
+        general_module, ["Params", "Values"], context.console)
 
 
 @module_app.command(name="list")
@@ -254,22 +259,6 @@ def inventory(ctx: Context, balances: bool = False, netuid: int = 0):
             validators.append(module)
 
     print_module_info(client, miners, context.console, netuid, "miners")
-    print_module_info(client, validators, context.console, netuid, "validators")
+    print_module_info(client, validators, context.console,
+                      netuid, "validators")
     print_module_info(client, inactive, context.console, netuid, "inactive")
-
-
-@module_app.command()
-def cost_appraise(
-    ctx: Context,
-    netuid: int,
-):
-    """
-    Appraises the cost of registering a module on the Commune network.
-    """
-
-    context = make_custom_context(ctx)
-    client = context.com_client()
-    
-    burn = client.get_burn(netuid)
-    registration_cost = c_balance.from_nano(burn)
-    context.info(f"The cost to register for {netuid} is {registration_cost} $COMAI")

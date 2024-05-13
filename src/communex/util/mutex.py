@@ -1,8 +1,9 @@
+from threading import Lock
 from types import TracebackType
 from typing import ContextManager, Generic, TypeVar
-from threading import Lock
 
 T = TypeVar("T")
+
 
 class MutexBox(Generic[T], ContextManager[T]):
     _mutex: Lock

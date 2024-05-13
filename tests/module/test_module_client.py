@@ -1,11 +1,13 @@
-import pytest
 from re import escape
+
+import pytest
 from substrateinterface import Keypair
 
-from tests.module.conftest import TEST_HOST, TEST_PORT
-from communex.module.client import ModuleClient
-from communex.key import check_ss58_address, generate_keypair
 from communex.errors import NetworkTimeoutError
+from communex.key import check_ss58_address, generate_keypair
+from communex.module.client import ModuleClient
+from tests.module.conftest import TEST_HOST, TEST_PORT
+
 
 def test_client_host_port(serve, client: ModuleClient):
     assert client.host == TEST_HOST

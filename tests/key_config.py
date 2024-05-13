@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 TEST_TEMPORARY_KEY = "warn_temporary_key_983"
 
 TEST_FAKE_MNEM_DO_NOT_USE_THIS = "spy odor tomato foam supreme double vanish minute quarter anxiety wagon hundred"

@@ -3,6 +3,7 @@ import pytest
 from tests.conftest import InvokeCli
 from tests.str_utils import clean
 
+
 def test_cli_subnet_info_slow(invoke_cli: InvokeCli):
     result = invoke_cli(["subnet", "info", "0"])
     

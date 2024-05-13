@@ -12,10 +12,12 @@ import aiohttp.client_exceptions
 import aiohttp.web_exceptions
 from substrateinterface import Keypair  # type: ignore
 
-from ._signer import sign, TESTING_MNEMONIC
-from communex.types import Ss58Address
-from communex.key import check_ss58_address
 from communex.errors import NetworkTimeoutError
+from communex.key import check_ss58_address
+from communex.types import Ss58Address
+
+from ._signer import TESTING_MNEMONIC, sign
+
 
 def iso_timestamp_now() -> str:
     now = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -39,12 +41,12 @@ class ModuleClient:
         self.key = key
 
     async def call(
-            self, 
+            self,
             fn: str,
             target_key: Ss58Address,
-            params: Any = {}, 
+            params: Any = {},
             timeout: int = 16,
-            ) -> Any:
+    ) -> Any:
         timestamp = iso_timestamp_now()
         params["target_key"] = target_key
         # params["timestamp"] = timestamp
@@ -87,9 +89,12 @@ class ModuleClient:
                             # TODO: deserialize result
                             return result
                         case _:
-                            raise Exception(f"Unknown content type: {response.content_type}")
+                            raise Exception(
+                                f"Unknown content type: {response.content_type}")
         except asyncio.exceptions.TimeoutError as e:
-            raise NetworkTimeoutError(f"The call took longer than the timeout of {timeout} second(s)").with_traceback(e.__traceback__)
+            raise NetworkTimeoutError(
+                f"The call took longer than the timeout of {timeout} second(s)").with_traceback(e.__traceback__)
+
 
 if __name__ == "__main__":
     keypair = Keypair.create_from_mnemonic(
@@ -97,5 +102,6 @@ if __name__ == "__main__":
     )
     client = ModuleClient("localhost", 8000, keypair)
     ss58_address = check_ss58_address(keypair.ss58_address)
-    result = asyncio.run(client.call("do_the_thing", ss58_address, {"awesomness": 45, "extra": "hi"}))
+    result = asyncio.run(client.call("do_the_thing", ss58_address, {
+                         "awesomness": 45, "extra": "hi"}))
     print(result)

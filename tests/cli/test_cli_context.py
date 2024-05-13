@@ -1,10 +1,9 @@
 import pytest
-from typer.testing import CliRunner, Result # type: ignore
+from typer import Context, Typer
+from typer.testing import CliRunner, Result  # type: ignore
 
-from typer import Typer, Context
-from communex.cli.root import app
 from communex.cli._common import make_custom_context
-
+from communex.cli.root import app
 from tests.conftest import InvokeCli
 
 context_test_app = Typer(no_args_is_help=True)

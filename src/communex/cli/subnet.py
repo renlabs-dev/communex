@@ -1,14 +1,15 @@
-from typing import Any, cast
 import re
+from typing import Any, cast
 
 import typer
 from typer import Context
 
 from communex.balance import from_nano
-from communex.cli._common import make_custom_context, print_table_from_plain_dict
+from communex.cli._common import (make_custom_context,
+                                  print_table_from_plain_dict)
 from communex.compat.key import classic_load_key, resolve_key_ss58
 from communex.errors import ChainTransactionError
-from communex.misc import get_map_subnets_params, IPFS_REGEX
+from communex.misc import IPFS_REGEX, get_map_subnets_params
 from communex.types import SubnetParams
 
 subnet_app = typer.Typer(no_args_is_help=True)
@@ -38,16 +39,19 @@ def list(ctx: Context):
     subnets_with_stakes = [
         {**subnets_with_netuids[i], **subnets_with_stakes[i]} for i in range(len(keys))
     ]
-    subnets_with_netuids = sorted( # type: ignore
-        subnets_with_stakes, key=lambda x: x["emission"], reverse=True # type: ignore
-    ) # type: ignore
-    for subnet_dict in subnets_with_netuids: # type: ignore
-        bonds = subnet_dict["bonds_ma"] # type: ignore
+    subnets_with_netuids = sorted(  # type: ignore
+        # type: ignore
+        subnets_with_stakes, key=lambda x: x["emission"], reverse=True
+    )  # type: ignore
+    for subnet_dict in subnets_with_netuids:  # type: ignore
+        bonds = subnet_dict["bonds_ma"]  # type: ignore
         if bonds:
-            subnet_dict["bonds_ma"] = str(from_nano(subnet_dict["bonds_ma"])) + " J" # type: ignore
+            subnet_dict["bonds_ma"] = str(
+                from_nano(subnet_dict["bonds_ma"])) + " J"  # type: ignore
 
-    for dict in subnets_with_netuids: # type: ignore
-        print_table_from_plain_dict(dict, ["Params", "Values"], context.console) # type: ignore
+    for dict in subnets_with_netuids:  # type: ignore
+        print_table_from_plain_dict(
+            dict, ["Params", "Values"], context.console)  # type: ignore
 
 
 @subnet_app.command()
@@ -84,7 +88,8 @@ def info(ctx: Context, netuid: int):
         raise ValueError("Subnet not found")
 
     general_subnet: dict[str, Any] = cast(dict[str, Any], subnet)
-    print_table_from_plain_dict(general_subnet, ["Params", "Values"], context.console)
+    print_table_from_plain_dict(
+        general_subnet, ["Params", "Values"], context.console)
 
 
 # TODO refactor (user does not need to specify all params)

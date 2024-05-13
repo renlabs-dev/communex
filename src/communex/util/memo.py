@@ -1,11 +1,8 @@
-from collections.abc import MutableMapping
-from typing import Callable, Generic, Iterator, TypeVar
-
-from threading import Lock
-
-from collections import OrderedDict
-
 import time
+from collections import OrderedDict
+from collections.abc import MutableMapping
+from threading import Lock
+from typing import Callable, Generic, Iterator, TypeVar
 
 K = TypeVar("K")
 V = TypeVar("V")

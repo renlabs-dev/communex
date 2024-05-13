@@ -36,10 +36,13 @@ def show(ctx: Context, key: str, unit: BalanceUnit = BalanceUnit.joule):
         stake_dict = dict(zip(netuids, string_stakes))
 
         total = balance + sum(stakes)
-        free, total = format_balance(balance, unit), format_balance(total, unit)
+        free, total = format_balance(
+            balance, unit), format_balance(total, unit)
 
-        print_table_from_plain_dict(stake_dict, ["Netuid", "Staked"], context.console)
-        print_table_from_plain_dict({"Free": free, "Total": total}, ["Result", "Amount"], context.console)
+        print_table_from_plain_dict(
+            stake_dict, ["Netuid", "Staked"], context.console)
+        print_table_from_plain_dict({"Free": free, "Total": total}, [
+                                    "Result", "Amount"], context.console)
 
 
 @balance_app.command()
@@ -127,7 +130,8 @@ def transfer(ctx: Context, key: str, amount: float, dest: str):
         raise typer.Abort()
 
     with context.progress_status(f"Transferring {amount} tokens to {dest}..."):
-        response = client.transfer(key=resolved_key, amount=nano_amount, dest=resolved_dest)
+        response = client.transfer(
+            key=resolved_key, amount=nano_amount, dest=resolved_dest)
 
     if response.is_success:
         context.info(f"Transferred {amount} tokens to {dest}")
@@ -178,7 +182,8 @@ def stake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
     resolved_dest = resolve_key_ss58(dest)
 
     with context.progress_status(f"Staking {amount} tokens to {dest} on a subnet with netuid '{netuid}'..."):
-        response = client.stake(key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid)
+        response = client.stake(
+            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid)
 
     if response.is_success:
         context.info(f"Staked {amount} tokens to {dest}")
@@ -199,7 +204,8 @@ def unstake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
     resolved_dest = resolve_key_ss58(dest)
 
     with context.progress_status(f"Unstaking {amount} tokens from {dest} on a subnet with netuid '{netuid}'..."):
-        response = client.unstake(key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid)
+        response = client.unstake(
+            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid)
 
     if response.is_success:
         context.info(f"Unstaked {amount} tokens from {dest}")

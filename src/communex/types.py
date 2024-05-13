@@ -42,7 +42,6 @@ class NetworkParams(TypedDict):
     proposal_participation_threshold: int
     subnet_stake_threshold: int
 
-    
 
 class SubnetParams(TypedDict):
     founder: Ss58Address

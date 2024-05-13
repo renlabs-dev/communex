@@ -45,7 +45,8 @@ def function_params_to_model(signature: inspect.Signature) -> type[EndpointParam
             continue
         annotation = param.annotation
         if annotation == param.empty:
-            raise Exception(f"Error: annotation for parameter `{name}` not found")
+            raise Exception(
+                f"Error: annotation for parameter `{name}` not found")
 
         if param.default == param.empty:
             fields[name] = (annotation, ...)
@@ -53,8 +54,9 @@ def function_params_to_model(signature: inspect.Signature) -> type[EndpointParam
             fields[name] = (annotation, param.default)
 
     model: type[EndpointParams] = cast(
-        type[EndpointParams], pydantic.create_model('Params', **fields, __base__=EndpointParams) # type: ignore
-        )  # type: ignore
+        type[EndpointParams], pydantic.create_model(
+            'Params', **fields, __base__=EndpointParams)  # type: ignore
+    )  # type: ignore
 
     return model
 

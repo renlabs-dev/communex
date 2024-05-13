@@ -1,9 +1,11 @@
-from communex.client import CommuneClient
-from communex._common import get_node_url
-from communex.types import Ss58Address
-from substrateinterface import Keypair  # type: ignore
-from communex.compat.key import classic_load_key
 import time
+
+from substrateinterface import Keypair  # type: ignore
+
+from communex._common import get_node_url
+from communex.client import CommuneClient
+from communex.compat.key import classic_load_key
+from communex.types import Ss58Address
 
 # The netuid of the general subnet.
 GENERAL_NETUID = 0

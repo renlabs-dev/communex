@@ -1,8 +1,10 @@
 import ipaddress
+import json
 import os.path
 from typing import Any, Callable, Generic, Optional, Protocol, TypeVar
+
 import requests
-import json
+
 
 def check_str(x: Any) -> str:
     assert isinstance(x, str)
@@ -86,12 +88,13 @@ def get_json_from_cid(cid: str) -> dict[Any, Any] | None:
         return None
     except Exception:
         return None
-    
+
+
 def convert_cid_on_proposal(proposals: dict[int, dict[str, Any]]):
     unwrapped: dict[int, dict[str, Any]] = {}
     for prop_id, proposal in proposals.items():
-       data = proposal.get("data")
-       if data and "Custom" in data:
+        data = proposal.get("data")
+        if data and "Custom" in data:
             cid = data["Custom"].split("ipfs://")[-1]
             queried_cid = get_json_from_cid(cid)
             if queried_cid:
@@ -102,5 +105,5 @@ def convert_cid_on_proposal(proposals: dict[int, dict[str, Any]]):
                     except Exception:
                         pass
             data["Custom"] = queried_cid
-       unwrapped[prop_id] = proposal
+        unwrapped[prop_id] = proposal
     return unwrapped
