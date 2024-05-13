@@ -207,7 +207,7 @@ def add_custom_proposal(ctx: Context, key: str, cid: str):
 
 
 @network_app.command()
-def cost_appraise(
+def registration_burn(
     ctx: Context,
     netuid: int,
 ):
@@ -221,4 +221,5 @@ def cost_appraise(
     burn = client.get_burn(netuid)
     registration_cost = c_balance.from_nano(burn)
     context.info(
-        f"The cost to register for {netuid} is {registration_cost} $COMAI")
+        f"The cost to register on a netuid: {netuid} is: {registration_cost} $COMAI"
+    )
