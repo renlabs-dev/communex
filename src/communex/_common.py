@@ -1,5 +1,6 @@
 import random
 from enum import Enum
+from typing import TypeVar, Mapping
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -48,8 +49,7 @@ class ComxSettings(BaseSettings):
         "wss://commune-api-node-30.communeai.net",
         "wss://commune-api-node-31.communeai.net",
     ]
-    TESTNET_NODE_URLS: list[str] = [
-        "wss://testnet-commune-api-node-0.communeai.net"]
+    TESTNET_NODE_URLS: list[str] = ["wss://testnet-commune-api-node-0.communeai.net"]
 
 
 def get_node_url(
@@ -96,3 +96,14 @@ def format_balance(balance: int, unit: BalanceUnit = BalanceUnit.nano) -> str:
             in_joules = from_nano(balance)
             round_joules = round(in_joules, 4)
             return f"{round_joules:,} J"
+
+
+K = TypeVar("K")
+V = TypeVar("V")
+Z = TypeVar("Z")
+def intersection_update(base: dict[K, V], update: dict[K, Z]) -> Mapping[K, V | Z]:
+    """
+    Update a dictionary with another dictionary, but only with keys that are already present.
+    """
+    updated = {k: update[k] for k in base if k in update}
+    return updated
