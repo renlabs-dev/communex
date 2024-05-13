@@ -41,8 +41,8 @@ def _encrypt_data(password: str, data: Any) -> str:
     raw = json.dumps(data).encode()
     ciphertext = box.encrypt(raw, nonce).ciphertext
     encrypted = nonce + ciphertext
-    data = base64.b64encode(encrypted).decode()
-    return data
+    decoded_data = base64.b64encode(encrypted).decode()
+    return decoded_data
 
 def _decrypt_data(password: str, data: str) -> Any:
     key = _derive_key(password)
@@ -81,7 +81,7 @@ def classic_load(path: str, mode: str = "json", password: str | None = None) -> 
         if body["encrypted"] and password is None:
             raise json.JSONDecodeError("Data is encrypted but no password provided", "", 0)
         if body["encrypted"] and password is not None:
-            content = json.dumps(_decrypt_data(password, body["data"]))
+            content = _decrypt_data(password, body["data"])
         else:
             content = body["data"]
     assert isinstance(body, dict)
