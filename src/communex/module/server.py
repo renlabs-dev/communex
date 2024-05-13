@@ -267,8 +267,7 @@ class ModuleServer:
                 params: endpoint_def.params_model  # type: ignore
 
             def handler(end_def: EndpointDefinition[Any, ...], body: Body):
-                # type: ignore
-                return end_def.fn(self._module, **body.params.model_dump())
+                return end_def.fn(self._module, **body.params.model_dump())  # type: ignore
 
             defined_handler = partial(handler, endpoint_def)
             router.post(f"/method/{name}")(defined_handler)
