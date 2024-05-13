@@ -1,5 +1,6 @@
 import typer
 from typer import Context
+from typing import Optional
 
 from communex._common import BalanceUnit, format_balance
 from communex.balance import to_nano
@@ -15,7 +16,7 @@ balance_app = typer.Typer(no_args_is_help=True)
 def show(
     ctx: Context, key: str, 
     unit: BalanceUnit = BalanceUnit.joule,
-    password: str | None = None
+    password: Optional[str] = None
 ):
     """
     Gets the balances of a key.
@@ -53,7 +54,7 @@ def show(
 def free_balance(
     ctx: Context, key: str, 
     unit: BalanceUnit = BalanceUnit.joule,
-    password: str | None = None
+    password: Optional[str] = None
 ):
     """
     Gets free balance of a key.
@@ -73,7 +74,7 @@ def free_balance(
 def staked_balance(
     ctx: Context, key: str, 
     netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule,
-    password: str | None = None
+    password: Optional[str] = None
 ):
     """
     Gets the balance staked on the key itself.
@@ -95,7 +96,7 @@ def staked_balance(
 def all_balance(
     ctx: Context, key: str, netuid: int = 0, 
     unit: BalanceUnit = BalanceUnit.joule,
-    password: str | None = None,
+    password: Optional[str] = None,
     ):
     """
     Gets entire balance of a key (free balance + staked balance).
@@ -118,7 +119,7 @@ def all_balance(
 def get_staked(
     ctx: Context, key: str, netuid: int = 0, 
     unit: BalanceUnit = BalanceUnit.joule,
-    password: str | None = None,
+    password: Optional[str] = None,
     ):
     """
     Gets total stake of a key it delegated across other keys.
