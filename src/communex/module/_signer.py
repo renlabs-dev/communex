@@ -4,7 +4,6 @@ import sr25519  # type: ignore
 from substrateinterface import Keypair, KeypairType  # type: ignore
 from substrateinterface.exceptions import ConfigurationError  # type: ignore
 
-
 # Random key mnemonic for testing
 TESTING_MNEMONIC = "electric suffer nephew rough gentle decline fun body tray account vital clinic"
 

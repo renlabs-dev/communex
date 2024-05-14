@@ -9,9 +9,9 @@ from rich.table import Table
 from typer import Context
 
 from communex._common import get_node_url
+from communex.balance import from_horus, from_nano
 from communex.client import CommuneClient
 from communex.types import ModuleInfoWithOptionalBalance
-from communex.balance import from_nano, from_horus
 
 
 @dataclass
@@ -138,7 +138,8 @@ def transform_module_into(to_exclude: list[str], last_block: int, immunity_perio
         for key in to_exclude:
             del module[key]
         module["stake"] = round(from_nano(module["stake"]), 2)  # type: ignore
-        module["emission"] = round(from_horus(module["emission"]), 4)  # type: ignore
+        module["emission"] = round(from_horus(
+            module["emission"]), 4)  # type: ignore
         if module.get("balance") is not None:
             module["balance"] = from_nano(module["balance"])  # type: ignore
         else:
@@ -179,7 +180,8 @@ def print_module_info(
     )
 
     to_exclude = ["stake_from", "metadata", "last_update", "regblock"]
-    tranformed_modules = transform_module_into(to_exclude, last_block, immunity_period, modules)
+    tranformed_modules = transform_module_into(
+        to_exclude, last_block, immunity_period, modules)
 
     sample_mod = tranformed_modules[0]
     for key in sample_mod.keys():

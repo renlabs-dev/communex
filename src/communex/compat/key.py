@@ -83,7 +83,8 @@ def from_classic_dict(data: dict[Any, Any]) -> Keypair:
     public_key = data_["public_key"]
     ss58_format = data_["ss58_format"]
 
-    key = Keypair.create_from_private_key(private_key, public_key, ss58_address, ss58_format)
+    key = Keypair.create_from_private_key(
+        private_key, public_key, ss58_address, ss58_format)
 
     return key
 
@@ -142,8 +143,8 @@ def local_key_addresses() -> dict[str, Ss58Address]:
     addresses_map: dict[str, Ss58Address] = {}
 
     for key_name in key_names:
-        # issue #11 https://github.com/agicommies/communex/issues/12 added check for key2address to stop error from being thrown by wrong key type. 
-        if key_name == "key2address": 
+        # issue #11 https://github.com/agicommies/communex/issues/12 added check for key2address to stop error from being thrown by wrong key type.
+        if key_name == "key2address":
             print("key2address is saved in an invalid format. It will be ignored.")
             continue
         key_dict = classic_load_key(key_name)
@@ -168,7 +169,8 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
     try:
         keypair = classic_load_key(key)
     except FileNotFoundError:
-        raise ValueError(f"Key is not a valid SS58 address nor a valid key name: {key}")
+        raise ValueError(
+            f"Key is not a valid SS58 address nor a valid key name: {key}")
 
     address = keypair.ss58_address
 

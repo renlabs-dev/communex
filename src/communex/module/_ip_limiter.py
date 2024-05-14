@@ -8,6 +8,7 @@ from starlette.types import ASGIApp
 
 Callback = Callable[[Request], Awaitable[Response]]
 
+
 class IpLimiterMiddleware(BaseHTTPMiddleware):
     def __init__(
             self,
@@ -24,7 +25,8 @@ class IpLimiterMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
 
         # fallback to default limiter
-        self._limiter = limiter or TokenBucketLimiter(bucket_size=200, refill_rate=15)
+        self._limiter = limiter or TokenBucketLimiter(
+            bucket_size=200, refill_rate=15)
 
     async def dispatch(self, request: Request, call_next: Callback) -> Response:
         assert request.client is not None, "request is invalid"
@@ -36,10 +38,11 @@ class IpLimiterMiddleware(BaseHTTPMiddleware):
 
         if not is_allowed:
             response = JSONResponse(
-                status_code=400, 
-                headers={"X-RateLimit-Remaining": str(self._limiter.remaining(ip))},
+                status_code=400,
+                headers={
+                    "X-RateLimit-Remaining": str(self._limiter.remaining(ip))},
                 content={"error": "Rate limit exceeded"}
-                )
+            )
             return response
 
         response = await call_next(request)

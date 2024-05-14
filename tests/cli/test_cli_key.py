@@ -1,10 +1,10 @@
 import pytest
 
 from communex.key import is_ss58_address
-
 from tests.conftest import InvokeCli
+from tests.key_config import (TEST_FAKE_MNEM_DO_NOT_USE_THIS,
+                              TEST_TEMPORARY_KEY, delete_temporary_key)
 from tests.str_utils import clean
-from tests.key_config import TEST_TEMPORARY_KEY, TEST_FAKE_MNEM_DO_NOT_USE_THIS, delete_temporary_key
 
 
 @pytest.fixture()

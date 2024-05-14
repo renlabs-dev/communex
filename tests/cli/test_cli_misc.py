@@ -1,9 +1,8 @@
-import re
 import random
+import re
 
 from tests.conftest import InvokeCli
 from tests.str_utils import clean
-
 
 TEST_KEY_ALIAS = "dev01"
 TEST_SS58_ADDRESS = "5EA6Dd3vejQco2FZomoAQgxacsTp7ZPFuR25TwxTiUKbkep1"

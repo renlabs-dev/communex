@@ -2,6 +2,7 @@ from typing import TypedDict
 
 from communex.types import Ss58Address
 
+
 class CommuneStorageDict(TypedDict):
     data: str
     encrypted: bool

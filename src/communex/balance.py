@@ -1,6 +1,7 @@
 DECIMALS = 9
 HORUS_DECIMALS = 11
 
+
 def from_nano(amount: int) -> float:
     """
     Converts from nano to j

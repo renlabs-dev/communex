@@ -36,7 +36,8 @@ def check_ss58_address(address: str | Ss58Address, ss58_format: int = 42) -> Ss5
         AssertionError: If the address is invalid.
     """
 
-    assert is_ss58_address(address, ss58_format), f"Invalid SS58 address '{address}'"
+    assert is_ss58_address(
+        address, ss58_format), f"Invalid SS58 address '{address}'"
     return Ss58Address(address)
 
 

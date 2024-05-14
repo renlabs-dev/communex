@@ -2,14 +2,12 @@
 Server for Commune modules.
 """
 
-import re
-
-from typing import Awaitable, Callable, Any
 import json
-from functools import partial
-from datetime import datetime, timezone
 import random
-
+import re
+from datetime import datetime, timezone
+from functools import partial
+from typing import Any, Awaitable, Callable
 
 import fastapi
 import starlette.datastructures
@@ -26,11 +24,9 @@ from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._ip_limiter import IpLimiterMiddleware
-from communex.util.memo import TTLDict
-
-from communex.module.module import Module, endpoint, EndpointDefinition
+from communex.module.module import EndpointDefinition, Module, endpoint
 from communex.types import Ss58Address
-
+from communex.util.memo import TTLDict
 
 # Regular expression to match a hexadecimal number
 HEX_PATTERN = re.compile(r"^[0-9a-fA-F]+$")
@@ -49,11 +45,11 @@ def parse_hex(hex_str: str) -> bytes:
 
 
 def build_input_handler_route_class(
-        subnets_whitelist: list[int] | None,
-        module_key: Ss58Address,
-        request_staleness: int,
-        blockchain_cache: TTLDict[str, list[Ss58Address]],
-    ) -> type[APIRoute]:
+    subnets_whitelist: list[int] | None,
+    module_key: Ss58Address,
+    request_staleness: int,
+    blockchain_cache: TTLDict[str, list[Ss58Address]],
+) -> type[APIRoute]:
     class InputHandlerRoute(APIRoute):
         def get_route_handler(self):
             original_route_handler = super().get_route_handler()
@@ -104,8 +100,8 @@ def build_input_handler_route_class(
 
             # TODO: we'll replace this by a Result ADT :)
             match _check_key_registered(
-                subnets_whitelist, 
-                headers_dict, 
+                subnets_whitelist,
+                headers_dict,
                 blockchain_cache
             ):
                 case (False, error):
@@ -123,10 +119,10 @@ def _json_error(code: int, message: str):
 
 
 def _get_headers_dict(
-        headers: starlette.datastructures.Headers,
-        required: list[str],
-        optional: list[str],
-    ):
+    headers: starlette.datastructures.Headers,
+    required: list[str],
+    optional: list[str],
+):
     headers_dict: dict[str, str] = {}
     for required_header in required:
         value = headers.get(required_header)
@@ -144,10 +140,10 @@ def _get_headers_dict(
 
 # TODO: type `headers_dict` better
 def _check_signature(
-        headers_dict: dict[str, str],
-        body: bytes,
-        module_key: Ss58Address
-    ):
+    headers_dict: dict[str, str],
+    body: bytes,
+    module_key: Ss58Address
+):
     key = headers_dict["x-key"]
     signature = headers_dict["x-signature"]
     crypto = int(headers_dict["x-crypto"])  # TODO: better handling of this
@@ -176,7 +172,6 @@ def _check_signature(
     if not target_key or target_key != module_key:
         return (False, _json_error(401, "Wrong target_key in body"))
 
-
     return (True, None)
 
 
@@ -185,11 +180,11 @@ def _make_client(node_url: str):
 
 
 def _check_key_registered(
-        subnets_whitelist: list[int] | None, 
+        subnets_whitelist: list[int] | None,
         headers_dict: dict[str, str],
         blockchain_cache: TTLDict[str, list[Ss58Address]],
 
-    ):
+):
     key = headers_dict["x-key"]
     if not is_hex_string(key):
         return (False, _json_error(400, "X-Key should be a hex value"))
@@ -257,8 +252,8 @@ class ModuleServer:
                 check_ss58_address(self.key.ss58_address),
                 self.max_request_staleness,
                 self._blockchain_cache,
-                )
             )
+        )
         self.register_endpoints(self._router)
         self._app.include_router(self._router)
 

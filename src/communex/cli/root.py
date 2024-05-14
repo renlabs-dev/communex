@@ -27,6 +27,7 @@ def _version_callback(value: bool):
         print(f"CommuneX {__version__}")
         raise typer.Exit()
 
+
 def flag_option(
     flag: str,
     flag_envvar: str,
@@ -43,13 +44,18 @@ def flag_option(
         help=flag_help
     )
 
+
 @app.callback()
 def main(
     ctx: typer.Context,
-    json: Annotated[bool, flag_option("json", "COMX_OUTPUT_JSON", "Output machine-readable JSON.")] = False,
-    testnet: Annotated[bool, flag_option("testnet", "COMX_USE_TESTNET", "Use testnet endpoints.")] = False,
-    yes_to_all: Annotated[bool, flag_option("yes", "COMX_YES_TO_ALL","Say yes to all confirmation inputs.")] = False,
-    version: Annotated[Optional[bool], typer.Option(callback=_version_callback)] = None,
+    json: Annotated[bool, flag_option(
+        "json", "COMX_OUTPUT_JSON", "Output machine-readable JSON.")] = False,
+    testnet: Annotated[bool, flag_option(
+        "testnet", "COMX_USE_TESTNET", "Use testnet endpoints.")] = False,
+    yes_to_all: Annotated[bool, flag_option(
+        "yes", "COMX_YES_TO_ALL", "Say yes to all confirmation inputs.")] = False,
+    version: Annotated[Optional[bool], typer.Option(
+        callback=_version_callback)] = None,
 ):
     """
     CommuneX CLI {version}
@@ -57,7 +63,8 @@ def main(
     This command line interface is under development and subject to change.
     """
     # Pass the extra context data to the subcommands.
-    ctx.obj = ExtraCtxData(output_json=json, use_testnet=testnet, yes_to_all=yes_to_all)
+    ctx.obj = ExtraCtxData(
+        output_json=json, use_testnet=testnet, yes_to_all=yes_to_all)
 
 
 if main.__doc__ is not None:

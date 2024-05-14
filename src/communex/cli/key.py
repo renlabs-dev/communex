@@ -62,7 +62,7 @@ def regen(ctx: Context, name: str, key_input: str):
         keypair = Keypair.create_from_private_key(key_input, ss58_format=42)
         key_type = "private key"
         # Substrate does not return these.
-        keypair.mnemonic = "" # type: ignore
+        keypair.mnemonic = ""  # type: ignore
         keypair.seed_hex = ""
 
     address = keypair.ss58_address
@@ -71,6 +71,7 @@ def regen(ctx: Context, name: str, key_input: str):
     classic_store_key(keypair, name)
 
     context.info(f"Key stored with name `{name}` successfully.")
+
 
 @key_app.command()
 def show(ctx: Context, key: str, show_private: bool = False):
@@ -101,11 +102,13 @@ def balances(ctx: Context, netuid: Optional[int] = None, unit: BalanceUnit = Bal
 
     with context.console.status("Getting balances of all keys, this might take a while..."):
         key2freebalance, key2stake = local_keys_allbalance(client, netuid)
-    key_to_freebalance = {k: format_balance(v, unit) for k, v in key2freebalance.items()}
+    key_to_freebalance = {k: format_balance(
+        v, unit) for k, v in key2freebalance.items()}
     key_to_stake = {k: format_balance(v, unit) for k, v in key2stake.items()}
 
     key2balance = {k: v + key2stake[k] for k, v in key2freebalance.items()}
-    key_to_balance = {k: format_balance(v, unit) for k, v in key2balance.items()}
+    key_to_balance = {k: format_balance(v, unit)
+                      for k, v in key2balance.items()}
 
     if sort_balance == SortBalance.all:
         sorted_bal = {k: v for k, v in sorted(
@@ -137,7 +140,8 @@ def balances(ctx: Context, netuid: Optional[int] = None, unit: BalanceUnit = Bal
         "all": all_balance,
     }
 
-    general_dict: dict[str, list[Any]] = cast(dict[str, list[Any]], pretty_dict)
+    general_dict: dict[str, list[Any]] = cast(
+        dict[str, list[Any]], pretty_dict)
     print_table_standardize(general_dict, context.console)
 
 
@@ -149,8 +153,10 @@ def inventory(ctx: Context):
     context = make_custom_context(ctx)
 
     key_to_address = local_key_addresses()
-    general_key_to_address: dict[str, str] = cast(dict[str, str], key_to_address)
-    print_table_from_plain_dict(general_key_to_address, ["Key", "Address"], context.console)
+    general_key_to_address: dict[str, str] = cast(
+        dict[str, str], key_to_address)
+    print_table_from_plain_dict(general_key_to_address, [
+                                "Key", "Address"], context.console)
 
 
 @key_app.command()
@@ -214,7 +220,8 @@ def total_staked_balance(ctx: Context, unit: BalanceUnit = BalanceUnit.joule, ne
     client = context.com_client()
 
     with context.progress_status("Getting total staked balance of all keys..."):
-        key2stake: dict[str, int] = local_keys_to_stakedbalance(client, netuid=netuid)
+        key2stake: dict[str, int] = local_keys_to_stakedbalance(
+            client, netuid=netuid)
 
         stake_sum = sum(key2stake.values())
 

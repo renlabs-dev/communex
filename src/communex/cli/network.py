@@ -1,17 +1,19 @@
-from typing import Any, cast, Optional
 import re
+from typing import Any, Optional, cast
 
 import typer
-from typer import Context
 from rich.progress import track
+from typer import Context
 
-from communex.cli._common import make_custom_context, print_table_from_plain_dict
-from communex.compat.key import classic_load_key
-from communex.misc import get_global_params, local_keys_to_stakedbalance, IPFS_REGEX
-from communex.types import NetworkParams
+import communex.balance as c_balance
+from communex.cli._common import (make_custom_context,
+                                  print_table_from_plain_dict)
 from communex.client import CommuneClient
+from communex.compat.key import classic_load_key
+from communex.misc import (IPFS_REGEX, get_global_params,
+                           local_keys_to_stakedbalance)
+from communex.types import NetworkParams
 from communex.util import convert_cid_on_proposal
-
 
 network_app = typer.Typer(no_args_is_help=True)
 
@@ -70,7 +72,8 @@ def list_proposals(ctx: Context, query_cid: bool = typer.Option(True)):
 
     for proposal_id, batch_proposal in proposals.items():
         print_table_from_plain_dict(
-            batch_proposal, [f"Proposal id: {proposal_id}", "Params"], context.console
+            batch_proposal, [
+                f"Proposal id: {proposal_id}", "Params"], context.console
         )
 
 
@@ -133,7 +136,8 @@ def get_valid_voting_keys(
                 key: keys_stake.get(key, 0) + subnet_stake.get(key, 0)
                 for key in set(keys_stake) | set(subnet_stake)
             }
-    keys_stake = {key: stake for key, stake in keys_stake.items() if stake >= 5}
+    keys_stake = {key: stake for key,
+                  stake in keys_stake.items() if stake >= 5}
     return keys_stake
 
 
@@ -200,3 +204,22 @@ def add_custom_proposal(ctx: Context, key: str, cid: str):
 
     with context.progress_status("Adding a proposal..."):
         client.add_custom_proposal(resolved_key, cid)
+
+
+@network_app.command()
+def registration_burn(
+    ctx: Context,
+    netuid: int,
+):
+    """
+    Appraises the cost of registering a module on the Commune network.
+    """
+
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    burn = client.get_burn(netuid)
+    registration_cost = c_balance.from_nano(burn)
+    context.info(
+        f"The cost to register on a netuid: {netuid} is: {registration_cost} $COMAI"
+    )

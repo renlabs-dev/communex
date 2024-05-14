@@ -9,6 +9,18 @@ readme = "README.md"
 [tool.poetry.scripts]
 comx = "communex.cli:app"
 
+# configure autopep to not format type ignores !!!
+[tool.autopep8]
+ignore_local_config = true
+aggressive = 2
+in-place = true
+recursive = true
+max_line_length = 80
+ignore = [
+  "E265", # block comment should start with '# '
+  "E501", # line too long
+]
+
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
 
@@ -64,9 +76,7 @@ pdoc = "^14.3.0"
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
 testpaths = "./tests"
-pythonpath = [
-  "."
-]
+pythonpath = ["."]
 
 [tool.pyright]
 strict = ["src"]

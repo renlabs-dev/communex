@@ -18,26 +18,27 @@ class OpenAIModels(str, Enum):
 class OpenAIModule(Module):
     def __init__(self) -> None:
         super().__init__()
-        self.client = OpenAI(api_key=OPENAI_API_KEY)
+        self.client = OpenAI(api_key=OPENAI_API_KEY)  #  type: ignore
 
     @endpoint
     def prompt(self, text: str, model: OpenAIModels):
-        response = self.client.chat.completions.create(
+        response = self.client.chat.completions.create(  # type: ignore
             model=model,
             response_format={"type": "json_object"},
             messages=[
-                {"role": "system", "content": "You are a helpful assistant designed to output JSON."},
+                {"role": "system",
+                    "content": "You are a helpful assistant designed to output JSON."},
                 {"role": "user", "content": text},
             ],
         )
         answers: list[dict[str, str]] = []
-        for msg in response.choices:
-            finish_reason = msg.finish_reason
-            if finish_reason != "stop": 
+        for msg in response.choices:  # type: ignore
+            finish_reason = msg.finish_reason  # type: ignore
+            if finish_reason != "stop":
                 raise HTTPException(418, finish_reason)
-            content = msg.message.content
+            content = msg.message.content  # type: ignore
             if content:
-                answers.append(json.loads(content))
+                answers.append(json.loads(content))  # type: ignore
 
         return {"Answer": answers}
 

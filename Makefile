@@ -17,6 +17,7 @@ type_check:
 	pyright ./src ./tests
 
 fmt:
+	isort ./src
 	autopep8 --in-place --recursive ./src
 
 test_all: test test_slow

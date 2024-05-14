@@ -1,4 +1,4 @@
-from communex.module.module import Module, endpoint, EndpointDefinition
+from communex.module.module import EndpointDefinition, Module, endpoint
 
 
 class SomeModule(Module):
