@@ -16,9 +16,6 @@ from ._protocol import create_request_data, create_method_endpoint
 from communex.types import Ss58Address
 from communex.key import check_ss58_address
 from communex.errors import NetworkTimeoutError
-from communex.key import check_ss58_address
-from communex.types import Ss58Address
-
 
 class ModuleClient:
     host: str
