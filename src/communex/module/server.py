@@ -78,6 +78,7 @@ def build_input_handler_route_class(
 
             return custom_route_handler
 
+
         @staticmethod
         def _check_inputs(request: Request, body: bytes, module_key: Ss58Address):
             required_headers = ["x-signature", "x-key", "x-crypto"]
@@ -256,8 +257,10 @@ class ModuleServer:
         self.register_endpoints(self._router)
         self._app.include_router(self._router)
 
+
     def get_fastapi_app(self):
         return self._app
+
 
     def register_endpoints(self, router: APIRouter):
         endpoints = self._module.get_endpoints()
@@ -271,6 +274,7 @@ class ModuleServer:
 
             defined_handler = partial(handler, endpoint_def)
             router.post(f"/method/{name}")(defined_handler)
+
 
     def register_extra_middleware(self):
         async def check_lists(request: Request, call_next: Callback):
@@ -293,6 +297,18 @@ class ModuleServer:
             return response
 
         self._app.middleware("http")(check_lists)
+
+
+    def add_to_blacklist(self, ss58_address: str | Ss58Address):
+        if not self._blacklist:
+            self._blacklist = []
+        self._blacklist.append(ss58_address)
+
+
+    def add_to_whitelist(self, ss58_address: str | Ss58Address):
+        if not self._whitelist:
+            self._whitelist = []
+        self._whitelist.append(ss58_address)
 
 
 def main():
