@@ -40,8 +40,7 @@ def list(ctx: Context):
         {**subnets_with_netuids[i], **subnets_with_stakes[i]} for i in range(len(keys))
     ]
     subnets_with_netuids = sorted(  # type: ignore
-        # type: ignore
-        subnets_with_stakes, key=lambda x: x["emission"], reverse=True
+        subnets_with_stakes, key=lambda x: x["emission"], reverse=True # type: ignore
     )  # type: ignore
     for subnet_dict in subnets_with_netuids:  # type: ignore
         bonds = subnet_dict["bonds_ma"]  # type: ignore

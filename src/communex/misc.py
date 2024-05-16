@@ -1,9 +1,7 @@
 import re
 from typing import Any
-from getpass import getpass
 
 from communex.client import CommuneClient
-from communex.compat.key import local_key_addresses
 from communex.key import check_ss58_address
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsWithEmission)
