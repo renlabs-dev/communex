@@ -229,7 +229,7 @@ def unstake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
 
     with context.progress_status(f"Unstaking {amount} tokens from {dest} on a subnet with netuid '{netuid}'..."):
         response = client.unstake(
-            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid)
+            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid) # TODO: is it right?
 
     if response.is_success:
         context.info(f"Unstaked {amount} tokens from {dest}")
