@@ -53,6 +53,7 @@ class CommuneClient:
     wait_for_finalization: bool
     _num_connections: int
     _connection_queue: queue.Queue[SubstrateInterface]
+    url: str
 
     def __init__(
         self,
@@ -69,7 +70,8 @@ class CommuneClient:
         self._num_connections = num_connections
         self.wait_for_finalization = wait_for_finalization
         self._connection_queue = queue.Queue(num_connections)
-
+        self.url = url
+        
         for _ in range(num_connections):
             self._connection_queue.put(SubstrateInterface(url))
 
