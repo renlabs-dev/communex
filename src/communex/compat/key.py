@@ -6,7 +6,7 @@ WIP
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, cast, Protocol
 import os
 from getpass import getpass
 
@@ -17,7 +17,11 @@ from communex.compat.types import CommuneKeyDict
 from communex.key import check_ss58_address, is_ss58_address
 from communex.types import Ss58Address
 from communex.util import bytes_to_hex, check_str
-from communex.cli._common import CustomCtx
+
+
+class GenericCtx(Protocol):
+    def output(self, message: str):
+        ...
 
 
 def check_key_dict(key_dict: Any) -> CommuneKeyDict:
@@ -146,7 +150,7 @@ def classic_store_key(keypair: Keypair, name: str, password: str | None = None) 
 
 
 def try_classic_load_key(
-        name: str, context: CustomCtx,
+        name: str, context: GenericCtx,
         password: str | None = None
     ) -> Keypair:
     try:
@@ -158,7 +162,7 @@ def try_classic_load_key(
     return keypair
 
 
-def try_load_key(name: str, context: CustomCtx, password: str | None = None):
+def try_load_key(name: str, context: GenericCtx, password: str | None = None):
     try:
         key_dict = classic_load(name, password=password)
     except json.JSONDecodeError:
@@ -169,7 +173,7 @@ def try_load_key(name: str, context: CustomCtx, password: str | None = None):
 
 
 def local_key_addresses(
-        ctx: CustomCtx | None = None,
+        ctx: GenericCtx | None = None,
         universal_password: str | None = None
     ) -> dict[str, Ss58Address]:
     """
@@ -230,7 +234,7 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
 
 
 def resolve_key_ss58_encrypted(
-        key: Ss58Address | Keypair | str, context: CustomCtx,
+        key: Ss58Address | Keypair | str, context: GenericCtx,
         password: str | None = None
         
         ) -> Ss58Address:
