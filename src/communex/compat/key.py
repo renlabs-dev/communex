@@ -196,11 +196,14 @@ def local_key_addresses(
             continue
         encrypted = is_encrypted(key_name)
         if encrypted:
-            if ctx and not universal_password:
+            if universal_password:
+                password = universal_password
+            elif ctx:
                 ctx.output(f"Please provide the password for the key '{key_name}'")
                 password = getpass()
             else:
-                password = universal_password
+                print(f"Please provide the password for the key '{key_name}'")
+                password = getpass()
         else:
             password = None
         key_dict = classic_load_key(key_name, password=password)
