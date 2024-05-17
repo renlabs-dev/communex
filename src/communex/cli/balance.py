@@ -1,3 +1,4 @@
+from typing import Optional
 import typer
 from typer import Context
 from typing import Optional
@@ -8,6 +9,7 @@ from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict)
 from communex.compat.key import try_classic_load_key, resolve_key_ss58_encrypted
 from communex.errors import ChainTransactionError
+from communex.faucet.powv2 import solve_for_difficulty_fast
 
 balance_app = typer.Typer(no_args_is_help=True)
 
@@ -235,3 +237,34 @@ def unstake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
         context.info(f"Unstaked {amount} tokens from {dest}")
     else:
         raise ChainTransactionError(response.error_message)  # type: ignore
+
+
+@balance_app.command()
+def run_faucet(
+    ctx: Context, 
+    key: str, 
+    num_processes: Optional[int] = None,
+    num_executions: int = 1,
+    ):
+    context = make_custom_context(ctx)
+    use_testnet = ctx.obj.use_testnet
+    if not use_testnet:
+        context.error("Faucet only enabled on testnet")
+        return
+    resolved_key = classic_load_key(key)
+    client = context.com_client()
+    for _ in range(num_executions):
+        with context.progress_status("Solving PoW..."):
+            solution = solve_for_difficulty_fast(
+                client, 
+                resolved_key,
+                client.url,
+                num_processes=num_processes,
+                )
+        with context.progress_status("Sending solution to blockchain"):
+            params = {
+            "block_number": solution.block_number,
+            "nonce": solution.nonce,
+            "work": solution.seal,
+            }
+            client.compose_call("faucet", params=params, key=resolved_key)
