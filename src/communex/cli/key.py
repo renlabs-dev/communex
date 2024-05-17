@@ -2,7 +2,6 @@ import json
 import re
 from enum import Enum
 from typing import Any, Optional, cast
-from getpass import getpass
 
 import typer
 from substrateinterface import Keypair  # type: ignore

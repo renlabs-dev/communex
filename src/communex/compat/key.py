@@ -191,8 +191,8 @@ def local_key_addresses(
             print("key2address is saved in an invalid format. It will be ignored.")
             continue
         encrypted = is_encrypted(key_name)
-        if encrypted and ctx:
-            if not universal_password:
+        if encrypted:
+            if ctx and not universal_password:
                 ctx.output(f"Please provide the password for the key '{key_name}'")
                 password = getpass()
             else:
@@ -241,7 +241,7 @@ def resolve_key_ss58_encrypted(
     """
 
     if isinstance(key, Keypair):
-        return key.ss58_address  # type: ignore
+        return check_ss58_address(key.ss58_address, key.ss58_format)
 
     if is_ss58_address(key):
         return key
@@ -258,6 +258,6 @@ def resolve_key_ss58_encrypted(
 
     address = keypair.ss58_address
 
-    return check_ss58_address(address)
+    return check_ss58_address(address, keypair.ss58_format)
 
     
