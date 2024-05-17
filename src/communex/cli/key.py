@@ -30,7 +30,7 @@ class SortBalance(str, Enum):
 @key_app.command()
 def create(
     ctx: Context, name: str, 
-    password: str = typer.Option(None, prompt=True, confirmation_prompt=True)
+    password: str = typer.Option(None)
     ):
     """
     Generates a new key and stores it on a disk with the given name.
