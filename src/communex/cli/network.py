@@ -131,7 +131,7 @@ def get_valid_voting_keys(
     
     if proposal.get("SubnetParams"):
         proposal_netuid = proposal["SubnetParams"]["netuid"]
-        assert(type(proposal_netuid) == int)
+        assert(isinstance(proposal_netuid, int))
         keys_stake = local_keys_to_stakedbalance(client, local_keys, netuid=proposal_netuid)
     else:
         keys_stake: dict[str, int] = {}
