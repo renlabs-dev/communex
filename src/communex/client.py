@@ -9,6 +9,7 @@ from typing import Any, Mapping, TypeVar
 from substrateinterface import ExtrinsicReceipt  # type: ignore
 from substrateinterface import Keypair  # type: ignore
 from substrateinterface import SubstrateInterface # type: ignore
+
 from substrateinterface.storage import StorageKey  # type: ignore
 
 from communex.errors import ChainTransactionError, NetworkQueryError
@@ -156,11 +157,13 @@ class CommuneClient:
         """
 
         function_parameters: list[tuple[Any, Any, Any, Any, str]] = []
+
         metadata_pallet = substrate.metadata.get_metadata_pallet( # type: ignore
             storage_module)
         for storage_function, params in queries:
             storage_item = metadata_pallet.get_storage_function( # type: ignore
                 storage_function)
+        
             value_type = storage_item.get_value_type_string()  # type: ignore
             param_types = storage_item.get_params_type_string()  # type: ignore
             key_hashers = storage_item.get_param_hashers()  # type: ignore
@@ -195,8 +198,9 @@ class CommuneClient:
         results: list[str | dict[Any, Any]] = []
         with self.get_conn(init=True) as substrate:
             try:
-                substrate.websocket.send( # type: ignore
-                    json.dumps(batch_payload))
+
+                substrate.websocket.send(  #  type: ignore
+                    json.dumps(batch_payload))  # type: ignore
             except NetworkQueryError:
                 pass
             while len(results) < len(request_ids):
@@ -545,6 +549,7 @@ class CommuneClient:
                     result_dict.setdefault(storage_function, {})
                     
                     result_dict[storage_function][item_key.value] = item_value.value # type: ignore
+
 
         return result_dict
 

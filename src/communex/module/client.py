@@ -3,7 +3,6 @@ Client for Commune modules.
 """
 
 import asyncio
-import datetime
 import json
 from typing import Any
 
@@ -12,23 +11,11 @@ import aiohttp.client_exceptions
 import aiohttp.web_exceptions
 from substrateinterface import Keypair  # type: ignore
 
-from communex.errors import NetworkTimeoutError
-from communex.key import check_ss58_address
+from ._signer import TESTING_MNEMONIC
+from ._protocol import create_request_data, create_method_endpoint
 from communex.types import Ss58Address
-
-from ._signer import TESTING_MNEMONIC, sign
-
-
-def iso_timestamp_now() -> str:
-    now = datetime.datetime.now(tz=datetime.timezone.utc)
-    iso_now = now.isoformat()
-    return iso_now
-
-
-def serialize(data: Any) -> bytes:
-    txt = json.dumps(data)
-    return txt.encode()
-
+from communex.key import check_ss58_address
+from communex.errors import NetworkTimeoutError
 
 class ModuleClient:
     host: str
@@ -46,33 +33,14 @@ class ModuleClient:
             target_key: Ss58Address,
             params: Any = {},
             timeout: int = 16,
-    ) -> Any:
-        timestamp = iso_timestamp_now()
-        params["target_key"] = target_key
-        # params["timestamp"] = timestamp
+            ) -> Any:
+        serialized_data, headers = create_request_data(self.key, target_key, params)
 
-        request_data = {
-            "params": params,
-        }
-
-        serialized_data = serialize(request_data)
-        request_data["timestamp"] = timestamp
-        serialized_stamped_data = serialize(request_data)
-        signature = sign(self.key, serialized_stamped_data)
-
-        # signed_data = sign_to_dict(self.key, serialized_data)
-        headers = {
-            "Content-Type": "application/json",
-            "X-Signature": signature.hex(),
-            "X-Key": self.key.public_key.hex(),
-            "X-Crypto": str(self.key.crypto_type),
-            "X-Timestamp": timestamp,
-        }
         out = aiohttp.ClientTimeout(total=timeout)
         try:
             async with aiohttp.ClientSession(timeout=out) as session:
                 async with session.post(
-                    f"http://{self.host}:{self.port}/method/{fn}",
+                    create_method_endpoint(self.host, self.port, fn),
                     json=json.loads(serialized_data),
                     headers=headers,
                 ) as response:
