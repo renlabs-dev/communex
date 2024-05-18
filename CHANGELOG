@@ -1,6 +1,11 @@
 # Changelog
 
+## 0.1.26
+
+- Added wallet encryption
+
 ## 0.1.25.1
+
 - Added option to regen key with the private key
 
 ## 0.1.25
