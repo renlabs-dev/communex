@@ -203,7 +203,7 @@ def stake(
 
     nano_amount = to_nano(amount)
     resolved_key = try_classic_load_key(key, context)
-    resolved_dest = resolve_key_ss58(dest)
+    resolved_dest = resolve_key_ss58_encrypted(dest, context)
 
     with context.progress_status(f"Staking {amount} tokens to {dest} on a subnet with netuid '{netuid}'..."):
         response = client.stake(
@@ -225,7 +225,7 @@ def unstake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
 
     nano_amount = to_nano(amount)
     resolved_key = try_classic_load_key(key, context)
-    resolved_dest = try_classic_load_key(dest, context)
+    resolved_dest = resolve_key_ss58_encrypted(dest, context)
 
     with context.progress_status(f"Unstaking {amount} tokens from {dest} on a subnet with netuid '{netuid}'..."):
         response = client.unstake(
