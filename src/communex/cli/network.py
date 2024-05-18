@@ -7,9 +7,10 @@ from typer import Context
 
 import communex.balance as c_balance
 from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict)
+                                  print_table_from_plain_dict,
+                                  CustomCtx)
 from communex.client import CommuneClient
-from communex.compat.key import classic_load_key
+from communex.compat.key import (classic_load_key, local_key_addresses)
 from communex.misc import (IPFS_REGEX, get_global_params,
                            local_keys_to_stakedbalance)
 from communex.types import NetworkParams
@@ -122,16 +123,21 @@ def propose_globally(
 
 
 def get_valid_voting_keys(
-    client: CommuneClient, proposal: dict[str, Any]
+    ctx: CustomCtx,
+    client: CommuneClient,
+    proposal: dict[str, Any],
 ) -> dict[str, int]:
+    local_keys = local_key_addresses(ctx=ctx, universal_password=None)
+    
     if proposal.get("SubnetParams"):
         proposal_netuid = proposal["SubnetParams"]["netuid"]
-        keys_stake = local_keys_to_stakedbalance(client, proposal_netuid)
+        assert(isinstance(proposal_netuid, int))
+        keys_stake = local_keys_to_stakedbalance(client, local_keys, netuid=proposal_netuid)
     else:
         keys_stake: dict[str, int] = {}
         subnets = client.query_map_subnet_names()
         for netuid in track(subnets.keys(), description="Checking valid keys..."):
-            subnet_stake = local_keys_to_stakedbalance(client, netuid)
+            subnet_stake = local_keys_to_stakedbalance(client, local_keys, netuid=netuid)
             keys_stake = {
                 key: keys_stake.get(key, 0) + subnet_stake.get(key, 0)
                 for key in set(keys_stake) | set(subnet_stake)
@@ -158,7 +164,7 @@ def vote_proposal(
 
     if key is None:
         context.info("Voting with all keys on disk...")
-        keys_stake = get_valid_voting_keys(client, proposal)
+        keys_stake = get_valid_voting_keys(context, client, proposal)
     else:
         keys_stake = {key: None}
 

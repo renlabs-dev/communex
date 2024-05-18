@@ -54,6 +54,7 @@ def function_params_to_model(signature: inspect.Signature) -> type[EndpointParam
             fields[name] = (annotation, param.default)
 
     model: type[EndpointParams] = cast(
+
         type[EndpointParams], pydantic.create_model(  #  type: ignore
             'Params', **fields, __base__=EndpointParams)  #  type: ignore
     )

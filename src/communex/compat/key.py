@@ -6,15 +6,22 @@ WIP
 
 import json
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, cast, Protocol
+import os
+from getpass import getpass
 
 from substrateinterface import Keypair  # type: ignore
 
-from communex.compat.storage import classic_load, classic_put
+from communex.compat.storage import classic_load, classic_put, COMMUNE_HOME
 from communex.compat.types import CommuneKeyDict
 from communex.key import check_ss58_address, is_ss58_address
 from communex.types import Ss58Address
 from communex.util import bytes_to_hex, check_str
+
+
+class GenericCtx(Protocol):
+    def output(self, message: str):
+        ...
 
 
 def check_key_dict(key_dict: Any) -> CommuneKeyDict:
@@ -111,29 +118,69 @@ def to_classic_dict(keypair: Keypair, path: str) -> CommuneKeyDict:
     }
 
 
-def classic_load_key(name: str) -> Keypair:
+def classic_load_key(name: str, password: str | None = None) -> Keypair:
     """
     Loads the keypair with the given name from a disk.
     """
     path = classic_key_path(name)
-    key_dict_json = classic_load(path)
+    key_dict_json = classic_load(path, password=password)
     key_dict = json.loads(key_dict_json)
     return from_classic_dict(key_dict)
 
 
-def classic_store_key(keypair: Keypair, name: str) -> None:
+def is_encrypted(name: str) -> bool:
+    """
+    Checks if the key with the given name is encrypted.
+    """
+    path = classic_key_path(name)
+    full_path = os.path.expanduser(os.path.join(COMMUNE_HOME, path))
+    with open(full_path, "r") as file:
+        body = json.load(file)
+    return body["encrypted"]
+
+
+def classic_store_key(keypair: Keypair, name: str, password: str | None = None) -> None:
     """
     Stores the given keypair on a disk under the given name.
     """
     key_dict = to_classic_dict(keypair, name)
     key_dict_json = json.dumps(key_dict)
     path = classic_key_path(name)
-    classic_put(path, key_dict_json)
+    classic_put(path, key_dict_json, password=password)
 
 
-def local_key_addresses() -> dict[str, Ss58Address]:
+def try_classic_load_key(
+        name: str, context: GenericCtx,
+        password: str | None = None
+    ) -> Keypair:
+    try:
+        keypair = classic_load_key(name, password=password)
+    except json.JSONDecodeError:
+        context.output(f"Please provide the password for the key {name}")
+        password = getpass()
+        keypair = classic_load_key(name, password=password)
+    return keypair
+
+
+def try_load_key(name: str, context: GenericCtx, password: str | None = None):
+    try:
+        key_dict = classic_load(name, password=password)
+    except json.JSONDecodeError:
+        context.output(f"Please provide the password for the key {name}")
+        password = getpass()
+        key_dict = classic_load(name, password=password)
+    return key_dict
+
+
+def local_key_addresses(
+        ctx: GenericCtx | None = None,
+        universal_password: str | None = None
+    ) -> dict[str, Ss58Address]:
     """
     Retrieves a mapping of local key names to their SS58 addresses.
+    If password is passed, it will be used to decrypt every key.
+    If password is not passed and ctx is, 
+    the user will be prompted for the password.
     """
     home = Path.home()
     key_dir = home / '.commune' / "key"
@@ -147,7 +194,19 @@ def local_key_addresses() -> dict[str, Ss58Address]:
         if key_name == "key2address":
             print("key2address is saved in an invalid format. It will be ignored.")
             continue
-        key_dict = classic_load_key(key_name)
+        encrypted = is_encrypted(key_name)
+        if encrypted:
+            if universal_password:
+                password = universal_password
+            elif ctx:
+                ctx.output(f"Please provide the password for the key '{key_name}'")
+                password = getpass()
+            else:
+                print(f"Please provide the password for the key '{key_name}'")
+                password = getpass()
+        else:
+            password = None
+        key_dict = classic_load_key(key_name, password=password)
         addresses_map[key_name] = check_ss58_address(key_dict.ss58_address)
 
     return addresses_map
@@ -175,3 +234,37 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
     address = keypair.ss58_address
 
     return check_ss58_address(address)
+
+
+def resolve_key_ss58_encrypted(
+        key: Ss58Address | Keypair | str, context: GenericCtx,
+        password: str | None = None
+        
+        ) -> Ss58Address:
+    """
+    Resolves a keypair or key name to its corresponding SS58 address.
+
+    If the input is already an SS58 address, it is returned as is.
+    """
+
+    if isinstance(key, Keypair):
+        return check_ss58_address(key.ss58_address, key.ss58_format)
+
+    if is_ss58_address(key):
+        return key
+
+    try:
+        keypair = classic_load_key(key, password=password)
+    except json.JSONDecodeError:
+        context.output(f"Please provide the password for the key {key}")
+        password = getpass()
+        keypair = classic_load_key(key, password=password)
+    except FileNotFoundError:
+        raise ValueError(
+            f"Key is not a valid SS58 address nor a valid key name: {key}")
+
+    address = keypair.ss58_address
+
+    return check_ss58_address(address, keypair.ss58_format)
+
+    

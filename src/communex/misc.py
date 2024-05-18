@@ -2,7 +2,6 @@ import re
 from typing import Any
 
 from communex.client import CommuneClient
-from communex.compat.key import local_key_addresses
 from communex.key import check_ss58_address
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsWithEmission)
@@ -266,16 +265,21 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
     return global_params
 
 
-def concat_to_local_keys(balance: dict[str, int]) -> dict[str, int]:
+def concat_to_local_keys(
+        balance: dict[str, int],
+        local_key_info: dict[str, Ss58Address]
+        ) -> dict[str, int]:
 
-    local_key_info: dict[str, Ss58Address] = local_key_addresses()
     key2: dict[str, int] = {key_name: balance.get(key_address, 0)
                             for key_name, key_address in local_key_info.items()}
 
     return key2
 
 
-def local_keys_to_freebalance(c_client: CommuneClient) -> dict[str, int]:
+def local_keys_to_freebalance(
+        c_client: CommuneClient,
+        local_keys: dict[str, Ss58Address],
+        ) -> dict[str, int]:
     query_all = c_client.query_batch_map(
         {
             "System": [("Account", [])], })
@@ -285,12 +289,16 @@ def local_keys_to_freebalance(c_client: CommuneClient) -> dict[str, int]:
                                        for key, value in balance_map.items()
                                        if 'data' in value and 'free' in value['data']}
 
-    key2balance: dict[str, int] = concat_to_local_keys(format_balances)
+    key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
 
     return key2balance
 
 
-def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dict[str, int]:
+def local_keys_to_stakedbalance(
+        c_client: CommuneClient, 
+        local_keys: dict[str, Ss58Address],
+        netuid: int = 0,
+        ) -> dict[str, int]:
 
     query_all = c_client.query_batch_map(
         {
@@ -302,12 +310,16 @@ def local_keys_to_stakedbalance(c_client: CommuneClient, netuid: int = 0) -> dic
     format_stake: dict[str, int] = {
         key: sum(stake for _, stake in value) for key, value in staketo_map.items()}
 
-    key2stake: dict[str, int] = concat_to_local_keys(format_stake)
+    key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
     return key2stake
 
 
-def local_keys_allbalance(c_client: CommuneClient, netuid: int | None = None) -> tuple[dict[str, int], dict[str, int]]:
+def local_keys_allbalance(
+        c_client: CommuneClient, 
+        local_keys: dict[str, Ss58Address],
+        netuid: int | None = None,
+    ) -> tuple[dict[str, int], dict[str, int]]:
 
     staketo_maps: list[Any] = []
     query_result = c_client.query_batch_map(
@@ -336,7 +348,7 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int | None = None) ->
                                        for key, value in balance_map.items()
                                        if 'data' in value and 'free' in value['data']}
 
-    key2balance: dict[str, int] = concat_to_local_keys(format_balances)
+    key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
 
     merged_staketo_map: dict[Any, Any] = {}
 
@@ -354,7 +366,7 @@ def local_keys_allbalance(c_client: CommuneClient, netuid: int | None = None) ->
     format_stake: dict[str, int] = {
         key: sum(stake for _, stake in value) for key, value in merged_staketo_map.items()}
 
-    key2stake: dict[str, int] = concat_to_local_keys(format_stake)
+    key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
     key2balance = {k: v for k, v in sorted(
         key2balance.items(), key=lambda item: item[1], reverse=True)}

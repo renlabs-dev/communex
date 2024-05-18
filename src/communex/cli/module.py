@@ -6,13 +6,13 @@ import uvicorn
 from typer import Context
 
 import communex.balance as c_balance
-from communex.cli._common import (make_custom_context, print_module_info,
-                                  print_table_from_plain_dict)
+from communex.cli._common import make_custom_context, print_module_info, print_table_from_plain_dict
 from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
+from communex._common import intersection_update
 
 module_app = typer.Typer(no_args_is_help=True)
 
@@ -70,8 +70,7 @@ def register(
         if stake is not None:
             stake_nano = c_balance.to_nano(stake)
         else:
-            min_stake = client.get_min_stake(
-                netuid) if netuid is not None else 0
+            min_stake = client.get_min_stake(netuid) if netuid is not None else 0
             stake_nano = (
                 min_stake + burn + c_balance.to_nano(0.1)
             )  # 0.1 extra needed for the call to succeed
@@ -99,9 +98,9 @@ def register(
 def update(
     ctx: Context,
     key: str,
-    name: str,
-    ip: str,
-    port: int,
+    name: Optional[str] = None,
+    ip: Optional[str] = None,
+    port: Optional[int] = None,
     delegation_fee: int = 20,
     netuid: int = 0,
     metadata: Optional[str] = None,
@@ -116,21 +115,47 @@ def update(
         raise ValueError("Metadata must be less than 60 characters")
     resolved_key = classic_load_key(key)
 
-    if not is_ip_valid(ip):
+    if ip and not is_ip_valid(ip):
         raise ValueError("Invalid ip address")
+    modules = get_map_modules(client, netuid=netuid, include_balances=False)
+    modules_to_list = [value for _, value in modules.items()]
 
-    address = f"{ip}:{port}"
+    module = next(
+        (
+            item for item in modules_to_list if item["key"] == resolved_key.ss58_address
+        ), 
+            None
+    )
 
+    if module is None:
+        raise ValueError(f"Module {name} not found")
+    module_params = {
+        "name": name,
+        "ip": ip,
+        "port": port,
+        "delegation_fee": delegation_fee,
+        "metadata": metadata,
+    }
+    to_update = {
+        key: value for key, value in module_params.items() if value is not None
+    }
+    current_ip, current_port = module["address"].split(":")
+    new_ip = to_update.get("ip", current_ip)
+    new_port = to_update.get("port", current_port)
+    address = f"{new_ip}:{new_port}"
+    to_update["address"] = address
+    updated_module = intersection_update(dict(module), to_update)
+    module.update(updated_module) # type: ignore
     with context.progress_status(
         f"Updating Module on a subnet with netuid '{netuid}' ..."
     ):
         response = client.update_module(
             key=resolved_key,
-            name=name,
-            address=address,
-            delegation_fee=delegation_fee,
+            name=module["name"],
+            address=module["address"],
+            delegation_fee=module["delegation_fee"],
             netuid=netuid,
-            metadata=metadata,
+            metadata=module["metadata"],
         )
 
     if response.is_success:
@@ -214,19 +239,16 @@ def info(ctx: Context, name: str, balance: bool = False, netuid: int = 0):
     with context.progress_status(
         f"Getting Module {name} on a subnet with netuid {netuid}…"
     ):
-        modules = get_map_modules(
-            client, netuid=netuid, include_balances=balance)
+        modules = get_map_modules(client, netuid=netuid, include_balances=balance)
         modules_to_list = [value for _, value in modules.items()]
 
-        module = next(
-            (item for item in modules_to_list if item["name"] == name), None)
+        module = next((item for item in modules_to_list if item["name"] == name), None)
 
     if module is None:
         raise ValueError("Module not found")
 
     general_module = cast(dict[str, Any], module)
-    print_table_from_plain_dict(
-        general_module, ["Params", "Values"], context.console)
+    print_table_from_plain_dict(general_module, ["Params", "Values"], context.console)
 
 
 @module_app.command(name="list")
@@ -259,6 +281,5 @@ def inventory(ctx: Context, balances: bool = False, netuid: int = 0):
             validators.append(module)
 
     print_module_info(client, miners, context.console, netuid, "miners")
-    print_module_info(client, validators, context.console,
-                      netuid, "validators")
+    print_module_info(client, validators, context.console, netuid, "validators")
     print_module_info(client, inactive, context.console, netuid, "inactive")
