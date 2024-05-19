@@ -87,13 +87,19 @@ class StakeLimiterMiddleware(BaseHTTPMiddleware):
         self._limiter = StakeLimiter(subnets_whitelist, epoch=params.epoch, max_cache_age=params.cache_age)
 
     async def dispatch(self, request: Request, call_next: Callback) -> Response:
-        assert request.client is not None, "request is invalid"
-        assert request.client.host, "request is invalid."
-        key = request.headers.get('x-key-key')
+        if request.client is None:
+            response = JSONResponse(
+                status_code=401,
+                content={
+                    "error": "Address should be present in request"
+                }
+            )
+            return response
+        key = request.headers.get('x-key')
         if not key:
             response = JSONResponse(
                 status_code=401,
-                content={"error": "Valid X-Api-Key not provided on headers"}
+                content={"error": "Valid X-Key not provided on headers"}
                 )
             return response
         
