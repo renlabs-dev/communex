@@ -3,7 +3,7 @@ from enum import Enum
 from os import getenv
 
 from fastapi import HTTPException
-from openai import OpenAI
+from openai import OpenAI # type: ignore
 
 from communex.module.module import Module, endpoint
 from communex.module.server import ModuleServer
