@@ -32,43 +32,52 @@ def local_keys_to_stakedbalance(netuid: list[int]) -> dict[str, int]:
 
     return total_stake
 
-def build_keys_refill_rate(netuid: list[int] | None):
+
+def stake_to_ratio(stake: int) -> float:
+    if stake < to_nano(10_000):
+        return 0
+    elif stake < to_nano(100_000):
+        return 0.5
+    elif stake < to_nano(1_000_000):
+        return 1
+    else:
+        return 2
+    
+
+def build_keys_refill_rate(
+        netuid: list[int] | None,
+        get_refill_rate: Callable[[int], float]=stake_to_ratio
+    ):
     if netuid is None:
         empty_dict: dict[str, float] = {}
         return empty_dict
-    def stake_to_ratio(stake: int) -> float:
-        if stake < to_nano(10_000):
-            return 0
-        elif stake < to_nano(100_000):
-            return 0.5
-        elif stake < to_nano(1_000_000):
-            return 1
-        else:
-            return 2
     key_to_stake = local_keys_to_stakedbalance(netuid)
-    key_to_ratio = {ss58_decode(key): stake_to_ratio(stake) for key, stake in key_to_stake.items()}
+    key_to_ratio = {ss58_decode(key): get_refill_rate(stake) for key, stake in key_to_stake.items()}
     return key_to_ratio
 
 
 class StakeLimiter(KeyLimiter):
-    
-    
     def __init__(
             self,
             subnets_whitelist: list[int] | None,
             time_func: Callable[[], float]=monotonic,
             epoch: int=800,
+            get_refill_rate: Callable[[int], float] | None = None,
             max_cache_age: int = 600,
         ):        
         self._time = time_func
-        
+        if get_refill_rate is None:
+            get_refill_rate = stake_to_ratio
                 
+        self.refiller_function = get_refill_rate
         self._lock = Lock()
         
         self.buckets: dict[str, tuple[float, float]] = {}
 
         self.whitelist = subnets_whitelist
-        self.key_ratio = build_keys_refill_rate(netuid=subnets_whitelist)
+        self.key_ratio = build_keys_refill_rate(
+            netuid=subnets_whitelist, get_refill_rate=self.refiller_function
+            )
         self.key_ratio_age = monotonic()
         self.max_cache_age = max_cache_age
 
@@ -82,7 +91,10 @@ class StakeLimiter(KeyLimiter):
             return 1000
         if monotonic() - self.key_ratio_age > self.max_cache_age:
             with self._lock:
-                self.key_ratio = build_keys_refill_rate(netuid=self.whitelist)
+                self.key_ratio = build_keys_refill_rate(
+                    netuid=self.whitelist,
+                    get_refill_rate=self.refiller_function,
+                )
                 self.key_ratio_age = monotonic()
         ratio = self.key_ratio.get(key, 0)
         if ratio == 0:

@@ -25,6 +25,7 @@ class IpLimiterParams(BaseSettings):
 class StakeLimiterParams(BaseSettings):
     epoch: int = 800
     cache_age: int = 600
+    get_refill_rate: Callable[[int], float] | None = None
 
     class config:
         env_prefix = "CONFIG_STAKE_LIMITER_"
@@ -84,7 +85,12 @@ class StakeLimiterMiddleware(BaseHTTPMiddleware):
 
         if not params:
             params = StakeLimiterParams()
-        self._limiter = StakeLimiter(subnets_whitelist, epoch=params.epoch, max_cache_age=params.cache_age)
+        self._limiter = StakeLimiter(
+            subnets_whitelist, 
+            epoch=params.epoch, 
+            max_cache_age=params.cache_age,
+            get_refill_rate=params.get_refill_rate
+            )
 
     async def dispatch(self, request: Request, call_next: Callback) -> Response:
         if request.client is None:
