@@ -1,11 +1,8 @@
 from typing import Awaitable, Callable
-from enum import Enum
 
-from substrateinterface import Keypair
-from substrateinterface.utils.ss58 import ss58_encode
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
-from keylimiter import KeyLimiter, TokenBucketLimiter
+from keylimiter import TokenBucketLimiter
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 from pydantic_settings import BaseSettings
