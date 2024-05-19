@@ -175,10 +175,11 @@ def serve(
     subnets_whitelist: Optional[list[int]] = [0],
     whitelist: Optional[list[str]] = None,
     blacklist: Optional[list[str]] = None,
+    ip_blacklist: Optional[list[str]] = None,
     test_mode: Optional[bool] = False,
     request_staleness: int = typer.Option(120),
-    use_stake_limiter: Optional[bool] = typer.Option(
-        True, help=("If this value is false, the ip limiter will be used")
+    use_ip_limiter: Optional[bool] = typer.Option(
+        False, help=("If this value is passed, the ip limiter will be used")
     ),
 ):
     """
@@ -219,13 +220,14 @@ def serve(
     keypair = classic_load_key(key)
     if test_mode:
         subnets_whitelist = None
-    limiter_params = StakeLimiterParams() if use_stake_limiter else IpLimiterParams()
+    limiter_params = IpLimiterParams() if use_ip_limiter else StakeLimiterParams()
     server = ModuleServer(
         class_obj(), keypair, 
         whitelist=whitelist, blacklist=blacklist, 
         subnets_whitelist=subnets_whitelist, 
         max_request_staleness=request_staleness,
         limiter=limiter_params,
+        ip_blacklist=ip_blacklist,
         
     )
     app = server.get_fastapi_app()

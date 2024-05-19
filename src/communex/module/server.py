@@ -234,6 +234,7 @@ class ModuleServer:
         lower_ttl: int = 600,
         upper_ttl: int = 700,
         limiter: StakeLimiterParams | IpLimiterParams = StakeLimiterParams(),
+        ip_blacklist: list[str] | None = None,
     ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
@@ -244,6 +245,7 @@ class ModuleServer:
         self._whitelist = whitelist
         ttl = random.randint(lower_ttl, upper_ttl)
         self._blockchain_cache = TTLDict[str, list[Ss58Address]](ttl)
+        self._ip_blacklist = ip_blacklist
 
 
         # Midlewares
@@ -298,7 +300,6 @@ class ModuleServer:
 
             if not request.url.path.startswith('/method'):
                 return await call_next(request)
-
             key = request.headers.get("x-key")
             if not key:
                 return _json_error(400, "Missing header: X-Key")
@@ -306,8 +307,12 @@ class ModuleServer:
             ss58 = ss58_encode(key, ss58_format)
             ss58 = check_ss58_address(ss58, ss58_format)
 
+            if request.client is None:
+                return _json_error(400, "Address should be present in request")
             if self._blacklist and ss58 in self._blacklist:
                 return _json_error(403, "You are blacklisted")
+            if self._ip_blacklist and request.client.host in self._ip_blacklist:
+                return _json_error(403, "Your IP is blacklisted")
             if self._whitelist and ss58 not in self._whitelist:
                 return _json_error(403, "You are not whitelisted")
             response = await call_next(request)
