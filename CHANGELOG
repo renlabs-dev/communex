@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.27.1
+- A custom function that sets the refill rate can be passed to`StakeLimiterParams`
+
 ## 0.1.27
 - Added a new rate limiter based on stake
 - Now possibly to blacklist ips
