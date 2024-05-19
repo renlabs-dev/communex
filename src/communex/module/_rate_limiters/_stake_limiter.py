@@ -4,7 +4,7 @@ from math import ceil, floor
 from threading import Lock
 
 from keylimiter import KeyLimiter
-from substrateinterface.utils.ss58 import ss58_decode
+from substrateinterface.utils.ss58 import ss58_decode # type: ignore
 
 from communex._common import get_node_url
 from communex.client import CommuneClient
