@@ -11,6 +11,7 @@ from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_modules
 from communex.module.server import ModuleServer
+from communex.module._rate_limiters.limiters import IpLimiterParams, StakeLimiterParams
 from communex.util import is_ip_valid
 from communex._common import intersection_update
 
@@ -174,8 +175,12 @@ def serve(
     subnets_whitelist: Optional[list[int]] = [0],
     whitelist: Optional[list[str]] = None,
     blacklist: Optional[list[str]] = None,
+    ip_blacklist: Optional[list[str]] = None,
     test_mode: Optional[bool] = False,
     request_staleness: int = typer.Option(120),
+    use_ip_limiter: Optional[bool] = typer.Option(
+        False, help=("If this value is passed, the ip limiter will be used")
+    ),
 ):
     """
     Serves a module on `127.0.0.1` on port `port`. `class_path` should specify
@@ -215,13 +220,15 @@ def serve(
     keypair = classic_load_key(key)
     if test_mode:
         subnets_whitelist = None
+    limiter_params = IpLimiterParams() if use_ip_limiter else StakeLimiterParams()
     server = ModuleServer(
-        class_obj(),
-        keypair,
-        whitelist=whitelist,
-        blacklist=blacklist,
-        subnets_whitelist=subnets_whitelist,
+        class_obj(), keypair, 
+        whitelist=whitelist, blacklist=blacklist, 
+        subnets_whitelist=subnets_whitelist, 
         max_request_staleness=request_staleness,
+        limiter=limiter_params,
+        ip_blacklist=ip_blacklist,
+        
     )
     app = server.get_fastapi_app()
     host = ip or "127.0.0.1"

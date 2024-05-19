@@ -14,7 +14,6 @@ import starlette.datastructures
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
-from keylimiter import KeyLimiter
 from pydantic import BaseModel
 from scalecodec.utils.ss58 import ss58_encode  # type: ignore
 from substrateinterface import Keypair  # type: ignore
@@ -23,8 +22,12 @@ from communex._common import get_node_url
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
-from communex.module._ip_limiter import IpLimiterMiddleware
-from communex.module.module import EndpointDefinition, Module, endpoint
+from communex.module._rate_limiters.limiters import (
+    IpLimiterMiddleware, StakeLimiterMiddleware, 
+    StakeLimiterParams, IpLimiterParams
+    )
+
+from communex.module.module import Module, endpoint, EndpointDefinition
 from communex.types import Ss58Address
 from communex.util.memo import TTLDict
 
@@ -63,6 +66,7 @@ def build_input_handler_route_class(
                         return error
                     case (True, _):
                         pass
+               
                 body_dict: dict[str, dict[str, Any]] = json.loads(body)
                 timestamp = body_dict['params'].get("timestamp", None)
                 legacy_timestamp = request.headers.get("X-Timestamp", None)
@@ -224,12 +228,13 @@ class ModuleServer:
         module: Module,
         key: Keypair,
         max_request_staleness: int = 120,
-        ip_limiter: KeyLimiter | None = None,
         whitelist: list[str] | None = None,
         blacklist: list[str] | None = None,
         subnets_whitelist: list[int] | None = None,
         lower_ttl: int = 600,
         upper_ttl: int = 700,
+        limiter: StakeLimiterParams | IpLimiterParams = StakeLimiterParams(),
+        ip_blacklist: list[str] | None = None,
     ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
@@ -240,9 +245,22 @@ class ModuleServer:
         self._whitelist = whitelist
         ttl = random.randint(lower_ttl, upper_ttl)
         self._blockchain_cache = TTLDict[str, list[Ss58Address]](ttl)
+        self._ip_blacklist = ip_blacklist
+
 
         # Midlewares
-        self._app.add_middleware(IpLimiterMiddleware, limiter=ip_limiter)
+
+        if isinstance(limiter, StakeLimiterParams):
+            self._app.add_middleware(
+                StakeLimiterMiddleware, 
+                subnets_whitelist=self._subnets_whitelist,
+                params=limiter,
+                )
+        else:
+            self._app.add_middleware(
+                IpLimiterMiddleware, params=limiter
+                )
+
         self.register_extra_middleware()
 
         # Routes
@@ -282,7 +300,6 @@ class ModuleServer:
 
             if not request.url.path.startswith('/method'):
                 return await call_next(request)
-
             key = request.headers.get("x-key")
             if not key:
                 return _json_error(400, "Missing header: X-Key")
@@ -290,8 +307,12 @@ class ModuleServer:
             ss58 = ss58_encode(key, ss58_format)
             ss58 = check_ss58_address(ss58, ss58_format)
 
+            if request.client is None:
+                return _json_error(400, "Address should be present in request")
             if self._blacklist and ss58 in self._blacklist:
                 return _json_error(403, "You are blacklisted")
+            if self._ip_blacklist and request.client.host in self._ip_blacklist:
+                return _json_error(403, "Your IP is blacklisted")
             if self._whitelist and ss58 not in self._whitelist:
                 return _json_error(403, "You are not whitelisted")
             response = await call_next(request)
