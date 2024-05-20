@@ -23,6 +23,7 @@ class StakeLimiterParams(BaseSettings):
     epoch: int = 800
     cache_age: int = 600
     get_refill_rate: Callable[[int], float] | None = None
+    token_ratio: int = 1
 
     class config:
         env_prefix = "CONFIG_STAKE_LIMITER_"
