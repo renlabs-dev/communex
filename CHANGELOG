@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.27.3
+- ModuleServe accounts for the correct state of `use_testnet` when checking if keys are registered
+
 ## 0.1.27.2
 - Made base value on the stake limiter more loose
 - Allow miners to pass `token_refill_rate_base_multiplier` to multiply the value
