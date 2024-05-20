@@ -28,6 +28,7 @@ from communex.module._rate_limiters.limiters import (
     )
 
 from communex.module.module import Module, endpoint, EndpointDefinition
+from communex.module._util import log
 from communex.types import Ss58Address
 from communex.util.memo import TTLDict
 
@@ -52,6 +53,7 @@ def build_input_handler_route_class(
     module_key: Ss58Address,
     request_staleness: int,
     blockchain_cache: TTLDict[str, list[Ss58Address]],
+    host_key: Keypair,
 ) -> type[APIRoute]:
     class InputHandlerRoute(APIRoute):
         def get_route_handler(self):
@@ -106,7 +108,8 @@ def build_input_handler_route_class(
             match _check_key_registered(
                 subnets_whitelist,
                 headers_dict,
-                blockchain_cache
+                blockchain_cache,
+                host_key,
             ):
                 case (False, error):
                     return (False, error)
@@ -187,7 +190,7 @@ def _check_key_registered(
         subnets_whitelist: list[int] | None,
         headers_dict: dict[str, str],
         blockchain_cache: TTLDict[str, list[Ss58Address]],
-
+        host_key: Keypair,
 ):
     key = headers_dict["x-key"]
     if not is_hex_string(key):
@@ -207,6 +210,8 @@ def _check_key_registered(
     # of the given subnets
     def query_keys(subnet: int):
         return [*client.query_map_key(subnet).values()]
+    allowed_subnets: dict[int, bool] = {}
+    caller_subnets: list[int] = []
     if subnets_whitelist is not None:
         for subnet in subnets_whitelist:
             get_keys_on_subnet = partial(query_keys, subnet)
@@ -214,8 +219,34 @@ def _check_key_registered(
             keys_on_subnet = blockchain_cache.get_or_insert_lazy(
                 cache_key, get_keys_on_subnet
             )
-            if ss58 not in keys_on_subnet:
-                return (False, _json_error(403, "Key is not registered on the network"))
+            if host_key.ss58_address not in keys_on_subnet:
+                log(
+                    f"WARNING: This miner is deregistered on subnet {subnet}"
+                )
+            else:
+                allowed_subnets[subnet] = True
+            if ss58 in keys_on_subnet:
+                caller_subnets.append(subnet)
+        
+        if not allowed_subnets:
+            log("WARNING: Miner is not registered on any subnet")
+            return False, _json_error(403, "Miner is not registered on any subnet")
+        
+        # searches for a common subnet between caller and miner
+        # TODO: use sets
+        allowed_subnets = {
+            subnet: allowed for subnet, allowed in allowed_subnets.items() if (
+                subnet in caller_subnets
+                )
+            }
+        if not allowed_subnets:
+            return False, _json_error(
+                403, "Caller key is not registered in any subnet that the miner is"
+            )
+    else:
+        # accepts everything
+        pass
+    
     return (True, None)
 
 
@@ -270,6 +301,7 @@ class ModuleServer:
                 check_ss58_address(self.key.ss58_address),
                 self.max_request_staleness,
                 self._blockchain_cache,
+                self.key,
             )
         )
         self.register_endpoints(self._router)
