@@ -227,6 +227,11 @@ def serve(
         subnets_whitelist = None
     token_refill_rate = token_refill_rate or 1
     limiter_params = IpLimiterParams() if use_ip_limiter else StakeLimiterParams(token_ratio=token_refill_rate)
+    
+    if whitelist is None:
+        context.info(
+            "WARNING: No whitelist provided, will accept calls from any key"
+        )
     server = ModuleServer(
         class_obj(), keypair, 
         whitelist=whitelist, blacklist=blacklist, 
