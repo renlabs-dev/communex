@@ -50,6 +50,9 @@ class CustomCtx:
                 raise ConnectionError("Could not connect to any node")
 
         return self._com_client
+    
+    def get_use_testnet(self) -> bool:
+        return self.ctx.obj.use_testnet 
 
     def output(self, message: str) -> None:
         self.console.print(message)

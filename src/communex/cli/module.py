@@ -192,7 +192,7 @@ def serve(
     the dotted path to the module class e.g. `module.submodule.ClassName`.
     """
     context = make_custom_context(ctx)
-
+    use_testnet = context.get_use_testnet()
     path_parts = class_path.split(".")
     match path_parts:
         case [*module_parts, class_name]:
@@ -239,7 +239,7 @@ def serve(
         max_request_staleness=request_staleness,
         limiter=limiter_params,
         ip_blacklist=ip_blacklist,
-        
+        use_testnet=use_testnet
     )
     app = server.get_fastapi_app()
     host = ip or "127.0.0.1"

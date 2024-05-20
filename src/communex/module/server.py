@@ -54,6 +54,7 @@ def build_input_handler_route_class(
     request_staleness: int,
     blockchain_cache: TTLDict[str, list[Ss58Address]],
     host_key: Keypair,
+    use_testnet: bool,
 ) -> type[APIRoute]:
     class InputHandlerRoute(APIRoute):
         def get_route_handler(self):
@@ -110,6 +111,7 @@ def build_input_handler_route_class(
                 headers_dict,
                 blockchain_cache,
                 host_key,
+                use_testnet,
             ):
                 case (False, error):
                     return (False, error)
@@ -191,6 +193,7 @@ def _check_key_registered(
         headers_dict: dict[str, str],
         blockchain_cache: TTLDict[str, list[Ss58Address]],
         host_key: Keypair,
+        use_testnet: bool,
 ):
     key = headers_dict["x-key"]
     if not is_hex_string(key):
@@ -199,7 +202,7 @@ def _check_key_registered(
 
     # TODO: checking for key being registered should be smarter
     # e.g. query and store all registered modules periodically.
-    node_url = get_node_url(None, use_testnet=False)
+    node_url = get_node_url(None, use_testnet=use_testnet)
     # TODO: client pool for entire module server
     client = _make_client(node_url)  # TODO: get client from outer context
     ss58_format = 42
@@ -266,6 +269,7 @@ class ModuleServer:
         upper_ttl: int = 700,
         limiter: StakeLimiterParams | IpLimiterParams = StakeLimiterParams(),
         ip_blacklist: list[str] | None = None,
+        use_testnet: bool = False,
     ) -> None:
         self._module = module
         self._app = fastapi.FastAPI()
@@ -302,6 +306,7 @@ class ModuleServer:
                 self.max_request_staleness,
                 self._blockchain_cache,
                 self.key,
+                use_testnet
             )
         )
         self.register_endpoints(self._router)
