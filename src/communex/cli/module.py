@@ -181,7 +181,7 @@ def serve(
     use_ip_limiter: Optional[bool] = typer.Option(
         False, help=("If this value is passed, the ip limiter will be used")
     ),
-    token_refill_rate: Optional[int] = typer.Option(
+    token_refill_rate_base_multiplier: Optional[int] = typer.Option(
         None, help=(
             "Multiply the base limit per stake. Only used in stake limiter mode."
         )
@@ -225,7 +225,7 @@ def serve(
     keypair = classic_load_key(key)
     if test_mode:
         subnets_whitelist = None
-    token_refill_rate = token_refill_rate or 1
+    token_refill_rate = token_refill_rate_base_multiplier or 1
     limiter_params = IpLimiterParams() if use_ip_limiter else StakeLimiterParams(token_ratio=token_refill_rate)
     
     if whitelist is None:

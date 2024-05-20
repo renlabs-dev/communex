@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.27.2
+- Made base value on the stake limiter more loose
+- Allow miners to pass `token_refill_rate_base_multiplier` to multiply the value
+- If `subnets_whitelist` is passed, only accepts calls when the caller and the miner are both registered on one of those subnet
+
 ## 0.1.27.1
 - A custom function that sets the refill rate can be passed to`StakeLimiterParams`
 
