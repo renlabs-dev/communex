@@ -35,7 +35,7 @@ def local_keys_to_stakedbalance(netuid: list[int]) -> dict[str, int]:
 
 def stake_to_ratio(stake: int, multiplier: int = 1) -> float:
     max_ratio = 4
-    base_ratio = 13
+    base_ratio = 104
     if multiplier <= 1/max_ratio:
         raise ValueError(
             f"Given multiplier {multiplier} would set 0 tokens for all stakes"
@@ -48,10 +48,10 @@ def stake_to_ratio(stake: int, multiplier: int = 1) -> float:
     match stake:
         case _ if stake < to_nano(10_000):
             return 0
-        case _ if stake < to_nano(500_000):  # 1 request per 60 seconds
+        case _ if stake < to_nano(500_000):  # 8 request per 60 seconds
             return base_ratio * multiplier
         case _:
-            return mult_2(base_ratio) * multiplier  # 2 requests per 60 seconds
+            return mult_2(base_ratio) * multiplier  # 16 requests per 60 seconds
         
 
 def build_keys_refill_rate(
