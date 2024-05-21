@@ -22,7 +22,7 @@ class IpLimiterParams(BaseSettings):
 class StakeLimiterParams(BaseSettings):
     epoch: int = 800
     cache_age: int = 600
-    get_refill_rate: Callable[[int], float] | None = None
+    get_refill_per_epoch: Callable[[int], float] | None = None
     token_ratio: int = 1
 
     class config:
@@ -87,7 +87,7 @@ class StakeLimiterMiddleware(BaseHTTPMiddleware):
             subnets_whitelist, 
             epoch=params.epoch, 
             max_cache_age=params.cache_age,
-            get_refill_rate=params.get_refill_rate
+            get_refill_rate=params.get_refill_per_epoch,
             )
 
     async def dispatch(self, request: Request, call_next: Callback) -> Response:
@@ -108,13 +108,12 @@ class StakeLimiterMiddleware(BaseHTTPMiddleware):
             return response
         
 
-
-        is_allowed = self._limiter.allow(key)
+        is_allowed = await self._limiter.allow(key)
 
         if not is_allowed:
             response = JSONResponse(
                 status_code=429, 
-                headers={"X-RateLimit-TryAfter": f"{str(self._limiter.retry_after(key))} seconds"},
+                headers={"X-RateLimit-TryAfter": f"{str(await self._limiter.retry_after(key))} seconds"},
                 content={"error": "Rate limit exceeded"}
                 )
             return response
