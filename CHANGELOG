@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.27.5
+- Using asyncio.lock in stake limiter cache
+
 ## 0.1.27.4
 - More loose rate limitting on default
 
