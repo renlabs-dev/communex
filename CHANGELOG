@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.27.4
+- More loose rate limitting on default
+
 ## 0.1.27.3
 - ModuleServe accounts for the correct state of `use_testnet` when checking if keys are registered
 
