@@ -251,7 +251,7 @@ def run_faucet(
     if not use_testnet:
         context.error("Faucet only enabled on testnet")
         return
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key, context)
     client = context.com_client()
     for _ in range(num_executions):
         with context.progress_status("Solving PoW..."):
