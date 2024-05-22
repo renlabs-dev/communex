@@ -7,7 +7,9 @@ import random
 import re
 from datetime import datetime, timezone
 from functools import partial
-from typing import Any, Awaitable, Callable
+from typing import Any, Awaitable, Callable, TypeVar, ParamSpec
+from time import sleep
+import sys
 
 import fastapi
 import starlette.datastructures
@@ -34,6 +36,37 @@ from communex.util.memo import TTLDict
 
 # Regular expression to match a hexadecimal number
 HEX_PATTERN = re.compile(r"^[0-9a-fA-F]+$")
+
+T = TypeVar("T")
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def retry(max_retries: int | None, retry_exceptions: list[type]):
+    assert max_retries is None or max_retries > 0
+
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+        def wrapper(*args: P.args, **kwargs: P.kwargs):
+            max_retries__ = max_retries or sys.maxsize  # TODO: fix this ugly thing
+            for tries in range(max_retries__ + 1):
+                try:
+                    result = func(*args, **kwargs)
+                    return result
+                except Exception as e:
+                    if any(isinstance(e, exception_t) for exception_t in retry_exceptions):
+                        func_name = func.__name__
+                        log(f"An exception occurred in '{func_name} on try {tries}': {e}, but we'll retry.")
+                        if tries < max_retries__:
+                            delay = (1.4 ** tries) + random.uniform(0, 1)
+                            sleep(delay)
+                            continue
+                    raise e
+            raise Exception("Unreachable")
+        return wrapper
+    return decorator
 
 
 # TODO: merge `is_hex_string` into `parse_hex`
@@ -183,7 +216,7 @@ def _check_signature(
 
     return (True, None)
 
-
+@retry(5, [Exception])
 def _make_client(node_url: str):
     return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
 
@@ -202,26 +235,48 @@ def _check_key_registered(
 
     # TODO: checking for key being registered should be smarter
     # e.g. query and store all registered modules periodically.
-    node_url = get_node_url(None, use_testnet=use_testnet)
-    # TODO: client pool for entire module server
-    client = _make_client(node_url)  # TODO: get client from outer context
+
     ss58_format = 42
     ss58 = ss58_encode(key, ss58_format)
     ss58 = check_ss58_address(ss58, ss58_format)
 
     # If subnets whitelist is specified, checks if key is registered in one
     # of the given subnets
-    def query_keys(subnet: int):
-        return [*client.query_map_key(subnet).values()]
+    
     allowed_subnets: dict[int, bool] = {}
     caller_subnets: list[int] = []
     if subnets_whitelist is not None:
+        def query_keys(subnet: int):
+            try:
+                node_url = get_node_url(None, use_testnet=use_testnet)
+                client = _make_client(node_url)  # TODO: get client from outer context
+                return [*client.query_map_key(subnet).values()]
+            except Exception:
+                log(
+                    "WARNING: Could not connect to a blockchain node"
+                )
+                return_list: list[Ss58Address] = []
+                return return_list
+        
+        # TODO: client pool for entire module server
+        
+        got_keys = False
+        no_keys_reason = (
+            "Miner could not connect to a blockchain node "
+            "or there is no key registered on the subnet(s) {} "
+        )
         for subnet in subnets_whitelist:
             get_keys_on_subnet = partial(query_keys, subnet)
             cache_key = f"keys_on_subnet_{subnet}"
             keys_on_subnet = blockchain_cache.get_or_insert_lazy(
                 cache_key, get_keys_on_subnet
             )
+            if len(keys_on_subnet) == 0:
+                reason = no_keys_reason.format(subnet)
+                log(f"WARNING: {reason}")
+            else:
+                got_keys = True
+
             if host_key.ss58_address not in keys_on_subnet:
                 log(
                     f"WARNING: This miner is deregistered on subnet {subnet}"
@@ -230,7 +285,8 @@ def _check_key_registered(
                 allowed_subnets[subnet] = True
             if ss58 in keys_on_subnet:
                 caller_subnets.append(subnet)
-        
+        if not got_keys:
+            return False, _json_error(503, no_keys_reason.format(subnets_whitelist))
         if not allowed_subnets:
             log("WARNING: Miner is not registered on any subnet")
             return False, _json_error(403, "Miner is not registered on any subnet")
