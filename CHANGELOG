@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.28.2
+- Increased base value on stake limiter to 89
+
 ## 0.1.28.1
 - Added a Faucet command that can be run on the testnet as `comx --testnet balance run-faucet`
 - Testnet and mainnet are compatible again
