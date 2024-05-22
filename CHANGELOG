@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.28.1
+- Added a Faucet command that can be run on the testnet as `comx --testnet balance run-faucet`
+- Testnet and mainnet are compatible again
+
 ## 0.1.28
 - NetworkError now inherits from Exception instead of BaseException
 
