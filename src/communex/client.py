@@ -901,7 +901,7 @@ class CommuneClient:
 
         return response
 
-    def transfer(
+     def transfer(
         self,
         key: Keypair,
         amount: int,
@@ -928,7 +928,7 @@ class CommuneClient:
         params = {"dest": dest, "value": amount}
 
         return self.compose_call(
-            module="Balances", fn="transfer", params=params, key=key
+            module="Balances", fn="transfer_keep_alive", params=params, key=key
         )
 
     def transfer_multiple(
