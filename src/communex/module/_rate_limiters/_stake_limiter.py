@@ -34,7 +34,7 @@ def local_keys_to_stakedbalance(netuid: list[int]) -> dict[str, int]:
 def calls_per_epoch(stake: int, multiplier: int = 1) -> float:
     """Gives how many requests per epoch a stake can make"""
     max_ratio = 4
-    base_ratio = 13
+    base_ratio = 89
     if multiplier <= 1 / max_ratio:
         raise ValueError(
             f"Given multiplier {multiplier} would set 0 tokens for all stakes"
