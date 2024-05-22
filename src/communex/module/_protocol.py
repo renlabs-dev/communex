@@ -5,7 +5,9 @@ from typing import Any
 from substrateinterface import Keypair  # type: ignore
 
 from communex.types import Ss58Address
+
 from ._signer import sign
+
 
 def serialize(data: Any) -> bytes:
     txt = json.dumps(data)
@@ -35,7 +37,7 @@ def create_request_data(
     params: Any
 ) -> tuple[bytes, dict[str, str]]:
     timestamp_iso = iso_timestamp_now()
-    
+
     params["target_key"] = target_key
 
     request_data = {
@@ -46,9 +48,9 @@ def create_request_data(
     request_data["timestamp"] = timestamp_iso
     serialized_stamped_data = serialize(request_data)
     signature = sign(my_key, serialized_stamped_data)
-    
+
     headers = create_headers(signature, my_key, timestamp_iso)
-    
+
     return serialized_data, headers
 
 

@@ -4,21 +4,22 @@ Data storage compatible with the *classic* `commune` library.
 
 # TODO: encryption
 
+import base64
+import hashlib
 import json
 import os.path
 import time
 from typing import Any
-import base64
 
 from nacl.secret import SecretBox
 from nacl.utils import random
-import hashlib
+
+from communex.util import ensure_parent_dir_exists
 
 # from cryptography.fernet import Fernet
 # from cryptography.hazmat.primitives import hashes
 # from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-from communex.util import ensure_parent_dir_exists
 
 COMMUNE_HOME = "~/.commune"
 """
@@ -43,6 +44,7 @@ def _encrypt_data(password: str, data: Any) -> str:
     encrypted = nonce + ciphertext
     decoded_data = base64.b64encode(encrypted).decode()
     return decoded_data
+
 
 def _decrypt_data(password: str, data: str) -> Any:
     key = _derive_key(password)
@@ -91,8 +93,8 @@ def classic_load(path: str, mode: str = "json", password: str | None = None) -> 
 
 
 def classic_put(
-        path: str, value: Any, mode: str = "json", password: str | None = None
-    ):
+    path: str, value: Any, mode: str = "json", password: str | None = None
+):
     """
     Put data into commune data storage.
 
@@ -121,18 +123,15 @@ def classic_put(
 
     if os.path.exists(full_path):
         raise FileExistsError(f"Commune data storage file already exists: {full_path}")
-    
+
     ensure_parent_dir_exists(full_path)
-    
+
     if password:
         value = _encrypt_data(password, value)
         encrypt = True
     else:
         encrypt = False
 
-
-
     with open(full_path, "w") as file:
         json.dump({'data': value, 'encrypted': encrypt, 'timestamp': timestamp},
                   file, indent=4)
-

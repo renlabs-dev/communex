@@ -6,11 +6,10 @@ from rich.progress import track
 from typer import Context
 
 import communex.balance as c_balance
-from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict,
-                                  CustomCtx)
+from communex.cli._common import (CustomCtx, make_custom_context,
+                                  print_table_from_plain_dict)
 from communex.client import CommuneClient
-from communex.compat.key import (classic_load_key, local_key_addresses)
+from communex.compat.key import classic_load_key, local_key_addresses
 from communex.misc import (IPFS_REGEX, get_global_params,
                            local_keys_to_stakedbalance)
 from communex.types import NetworkParams
@@ -128,10 +127,10 @@ def get_valid_voting_keys(
     proposal: dict[str, Any],
 ) -> dict[str, int]:
     local_keys = local_key_addresses(ctx=ctx, universal_password=None)
-    
+
     if proposal.get("SubnetParams"):
         proposal_netuid = proposal["SubnetParams"]["netuid"]
-        assert(isinstance(proposal_netuid, int))
+        assert (isinstance(proposal_netuid, int))
         keys_stake = local_keys_to_stakedbalance(client, local_keys, netuid=proposal_netuid)
     else:
         keys_stake: dict[str, int] = {}

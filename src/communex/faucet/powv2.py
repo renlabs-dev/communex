@@ -1,26 +1,24 @@
-import multiprocessing.queues
-import os
-from typing import Optional, cast, Generic, TypeVar
-import math
-import random
-import multiprocessing
-import multiprocessing.synchronize
-import threading
-from abc import abstractmethod
-from time import sleep
-
 # from threading import Lock
 import binascii
 import hashlib
+import math
+import multiprocessing
+import multiprocessing.queues
+import multiprocessing.synchronize
+import os
+import random
+import threading
+from abc import abstractmethod
 from dataclasses import dataclass
 from queue import Empty
+from time import sleep
+from typing import Generic, Optional, TypeVar, cast
 
-from substrateinterface import Keypair  # type: ignore
 from Crypto.Hash import keccak
+from substrateinterface import Keypair  # type: ignore
 
-from communex.util.mutex import MutexBox
 from communex.client import CommuneClient
-
+from communex.util.mutex import MutexBox
 
 SEAL_LIMIT = 2**256 - 1  # U256_MAX
 DIFFICULTY = 1_000_000
@@ -279,7 +277,7 @@ def _hash_block_with_key(block_bytes: bytes, key_bytes: bytes) -> bytes:
     Returns:
         The 32-byte hash of the block and key.
     """
-  
+
     kec = keccak.new(digest_bits=256)
     kec = kec.update(bytearray(block_bytes + key_bytes))
     block_and_key_hash_bytes = kec.digest()
@@ -383,7 +381,7 @@ def _hex_bytes_to_u8_list(hex_bytes: bytes):
     Returns:
         A list of unsigned 8-bit integers.
     """
-    hex_chunks = [int(hex_bytes[i : i + 2], 16) for i in range(0, len(hex_bytes), 2)]
+    hex_chunks = [int(hex_bytes[i: i + 2], 16) for i in range(0, len(hex_bytes), 2)]
     return hex_chunks
 
 
@@ -561,9 +559,10 @@ def solve_for_difficulty_fast(
 
 
 if __name__ == "__main__":
+    import time
+
     from communex._common import get_node_url
     from communex.compat.key import classic_load_key
-    import time
 
     node = get_node_url(use_testnet=True)
     print(node)

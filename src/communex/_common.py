@@ -1,6 +1,6 @@
 import random
 from enum import Enum
-from typing import TypeVar, Mapping
+from typing import Mapping, TypeVar
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -96,6 +96,8 @@ def format_balance(balance: int, unit: BalanceUnit = BalanceUnit.nano) -> str:
 K = TypeVar("K")
 V = TypeVar("V")
 Z = TypeVar("Z")
+
+
 def intersection_update(base: dict[K, V], update: dict[K, Z]) -> Mapping[K, V | Z]:
     """
     Update a dictionary with another dictionary, but only with keys that are already present.

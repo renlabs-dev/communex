@@ -1,11 +1,11 @@
 import ipaddress
 import json
 import os.path
+import re
 from typing import Any, Callable, Generic, Optional, Protocol, TypeVar
 
 import requests
 
-import re
 
 def check_str(x: Any) -> str:
     assert isinstance(x, str)
@@ -108,6 +108,8 @@ def convert_cid_on_proposal(proposals: dict[int, dict[str, Any]]):
             data["Custom"] = queried_cid
         unwrapped[prop_id] = proposal
     return unwrapped
+
+
 HEX_PATTERN = re.compile(r"^[0-9a-fA-F]+$")
 
 

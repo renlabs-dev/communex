@@ -3,12 +3,8 @@ from typing import Any
 
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
-from communex.types import (
-    ModuleInfoWithOptionalBalance,
-    NetworkParams,
-    Ss58Address,
-    SubnetParamsWithEmission,
-)
+from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
+                            Ss58Address, SubnetParamsWithEmission)
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 

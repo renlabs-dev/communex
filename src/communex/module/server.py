@@ -5,11 +5,11 @@ Server for Commune modules.
 import json
 import random
 import re
+import sys
 from datetime import datetime, timezone
 from functools import partial
-from typing import Any, Awaitable, Callable, TypeVar, ParamSpec
 from time import sleep
-import sys
+from typing import Any, Awaitable, Callable, ParamSpec, TypeVar
 
 import fastapi
 import starlette.datastructures
@@ -24,13 +24,12 @@ from communex._common import get_node_url
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
-from communex.module._rate_limiters.limiters import (
-    IpLimiterMiddleware, StakeLimiterMiddleware, 
-    StakeLimiterParams, IpLimiterParams
-    )
-
-from communex.module.module import Module, endpoint, EndpointDefinition
+from communex.module._rate_limiters.limiters import (IpLimiterMiddleware,
+                                                     IpLimiterParams,
+                                                     StakeLimiterMiddleware,
+                                                     StakeLimiterParams)
 from communex.module._util import log
+from communex.module.module import EndpointDefinition, Module, endpoint
 from communex.types import Ss58Address
 from communex.util.memo import TTLDict
 
@@ -102,7 +101,7 @@ def build_input_handler_route_class(
                         return error
                     case (True, _):
                         pass
-               
+
                 body_dict: dict[str, dict[str, Any]] = json.loads(body)
                 timestamp = body_dict['params'].get("timestamp", None)
                 legacy_timestamp = request.headers.get("X-Timestamp", None)
@@ -117,7 +116,6 @@ def build_input_handler_route_class(
                 return response
 
             return custom_route_handler
-
 
         @staticmethod
         def _check_inputs(request: Request, body: bytes, module_key: Ss58Address):
@@ -216,6 +214,7 @@ def _check_signature(
 
     return (True, None)
 
+
 @retry(5, [Exception])
 def _make_client(node_url: str):
     return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
@@ -242,7 +241,7 @@ def _check_key_registered(
 
     # If subnets whitelist is specified, checks if key is registered in one
     # of the given subnets
-    
+
     allowed_subnets: dict[int, bool] = {}
     caller_subnets: list[int] = []
     if subnets_whitelist is not None:
@@ -257,9 +256,9 @@ def _check_key_registered(
                 )
                 return_list: list[Ss58Address] = []
                 return return_list
-        
+
         # TODO: client pool for entire module server
-        
+
         got_keys = False
         no_keys_reason = (
             "Miner could not connect to a blockchain node "
@@ -290,14 +289,14 @@ def _check_key_registered(
         if not allowed_subnets:
             log("WARNING: Miner is not registered on any subnet")
             return False, _json_error(403, "Miner is not registered on any subnet")
-        
+
         # searches for a common subnet between caller and miner
         # TODO: use sets
         allowed_subnets = {
             subnet: allowed for subnet, allowed in allowed_subnets.items() if (
                 subnet in caller_subnets
-                )
-            }
+            )
+        }
         if not allowed_subnets:
             return False, _json_error(
                 403, "Caller key is not registered in any subnet that the miner is"
@@ -305,7 +304,7 @@ def _check_key_registered(
     else:
         # accepts everything
         pass
-    
+
     return (True, None)
 
 
@@ -338,19 +337,18 @@ class ModuleServer:
         self._blockchain_cache = TTLDict[str, list[Ss58Address]](ttl)
         self._ip_blacklist = ip_blacklist
 
-
         # Midlewares
 
         if isinstance(limiter, StakeLimiterParams):
             self._app.add_middleware(
-                StakeLimiterMiddleware, 
+                StakeLimiterMiddleware,
                 subnets_whitelist=self._subnets_whitelist,
                 params=limiter,
-                )
+            )
         else:
             self._app.add_middleware(
                 IpLimiterMiddleware, params=limiter
-                )
+            )
 
         self.register_extra_middleware()
 
@@ -368,10 +366,8 @@ class ModuleServer:
         self.register_endpoints(self._router)
         self._app.include_router(self._router)
 
-
     def get_fastapi_app(self):
         return self._app
-
 
     def register_endpoints(self, router: APIRouter):
         endpoints = self._module.get_endpoints()
@@ -386,7 +382,6 @@ class ModuleServer:
 
             defined_handler = partial(handler, endpoint_def)
             router.post(f"/method/{name}")(defined_handler)
-
 
     def register_extra_middleware(self):
         async def check_lists(request: Request, call_next: Callback):
@@ -413,12 +408,10 @@ class ModuleServer:
 
         self._app.middleware("http")(check_lists)
 
-
     def add_to_blacklist(self, ss58_address: str | Ss58Address):
         if not self._blacklist:
             self._blacklist = []
         self._blacklist.append(ss58_address)
-
 
     def add_to_whitelist(self, ss58_address: str | Ss58Address):
         if not self._whitelist:

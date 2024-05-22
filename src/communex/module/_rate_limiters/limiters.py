@@ -3,9 +3,10 @@ from typing import Awaitable, Callable
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from keylimiter import TokenBucketLimiter
+from pydantic_settings import BaseSettings
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-from pydantic_settings import BaseSettings
+
 from ._stake_limiter import StakeLimiter
 
 Callback = Callable[[Request], Awaitable[Response]]
@@ -18,6 +19,7 @@ class IpLimiterParams(BaseSettings):
     class config:
         env_prefix = "CONFIG_IP_LIMITER_"
         extra = "ignore"
+
 
 class StakeLimiterParams(BaseSettings):
     epoch: int = 800
@@ -60,10 +62,10 @@ class IpLimiterMiddleware(BaseHTTPMiddleware):
 
         if not is_allowed:
             response = JSONResponse(
-                status_code=429, 
+                status_code=429,
                 headers={"X-RateLimit-Remaining": str(self._limiter.remaining(ip))},
                 content={"error": "Rate limit exceeded"}
-                )
+            )
             return response
 
         response = await call_next(request)
@@ -84,11 +86,11 @@ class StakeLimiterMiddleware(BaseHTTPMiddleware):
         if not params:
             params = StakeLimiterParams()
         self._limiter = StakeLimiter(
-            subnets_whitelist, 
-            epoch=params.epoch, 
+            subnets_whitelist,
+            epoch=params.epoch,
             max_cache_age=params.cache_age,
             get_refill_rate=params.get_refill_per_epoch,
-            )
+        )
 
     async def dispatch(self, request: Request, call_next: Callback) -> Response:
         if request.client is None:
@@ -104,18 +106,17 @@ class StakeLimiterMiddleware(BaseHTTPMiddleware):
             response = JSONResponse(
                 status_code=401,
                 content={"error": "Valid X-Key not provided on headers"}
-                )
+            )
             return response
-        
 
         is_allowed = await self._limiter.allow(key)
 
         if not is_allowed:
             response = JSONResponse(
-                status_code=429, 
+                status_code=429,
                 headers={"X-RateLimit-TryAfter": f"{str(await self._limiter.retry_after(key))} seconds"},
                 content={"error": "Rate limit exceeded"}
-                )
+            )
             return response
         response = await call_next(request)
 
