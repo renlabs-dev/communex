@@ -11,11 +11,6 @@ class ComxSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="COMX_")
     # TODO: improve node lists
     NODE_URLS: list[str] = [
-        "wss://commune.api.onfinality.io/public-ws",
-        "wss://commune.api.onfinality.io/public-ws",
-        "wss://commune.api.onfinality.io/public-ws",
-        "wss://commune.api.onfinality.io/public-ws",
-        "wss://commune.api.onfinality.io/public-ws",
         "wss://commune-api-node-0.communeai.net",
         "wss://commune-api-node-1.communeai.net",
         "wss://commune-api-node-2.communeai.net",
