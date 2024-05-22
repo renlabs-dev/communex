@@ -2,7 +2,7 @@ class ChainTransactionError(Exception):
     """Error for any chain transaction related errors."""
 
 
-class NetworkError(BaseException):
+class NetworkError(Exception):
     """Base for any network related errors."""
 
 
