@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.28
+- NetworkError now inherits from Exception instead of BaseException
+
 ## 0.1.27.5
 - Using asyncio.lock in stake limiter cache
 
