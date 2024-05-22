@@ -48,7 +48,7 @@ def log_reffusal(key: str, reason: str):
     log(f"INFO: refusing module {key} request because: {reason}")
 
 
-def try_ss58_decode(key: bytes):
+def try_ss58_decode(key: bytes | str):
     ss58_format = 42
     try:
         ss58 = ss58_encode(key, ss58_format)
@@ -207,9 +207,18 @@ def _check_signature(
         reason = "X-Key should be a hex value"
         log_reffusal(key, reason)
         return (False, _json_error(400, reason))
-
-    signature = parse_hex(signature)
-    key = parse_hex(key)
+    try:
+        signature = parse_hex(signature)
+    except Exception:
+        reason = "Signature sent is not a valid hex value"
+        log_reffusal(key, reason)
+        return False, _json_error(400, reason)
+    try:
+        key = parse_hex(key)
+    except Exception:
+        reason = "Key sent is not a valid hex value"
+        log_reffusal(key, reason)
+        return False, _json_error(400, reason)
     # decodes the key for better logging
     key_ss58 = try_ss58_decode(key)
     if key_ss58 is None:
@@ -424,11 +433,15 @@ class ModuleServer:
                 return await call_next(request)
             key = request.headers.get("x-key")
             if not key:
+                reason = "Missing header: X-Key"
+                log(f"INFO: refusing module request because: {reason}")
                 return _json_error(400, "Missing header: X-Key")
-            ss58_format = 42
-            ss58 = ss58_encode(key, ss58_format)
-            ss58 = check_ss58_address(ss58, ss58_format)
 
+            ss58 = try_ss58_decode(key)
+            if ss58 is None:
+                reason = "Caller key could not be decoded into a ss58address"
+                log_reffusal(key, reason)
+                return _json_error(400, reason)
             if request.client is None:
                 return _json_error(400, "Address should be present in request")
             if self._blacklist and ss58 in self._blacklist:
