@@ -901,7 +901,7 @@ class CommuneClient:
 
         return response
 
-     def transfer(
+    def transfer(
         self,
         key: Keypair,
         amount: int,
