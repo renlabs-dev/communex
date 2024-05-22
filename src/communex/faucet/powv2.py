@@ -570,7 +570,7 @@ if __name__ == "__main__":
     key = classic_load_key("dev01")
     start_time = time.time()
 
-    solution: POWSolution = solve_for_difficulty_fast(client, key, 0)
+    solution: POWSolution = solve_for_difficulty_fast(client, key, node)
     print(solution)
     print(f"Took {time.time() - start_time} seconds")
     params = {
