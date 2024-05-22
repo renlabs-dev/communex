@@ -44,6 +44,19 @@ T2 = TypeVar("T2")
 P = ParamSpec("P")
 R = TypeVar("R")
 
+def log_reffusal(key: str, reason: str):
+    log(f"INFO: refusing module {key} request because: {reason}")
+
+
+def try_ss58_decode(key: bytes):
+    ss58_format = 42
+    try:
+        ss58 = ss58_encode(key, ss58_format)
+        ss58 = check_ss58_address(ss58, ss58_format)
+    except Exception:
+        return None
+    return ss58
+    
 
 def retry(max_retries: int | None, retry_exceptions: list[type]):
     assert max_retries is None or max_retries > 0
@@ -191,10 +204,18 @@ def _check_signature(
     crypto = int(headers_dict["x-crypto"])  # TODO: better handling of this
 
     if not is_hex_string(key):
-        return (False, _json_error(400, "X-Key should be a hex value"))
+        reason = "X-Key should be a hex value"
+        log_reffusal(key, reason)
+        return (False, _json_error(400, reason))
 
     signature = parse_hex(signature)
     key = parse_hex(key)
+    # decodes the key for better logging
+    key_ss58 = try_ss58_decode(key)
+    if key_ss58 is None:
+        reason = "Caller key could not be decoded into a ss58address"
+        log_reffusal(key.decode(), reason)
+        return (False, _json_error(400, reason))
 
     timestamp = headers_dict.get("x-timestamp")
     legacy_verified = False
@@ -207,11 +228,15 @@ def _check_signature(
 
     verified = signer.verify(key, crypto, body, signature)
     if not verified and not legacy_verified:
+        reason = "Signature doesn't match"
+        log_reffusal(key_ss58, reason)
         return (False, _json_error(401, "Signatures doesn't match"))
 
     body_dict: dict[str, dict[str, Any]] = json.loads(body)
     target_key = body_dict['params'].get("target_key", None)
     if not target_key or target_key != module_key:
+        reason = "Wrong target_key in body"
+        log_reffusal(key_ss58, reason)
         return (False, _json_error(401, "Wrong target_key in body"))
 
     return (True, None)
@@ -236,9 +261,11 @@ def _check_key_registered(
     # TODO: checking for key being registered should be smarter
     # e.g. query and store all registered modules periodically.
 
-    ss58_format = 42
-    ss58 = ss58_encode(key, ss58_format)
-    ss58 = check_ss58_address(ss58, ss58_format)
+    ss58 = try_ss58_decode(key)
+    if ss58 is None:
+        reason = "Caller key could not be decoded into a ss58address"
+        log_reffusal(key.decode(), reason)
+        return (False, _json_error(400, reason))
 
     # If subnets whitelist is specified, checks if key is registered in one
     # of the given subnets
@@ -299,8 +326,10 @@ def _check_key_registered(
                 )
             }
         if not allowed_subnets:
+            reason = "Caller key is not registered in any subnet that the miner is"
+            log_reffusal(ss58, reason)
             return False, _json_error(
-                403, "Caller key is not registered in any subnet that the miner is"
+                403, reason
             )
     else:
         # accepts everything
