@@ -1,5 +1,5 @@
 import re
-from typing import Any, cast
+from typing import Any, cast, Optional
 
 import typer
 from typer import Context
@@ -281,3 +281,41 @@ def list_curator_applications(
     with context.progress_status("Querying applications..."):
         apps = client.query_map_curator_applications()
     print(apps)
+
+
+# Nice function to know when, and when not to register given mean return(s) within a subnet :)
+# NOTE: You could have this also under module cli, but though this was more fitting
+@subnet_app.command(name="burn")
+def current_burn(
+    ctx : Context,
+    netuid: Optional[int] = None,
+    new_subnet_name : Optional[int] = None    
+):
+    """
+    Gets the current burn to register on a subnet
+    """
+    context = make_custom_context(ctx)    
+    client = context.com_client()
+    
+    # copy pasts of def register 
+    # module path : communex.cli.module
+    match (netuid, new_subnet_name):
+        case (None, None):
+             raise ValueError(
+                "`--netuid` or `--new_subnet_name` argument must be passed into the CLI command \n"
+                "f.e comx module register <name> <ip> <port> <key> --netuid <netuid>"
+            )
+        case (netuid, None):
+            assert netuid is not None
+            subnet_name = client.get_subnet_name(netuid)
+            burn = client.get_burn(netuid)
+        case (None, new_subnet_name):
+            subnet_name = new_subnet_name
+            burn = client.get_min_burn()
+        case (_, _):
+            raise ValueError(
+                "`--netuid` and `--new_subnet_name` cannot be provided at the same time"
+            )
+    
+    context.info(f"{subnet_name} {from_nano(burn)} $COMAI")
+
