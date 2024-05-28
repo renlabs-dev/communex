@@ -22,8 +22,8 @@ chains.
 class NetworkParams(TypedDict):
     max_allowed_modules: int
     max_registrations_per_block: int
-    target_registrations_interval: int  #  in blocks
-    target_registrations_per_interval: int
+    # target_registrations_interval: int  #  in blocks
+    # target_registrations_per_interval: int
     unit_emission: int
     max_name_length: int
     min_name_length: int
@@ -60,13 +60,16 @@ class SubnetParams(TypedDict):
     vote_mode: str
     bonds_ma: int | None
     maximum_set_weight_calls_per_epoch: int | None
+    target_registrations_per_interval: int
+    target_registrations_interval: int
+    max_registrations_per_interval: int
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.
 # see https://github.com/mitmproxy/pdoc/blob/26d40827ddbe1658e8ac46cd092f17a44cf0287b/pdoc/doc.py#L691-L692
 class SubnetParamsWithEmission(SubnetParams, TypedDict):
-    """SubnetParams with emission field.
-    """
+    """SubnetParams with emission field."""
+
     emission: int
     """Subnet emission percentage (0-100).
     """

@@ -83,8 +83,6 @@ def propose_globally(
     key: str,
     max_allowed_modules: int = typer.Option(None),
     max_registrations_per_block: int = typer.Option(None),
-    target_registrations_interval: int = typer.Option(None),
-    target_registrations_per_interval: int = typer.Option(None),
     unit_emission: int = typer.Option(None),
     max_name_length: int = typer.Option(None),
     burn_rate: int = typer.Option(None),

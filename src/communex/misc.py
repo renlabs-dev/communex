@@ -3,8 +3,12 @@ from typing import Any
 
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
-from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
-                            Ss58Address, SubnetParamsWithEmission)
+from communex.types import (
+    ModuleInfoWithOptionalBalance,
+    NetworkParams,
+    Ss58Address,
+    SubnetParamsWithEmission,
+)
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
@@ -78,9 +82,7 @@ def get_map_modules(
         regblock = uid_to_regblock[uid]
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
-        delegation_fee = ss58_to_delegationfee.get(
-            key, 20
-        )  # 20% default delegation fee
+        delegation_fee = ss58_to_delegationfee.get(key, 20)  # 20% default delegation fee
         metadata = uid_to_metadata.get(uid, None)
 
         balance = None
@@ -114,9 +116,7 @@ def get_map_modules(
     return result_modules
 
 
-def get_map_subnets_params(
-    client: CommuneClient, block_hash: str | None = None
-) -> dict[int, SubnetParamsWithEmission]:
+def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None) -> dict[int, SubnetParamsWithEmission]:
     """
     Gets all subnets info on the network
     """
@@ -132,6 +132,9 @@ def get_map_subnets_params(
                 ("MaxStake", []),
                 ("Tempo", []),
                 ("MaxAllowedUids", []),
+                ("TargetRegistrationsInterval", []),
+                ("TargetRegistrationsPerInterval", []),
+                ("MaxRegistrationsPerInterval", []),
                 ("Founder", []),
                 ("FounderShare", []),
                 ("IncentiveRatio", []),
@@ -164,6 +167,9 @@ def get_map_subnets_params(
         netuid_to_weight_age,
         netuid_to_bonds_ma,
         netuid_to_maximum_weight_calls_per_epoch,
+        netuid_to_target_reg_interval,
+        netuid_to_target_reg_per_interval,
+        netuid_to_max_reg_per_interval,
     ) = (
         bulk_query["SubnetEmission"],
         bulk_query["Tempo"],
@@ -182,6 +188,9 @@ def get_map_subnets_params(
         bulk_query["MaxWeightAge"],
         bulk_query.get("BondsMovingAverage", {}),
         bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
+        bulk_query["TargetRegistrationsInterval"],
+        bulk_query["TargetRegistrationsPerInterval"],
+        bulk_query["MaxRegistrationsPerInterval"],
     )
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
@@ -202,9 +211,10 @@ def get_map_subnets_params(
         emission = netuid_to_emission[netuid]
         max_weight_age = netuid_to_weight_age[netuid]
         bonds_ma = netuid_to_bonds_ma.get(netuid, None)
-        maximum_weight_calls = netuid_to_maximum_weight_calls_per_epoch.get(
-            netuid, None
-        )
+        maximum_weight_calls = netuid_to_maximum_weight_calls_per_epoch.get(netuid, None)
+        target_registrations_interval = netuid_to_target_reg_interval[netuid]
+        target_registrations_per_interval = netuid_to_target_reg_per_interval[netuid]
+        max_registrations_per_interval = netuid_to_max_reg_per_interval[netuid]
 
         subnet: SubnetParamsWithEmission = {
             "name": name,
@@ -224,6 +234,9 @@ def get_map_subnets_params(
             "max_weight_age": max_weight_age,
             "bonds_ma": bonds_ma,
             "maximum_set_weight_calls_per_epoch": maximum_weight_calls,
+            "target_registrations_per_interval": target_registrations_per_interval,
+            "target_registrations_interval": target_registrations_interval,
+            "max_registrations_per_interval": max_registrations_per_interval,
         }
 
         result_subnets[netuid] = subnet
@@ -242,8 +255,8 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
                 ("MaxAllowedSubnets", []),
                 ("MaxAllowedModules", []),
                 ("MaxRegistrationsPerBlock", []),
-                ("TargetRegistrationsInterval", []),
-                ("TargetRegistrationsPerInterval", []),
+                # ("TargetRegistrationsInterval", []),
+                # ("TargetRegistrationsPerInterval", []),
                 ("UnitEmission", []),
                 ("MaxNameLength", []),
                 ("BurnRate", []),
@@ -270,10 +283,10 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
-        "target_registrations_interval": int(query_all["TargetRegistrationsInterval"]),
-        "target_registrations_per_interval": int(
-            query_all["TargetRegistrationsPerInterval"]
-        ),
+        # "target_registrations_interval": int(query_all["TargetRegistrationsInterval"]),
+        # "target_registrations_per_interval": int(
+        #     query_all["TargetRegistrationsPerInterval"]
+        # ),
         "unit_emission": int(query_all["UnitEmission"]),
         "max_name_length": int(query_all["MaxNameLength"]),
         "burn_rate": int(query_all["BurnRate"]),
@@ -287,9 +300,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "curator": Ss58Address(query_all["Curator"]),
         "proposal_cost": int(query_all["ProposalCost"]),
         "proposal_expiration": int(query_all["ProposalExpiration"]),
-        "proposal_participation_threshold": int(
-            query_all["ProposalParticipationThreshold"]
-        ),
+        "proposal_participation_threshold": int(query_all["ProposalParticipationThreshold"]),
         "subnet_stake_threshold": int(query_all["SubnetStakeThreshold"]),
         "min_name_length": int(query_all["MinNameLength"]),
     }
@@ -297,14 +308,8 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
     return global_params
 
 
-def concat_to_local_keys(
-    balance: dict[str, int], local_key_info: dict[str, Ss58Address]
-) -> dict[str, int]:
-
-    key2: dict[str, int] = {
-        key_name: balance.get(key_address, 0)
-        for key_name, key_address in local_key_info.items()
-    }
+def concat_to_local_keys(balance: dict[str, int], local_key_info: dict[str, Ss58Address]) -> dict[str, int]:
+    key2: dict[str, int] = {key_name: balance.get(key_address, 0) for key_name, key_address in local_key_info.items()}
 
     return key2
 
@@ -321,9 +326,7 @@ def local_keys_to_freebalance(
     balance_map = query_all["Account"]
 
     format_balances: dict[str, int] = {
-        key: value["data"]["free"]
-        for key, value in balance_map.items()
-        if "data" in value and "free" in value["data"]
+        key: value["data"]["free"] for key, value in balance_map.items() if "data" in value and "free" in value["data"]
     }
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
@@ -336,7 +339,6 @@ def local_keys_to_stakedbalance(
     local_keys: dict[str, Ss58Address],
     netuid: int = 0,
 ) -> dict[str, int]:
-
     query_all = c_client.query_batch_map(
         {
             "SubspaceModule": [("StakeTo", [netuid])],
@@ -345,9 +347,7 @@ def local_keys_to_stakedbalance(
 
     staketo_map = query_all["StakeTo"]
 
-    format_stake: dict[str, int] = {
-        key: sum(stake for _, stake in value) for key, value in staketo_map.items()
-    }
+    format_stake: dict[str, int] = {key: sum(stake for _, stake in value) for key, value in staketo_map.items()}
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
@@ -359,7 +359,6 @@ def local_keys_allbalance(
     local_keys: dict[str, Ss58Address],
     netuid: int | None = None,
 ) -> tuple[dict[str, int], dict[str, int]]:
-
     staketo_maps: list[Any] = []
     query_result = c_client.query_batch_map(
         {
@@ -384,9 +383,7 @@ def local_keys_allbalance(
         staketo_maps.append(staketo_map)
 
     format_balances: dict[str, int] = {
-        key: value["data"]["free"]
-        for key, value in balance_map.items()
-        if "data" in value and "free" in value["data"]
+        key: value["data"]["free"] for key, value in balance_map.items() if "data" in value and "free" in value["data"]
     }
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
@@ -404,21 +401,12 @@ def local_keys_allbalance(
                 # If the key exists, extend the existing list with the new values
                 merged_staketo_map[key].extend(value)
 
-    format_stake: dict[str, int] = {
-        key: sum(stake for _, stake in value)
-        for key, value in merged_staketo_map.items()
-    }
+    format_stake: dict[str, int] = {key: sum(stake for _, stake in value) for key, value in merged_staketo_map.items()}
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
-    key2balance = {
-        k: v
-        for k, v in sorted(key2balance.items(), key=lambda item: item[1], reverse=True)
-    }
+    key2balance = {k: v for k, v in sorted(key2balance.items(), key=lambda item: item[1], reverse=True)}
 
-    key2stake = {
-        k: v
-        for k, v in sorted(key2stake.items(), key=lambda item: item[1], reverse=True)
-    }
+    key2stake = {k: v for k, v in sorted(key2stake.items(), key=lambda item: item[1], reverse=True)}
 
     return key2balance, key2stake
