@@ -25,7 +25,7 @@ from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
 from communex.module._rate_limiters.limiters import (
-    IpLimiterMiddleware, StakeLimiterMiddleware, 
+    IpLimiterMiddleware, build_stakelimiter_router, 
     StakeLimiterParams, IpLimiterParams
     )
 
@@ -379,18 +379,6 @@ class ModuleServer:
 
         # Midlewares
 
-        if isinstance(limiter, StakeLimiterParams):
-            self._app.add_middleware(
-                StakeLimiterMiddleware, 
-                subnets_whitelist=self._subnets_whitelist,
-                params=limiter,
-                )
-        else:
-            self._app.add_middleware(
-                IpLimiterMiddleware, params=limiter
-                )
-
-        self.register_extra_middleware()
 
         # Routes
         self._router = APIRouter(
@@ -405,6 +393,19 @@ class ModuleServer:
         )
         self.register_endpoints(self._router)
         self._app.include_router(self._router)
+        if isinstance(limiter, StakeLimiterParams):
+            limiter_router = build_stakelimiter_router(
+                self._subnets_whitelist,
+                limiter
+                )
+            limiter_router = APIRouter(route_class=limiter_router)
+            self._app.include_router(limiter_router)
+        else:
+            self._app.add_middleware(
+                IpLimiterMiddleware, params=limiter
+                )
+
+        self.register_extra_middleware()
 
 
     def get_fastapi_app(self):
@@ -471,7 +472,7 @@ class ModuleServer:
 def main():
     class Amod(Module):
         @endpoint
-        def do_the_thing(self, awesomness: int = 42):
+        async def do_the_thing(self, awesomness: int = 42):
             if awesomness > 60:
                 msg = f"You're super awesome: {awesomness} awesomness"
             else:
