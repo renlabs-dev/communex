@@ -113,6 +113,9 @@ def update(
     max_weight_age: int = typer.Option(None),
     bonds_ma: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
+    target_registrations_per_interval: int = typer.Option(None),
+    target_registrations_interval: int = typer.Option(None),
+    max_registrations_per_interval: int = typer.Option(None),
 ):
     """
     Updates a subnet.
