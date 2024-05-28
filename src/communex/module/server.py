@@ -17,7 +17,6 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from pydantic import BaseModel
-from scalecodec.utils.ss58 import ss58_encode  # type: ignore
 from substrateinterface import Keypair  # type: ignore
 
 from communex._common import get_node_url
@@ -30,9 +29,12 @@ from communex.module._rate_limiters.limiters import (
     )
 
 from communex.module.module import Module, endpoint, EndpointDefinition
-from communex.module._util import log
+from communex.module._util import (
+    log, log_reffusal, json_error, try_ss58_decode,
+    )
 from communex.types import Ss58Address
 from communex.util.memo import TTLDict
+from communex.module.routers.module_routers import build_check_lists_route_class
 
 # Regular expression to match a hexadecimal number
 HEX_PATTERN = re.compile(r"^[0-9a-fA-F]+$")
@@ -43,19 +45,6 @@ T2 = TypeVar("T2")
 
 P = ParamSpec("P")
 R = TypeVar("R")
-
-def log_reffusal(key: str, reason: str):
-    log(f"INFO: refusing module {key} request because: {reason}")
-
-
-def try_ss58_decode(key: bytes | str):
-    ss58_format = 42
-    try:
-        ss58 = ss58_encode(key, ss58_format)
-        ss58 = check_ss58_address(ss58, ss58_format)
-    except Exception:
-        return None
-    return ss58
     
 
 def retry(max_retries: int | None, retry_exceptions: list[type]):
@@ -169,10 +158,6 @@ def build_input_handler_route_class(
     return InputHandlerRoute
 
 
-def _json_error(code: int, message: str):
-    return JSONResponse(status_code=code, content={"error": {"code": code, "message": message}})
-
-
 def _get_headers_dict(
     headers: starlette.datastructures.Headers,
     required: list[str],
@@ -183,7 +168,7 @@ def _get_headers_dict(
         value = headers.get(required_header)
         if not value:
             code = 400
-            return False, _json_error(code, f"Missing header: {required_header}")
+            return False, json_error(code, f"Missing header: {required_header}")
         headers_dict[required_header] = value
     for optional_header in optional:
         value = headers.get(optional_header)
@@ -206,25 +191,25 @@ def _check_signature(
     if not is_hex_string(key):
         reason = "X-Key should be a hex value"
         log_reffusal(key, reason)
-        return (False, _json_error(400, reason))
+        return (False, json_error(400, reason))
     try:
         signature = parse_hex(signature)
     except Exception:
         reason = "Signature sent is not a valid hex value"
         log_reffusal(key, reason)
-        return False, _json_error(400, reason)
+        return False, json_error(400, reason)
     try:
         key = parse_hex(key)
     except Exception:
         reason = "Key sent is not a valid hex value"
         log_reffusal(key, reason)
-        return False, _json_error(400, reason)
+        return False, json_error(400, reason)
     # decodes the key for better logging
     key_ss58 = try_ss58_decode(key)
     if key_ss58 is None:
         reason = "Caller key could not be decoded into a ss58address"
         log_reffusal(key.decode(), reason)
-        return (False, _json_error(400, reason))
+        return (False, json_error(400, reason))
 
     timestamp = headers_dict.get("x-timestamp")
     legacy_verified = False
@@ -239,14 +224,14 @@ def _check_signature(
     if not verified and not legacy_verified:
         reason = "Signature doesn't match"
         log_reffusal(key_ss58, reason)
-        return (False, _json_error(401, "Signatures doesn't match"))
+        return (False, json_error(401, "Signatures doesn't match"))
 
     body_dict: dict[str, dict[str, Any]] = json.loads(body)
     target_key = body_dict['params'].get("target_key", None)
     if not target_key or target_key != module_key:
         reason = "Wrong target_key in body"
         log_reffusal(key_ss58, reason)
-        return (False, _json_error(401, "Wrong target_key in body"))
+        return (False, json_error(401, "Wrong target_key in body"))
 
     return (True, None)
 
@@ -264,7 +249,7 @@ def _check_key_registered(
 ):
     key = headers_dict["x-key"]
     if not is_hex_string(key):
-        return (False, _json_error(400, "X-Key should be a hex value"))
+        return (False, json_error(400, "X-Key should be a hex value"))
     key = parse_hex(key)
 
     # TODO: checking for key being registered should be smarter
@@ -274,7 +259,7 @@ def _check_key_registered(
     if ss58 is None:
         reason = "Caller key could not be decoded into a ss58address"
         log_reffusal(key.decode(), reason)
-        return (False, _json_error(400, reason))
+        return (False, json_error(400, reason))
 
     # If subnets whitelist is specified, checks if key is registered in one
     # of the given subnets
@@ -322,10 +307,10 @@ def _check_key_registered(
             if ss58 in keys_on_subnet:
                 caller_subnets.append(subnet)
         if not got_keys:
-            return False, _json_error(503, no_keys_reason.format(subnets_whitelist))
+            return False, json_error(503, no_keys_reason.format(subnets_whitelist))
         if not allowed_subnets:
             log("WARNING: Miner is not registered on any subnet")
-            return False, _json_error(403, "Miner is not registered on any subnet")
+            return False, json_error(403, "Miner is not registered on any subnet")
         
         # searches for a common subnet between caller and miner
         # TODO: use sets
@@ -337,7 +322,7 @@ def _check_key_registered(
         if not allowed_subnets:
             reason = "Caller key is not registered in any subnet that the miner is"
             log_reffusal(ss58, reason)
-            return False, _json_error(
+            return False, json_error(
                 403, reason
             )
     else:
@@ -405,6 +390,11 @@ class ModuleServer:
                 IpLimiterMiddleware, params=limiter
                 )
 
+        check_list_router = build_check_lists_route_class(
+            whitelist, 
+            blacklist, 
+            ip_blacklist
+            )
         self.register_extra_middleware()
 
 
@@ -436,21 +426,21 @@ class ModuleServer:
             if not key:
                 reason = "Missing header: X-Key"
                 log(f"INFO: refusing module request because: {reason}")
-                return _json_error(400, "Missing header: X-Key")
+                return json_error(400, "Missing header: X-Key")
 
             ss58 = try_ss58_decode(key)
             if ss58 is None:
                 reason = "Caller key could not be decoded into a ss58address"
                 log_reffusal(key, reason)
-                return _json_error(400, reason)
+                return json_error(400, reason)
             if request.client is None:
-                return _json_error(400, "Address should be present in request")
+                return json_error(400, "Address should be present in request")
             if self._blacklist and ss58 in self._blacklist:
-                return _json_error(403, "You are blacklisted")
+                return json_error(403, "You are blacklisted")
             if self._ip_blacklist and request.client.host in self._ip_blacklist:
-                return _json_error(403, "Your IP is blacklisted")
+                return json_error(403, "Your IP is blacklisted")
             if self._whitelist and ss58 not in self._whitelist:
-                return _json_error(403, "You are not whitelisted")
+                return json_error(403, "You are not whitelisted")
             response = await call_next(request)
             return response
 
