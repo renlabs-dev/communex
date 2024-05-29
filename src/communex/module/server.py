@@ -341,8 +341,8 @@ class ModuleServer:
         module: Module,
         key: Keypair,
         max_request_staleness: int = 120,
-        whitelist: list[str] | None = None,
-        blacklist: list[str] | None = None,
+        whitelist: list[Ss58Address] | None = None,
+        blacklist: list[Ss58Address] | None = None,
         subnets_whitelist: list[int] | None = None,
         lower_ttl: int = 600,
         upper_ttl: int = 700,
@@ -377,25 +377,27 @@ class ModuleServer:
             )
         )
         self.register_endpoints(self._router)
-        self._app.include_router(self._router)
+        #self._app.include_router(self._router)
         if isinstance(limiter, StakeLimiterParams):
             limiter_router = build_stakelimiter_router(
                 self._subnets_whitelist,
                 limiter
                 )
             limiter_router = APIRouter(route_class=limiter_router)
-            self._app.include_router(limiter_router)
+            #self._app.include_router(limiter_router)
         else:
             self._app.add_middleware(
                 IpLimiterMiddleware, params=limiter
                 )
 
-        check_list_router = build_check_lists_route_class(
+        check_list_route = build_check_lists_route_class(
+            blacklist,
             whitelist, 
-            blacklist, 
             ip_blacklist
             )
-        self.register_extra_middleware()
+        check_list_router = APIRouter(route_class=check_list_route)
+        #self._app.include_router(check_list_router)
+        #self.register_extra_middleware()
 
 
     def get_fastapi_app(self):
@@ -409,12 +411,11 @@ class ModuleServer:
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
 
-            def handler(end_def: EndpointDefinition[Any, ...], body: Body):
-
-                return end_def.fn(self._module, **body.params.model_dump())  # type: ignore
+            async def handler(end_def: EndpointDefinition[Any, ...], body: Body):
+                return await end_def.fn(self._module, **body.params.model_dump())  # type: ignore
 
             defined_handler = partial(handler, endpoint_def)
-            router.post(f"/method/{name}")(defined_handler)
+            self._app.post(f"/method/{name}")(defined_handler)
 
 
     def register_extra_middleware(self):
