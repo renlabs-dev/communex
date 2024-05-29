@@ -10,6 +10,7 @@ from functools import partial
 from typing import Any, Awaitable, Callable, TypeVar, ParamSpec
 from time import sleep
 import sys
+import inspect
 
 import fastapi
 import starlette.datastructures
@@ -410,11 +411,17 @@ class ModuleServer:
 
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
-
-            async def handler(end_def: EndpointDefinition[Any, ...], body: Body):
+            
+            async def async_handler(end_def: EndpointDefinition[Any, ...], body: Body):
                 return await end_def.fn(self._module, **body.params.model_dump())  # type: ignore
 
-            defined_handler = partial(handler, endpoint_def)
+            def handler(end_def: EndpointDefinition[Any, ...], body: Body):
+                return end_def.fn(self._module, **body.params.model_dump())  # type: ignore
+
+            if inspect.iscoroutinefunction(endpoint_def.fn):
+                defined_handler = partial(async_handler, endpoint_def)
+            else:
+                defined_handler = partial(handler, endpoint_def)
             self._app.post(f"/method/{name}")(defined_handler)
 
 
@@ -463,7 +470,7 @@ class ModuleServer:
 def main():
     class Amod(Module):
         @endpoint
-        async def do_the_thing(self, awesomness: int = 42):
+        def do_the_thing(self, awesomness: int = 42):
             if awesomness > 60:
                 msg = f"You're super awesome: {awesomness} awesomness"
             else:
