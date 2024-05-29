@@ -150,9 +150,11 @@ class StakeLimiter():
         if tokens >= 1:
             return 0
         key_rate = await self._get_key_refresh_ratio(key)
-        assert key_rate > 0
-        return ceil(1 / key_rate)
-
+        if key_rate > 0:
+            return ceil(1 / key_rate)
+        else:
+            return self.max_cache_age
+        
     async def _refill(self, key: str) -> None:
         bucket = self.buckets.get(key)
         if bucket is None:  # type: ignore
