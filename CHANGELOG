@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.29.1
+- Fixed a bug on stakelimiter when calling retry_after for a key with no refresh rate
+
 ## 0.1.29
 - The parameters `target_registrations_per_interval` and `target_registrations_interval` are now SubnetParams (instead of GlobalParams).
 - Added the paremeter `max_registrations_per_interval` to SubnetParams 
