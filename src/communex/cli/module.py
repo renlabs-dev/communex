@@ -14,8 +14,22 @@ from communex.module.server import ModuleServer
 from communex.module._rate_limiters.limiters import IpLimiterParams, StakeLimiterParams
 from communex.util import is_ip_valid
 from communex._common import intersection_update
+from communex.key import check_ss58_address
+from communex.types import Ss58Address
 
 module_app = typer.Typer(no_args_is_help=True)
+
+
+def list_to_ss58(str_list: list[str] | None) -> list[Ss58Address] | None:
+    """Raises AssertionError if some input is not a valid Ss58Address."""
+    
+    if str_list is None:
+        return None
+    new_list: list[Ss58Address] = []
+    for item in str_list:
+        new_item = check_ss58_address(item)
+        new_list.append(new_item)
+    return new_list
 
 
 # TODO: refactor module register CLI
@@ -232,9 +246,28 @@ def serve(
         context.info(
             "WARNING: No whitelist provided, will accept calls from any key"
         )
+
+
+
+    try:
+        whitelist_ss58 = list_to_ss58(whitelist)
+    except AssertionError:
+        context.error(
+            "Invalid SS58 address passed to whitelist"
+        )
+        exit(1)
+    try:
+        blacklist_ss58 = list_to_ss58(blacklist)
+    except AssertionError:
+        context.error(
+            "Invalid SS58 address passed on blacklist"
+        )
+        exit(1)
+    cast(list[Ss58Address] | None, whitelist)
+    
     server = ModuleServer(
         class_obj(), keypair, 
-        whitelist=whitelist, blacklist=blacklist, 
+        whitelist=whitelist_ss58, blacklist=blacklist_ss58, 
         subnets_whitelist=subnets_whitelist, 
         max_request_staleness=request_staleness,
         limiter=limiter_params,
