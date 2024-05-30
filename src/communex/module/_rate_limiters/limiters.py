@@ -6,8 +6,6 @@ from keylimiter import TokenBucketLimiter
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 from pydantic_settings import BaseSettings
-from ._stake_limiter import StakeLimiter
-from fastapi.routing import APIRoute
 
 Callback = Callable[[Request], Awaitable[Response]]
 
@@ -72,55 +70,3 @@ class IpLimiterMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def build_stakelimiter_router(
-        subnets_whitelist: list[int] | None = [0], 
-        params_: StakeLimiterParams | None = None,
-    ) -> type[APIRoute]:
-    class StakeLimiterRouter(APIRoute):
-        def get_route_handler(self):
-            original_route_handler = super().get_route_handler()
-            
-            async def custom_route_hanlder(request: Request):
-                if not params_:
-                    params = StakeLimiterParams()
-                else:
-                    params = params_
-                limiter = StakeLimiter(
-                    subnets_whitelist, 
-                    epoch=params.epoch, 
-                    max_cache_age=params.cache_age,
-                    get_refill_rate=params.get_refill_per_epoch,
-                    )
-
-                if request.client is None:
-                    response = JSONResponse(
-                        status_code=401,
-                        content={
-                            "error": "Address should be present in request"
-                        }
-                    )
-                    return response
-                key = request.headers.get('x-key')
-                
-                if not key:
-                    response = JSONResponse(
-                        status_code=401,
-                        content={"error": "Valid X-Key not provided on headers"}
-                        )
-                    return response
-                
-
-                is_allowed = await limiter.allow(key)
-
-                if not is_allowed:
-                    response = JSONResponse(
-                        status_code=429, 
-                        headers={"X-RateLimit-TryAfter": f"{str(await limiter.retry_after(key))} seconds"},
-                        content={"error": "Rate limit exceeded"}
-                        )
-                    return response
-                response: Response = await original_route_handler(request)
-                return response
-
-            return custom_route_hanlder
-    return StakeLimiterRouter
