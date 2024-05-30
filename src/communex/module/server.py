@@ -50,11 +50,16 @@ class ModuleServer:
         self._subnets_whitelist = subnets_whitelist
         self.key = key
         self.max_request_staleness = max_request_staleness
-        self._blacklist = blacklist
-        self._whitelist = whitelist
         ttl = random.randint(lower_ttl, upper_ttl)
         self._blockchain_cache = TTLDict[str, list[Ss58Address]](ttl)
         self._ip_blacklist = ip_blacklist
+
+        # to keep reference to add_to_blacklist and add_to_whitelist
+        whitelist_: list[Ss58Address] = [] if whitelist is None else whitelist
+        blacklist_: list[Ss58Address] = [] if blacklist is None else blacklist
+
+        self._whitelist = whitelist_
+        self._blacklist = blacklist_
 
         self._build_routers(use_testnet, limiter)
 
@@ -83,7 +88,7 @@ class ModuleServer:
             limiter_verifier = IpLimiterVerifier(limiter)
         
         # order of verifiers is extremely important
-        verifiers = [input_handler, check_lists, limiter_verifier]
+        verifiers = [check_lists, input_handler, limiter_verifier]
         route_class = build_route_class(verifiers)
         self._router = APIRouter(route_class=route_class)
         self.register_endpoints(self._router)
@@ -113,14 +118,10 @@ class ModuleServer:
             router.post(f"/method/{name}")(defined_handler)
 
     def add_to_blacklist(self, ss58_address: Ss58Address):
-        if not self._blacklist:
-            self._blacklist = []
         self._blacklist.append(ss58_address)
 
 
     def add_to_whitelist(self, ss58_address: Ss58Address):
-        if not self._whitelist:
-            self._whitelist = []
         self._whitelist.append(ss58_address)
 
 
@@ -136,7 +137,12 @@ def main():
 
     a_mod = Amod()
     keypair = Keypair.create_from_mnemonic(signer.TESTING_MNEMONIC)
-    server = ModuleServer(a_mod, keypair, subnets_whitelist=None)
+    server = ModuleServer(
+        a_mod, 
+        keypair, 
+        subnets_whitelist=[0],
+        blacklist=None,
+    )
     app = server.get_fastapi_app()
 
     import uvicorn
