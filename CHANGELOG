@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.30
+- removed min_stake
+- removed burn_rate
+- removed max_stake
+
 ## 0.1.29.1
 - Fixed a bug on stakelimiter when calling retry_after for a key with no refresh rate
 
