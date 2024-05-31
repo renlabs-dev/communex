@@ -103,7 +103,6 @@ class ListVerifier(AbstractVerifier):
     
     async def verify(self, request: Request) -> JSONResponse | None:
         key = request.headers.get("x-key")
-        print(f"blacklist: {self.blacklist}")
         if not key:
             reason = "Missing header: X-Key"
             log(f"INFO: refusing module request because: {reason}")
