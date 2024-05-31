@@ -129,7 +129,6 @@ def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None)
                 ("MaxAllowedWeights", []),
                 ("MinStake", []),
                 ("SubnetEmission", []),
-                ("MaxStake", []),
                 ("Tempo", []),
                 ("MaxAllowedUids", []),
                 ("TargetRegistrationsInterval", []),
@@ -157,7 +156,6 @@ def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None)
         netuid_to_max_allowed_weights,
         netuid_to_max_allowed_uids,
         netuid_to_min_stake,
-        netuid_to_max_stake,
         netuid_to_founder,
         netuid_to_founder_share,
         netuid_to_incentive_ratio,
@@ -178,7 +176,6 @@ def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None)
         bulk_query["MaxAllowedWeights"],
         bulk_query["MaxAllowedUids"],
         bulk_query["MinStake"],
-        bulk_query["MaxStake"],
         bulk_query["Founder"],
         bulk_query["FounderShare"],
         bulk_query["IncentiveRatio"],
@@ -203,7 +200,6 @@ def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None)
         max_allowed_uids = netuid_to_max_allowed_uids[netuid]
         max_allowed_weights = netuid_to_max_allowed_weights[netuid]
         min_allowed_weights = netuid_to_min_allowed_weights[netuid]
-        max_stake = netuid_to_max_stake.get(netuid, -1)
         min_stake = netuid_to_min_stake[netuid]
         tempo = netuid_to_tempo[netuid]
         trust_ratio = netuid_to_trust_ratio[netuid]
@@ -225,7 +221,6 @@ def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None)
             "max_allowed_uids": max_allowed_uids,
             "max_allowed_weights": max_allowed_weights,
             "min_allowed_weights": min_allowed_weights,
-            "max_stake": max_stake,
             "min_stake": min_stake,
             "tempo": tempo,
             "trust_ratio": trust_ratio,
@@ -255,14 +250,10 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
                 ("MaxAllowedSubnets", []),
                 ("MaxAllowedModules", []),
                 ("MaxRegistrationsPerBlock", []),
-                # ("TargetRegistrationsInterval", []),
-                # ("TargetRegistrationsPerInterval", []),
                 ("UnitEmission", []),
                 ("MaxNameLength", []),
-                ("BurnRate", []),
                 ("MinBurn", []),
                 ("MaxBurn", []),
-                ("MinStakeGlobal", []),
                 ("MinWeightStake", []),
                 ("AdjustmentAlpha", []),
                 ("FloorDelegationFee", []),
@@ -283,16 +274,10 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
-        # "target_registrations_interval": int(query_all["TargetRegistrationsInterval"]),
-        # "target_registrations_per_interval": int(
-        #     query_all["TargetRegistrationsPerInterval"]
-        # ),
         "unit_emission": int(query_all["UnitEmission"]),
         "max_name_length": int(query_all["MaxNameLength"]),
-        "burn_rate": int(query_all["BurnRate"]),
         "min_burn": int(query_all["MinBurn"]),
         "max_burn": int(query_all["MaxBurn"]),
-        "min_stake": int(query_all["MinStakeGlobal"]),
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
