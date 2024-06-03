@@ -1,4 +1,4 @@
-im
+import datetime
 from typing import Any, Literal, TypeVar, Callable, ParamSpec
 import sys
 import random
@@ -84,12 +84,3 @@ def retry(max_retries: int | None, retry_exceptions: list[type]):
 @retry(5, [Exception])
 def make_client(node_url: str):
     return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
-
-    msg: str,
-    *values: object,
-    sep: str | None = " ",
-    end: str | None = "\n",
-    file: Any | None = None,
-    flush: Literal[False] = False
-):
-    print(f"[{iso_timestamp_now()}] " + msg, *values, sep=sep, end=end, file=file, flush=flush)
