@@ -1,4 +1,4 @@
-import datetime
+im
 from typing import Any, Literal, TypeVar, Callable, ParamSpec
 import sys
 import random
@@ -17,6 +17,9 @@ T2 = TypeVar("T2")
 P = ParamSpec("P")
 R = TypeVar("R")
 
+from typing import Any, Literal
+
+
 
 def iso_timestamp_now() -> str:
     now = datetime.datetime.now(tz=datetime.timezone.utc)
@@ -25,6 +28,7 @@ def iso_timestamp_now() -> str:
 
 
 def log(
+
         msg: str,
         *values: object,
         sep: str | None = " ",
@@ -80,3 +84,12 @@ def retry(max_retries: int | None, retry_exceptions: list[type]):
 @retry(5, [Exception])
 def make_client(node_url: str):
     return CommuneClient(url=node_url, num_connections=1, wait_for_finalization=False)
+
+    msg: str,
+    *values: object,
+    sep: str | None = " ",
+    end: str | None = "\n",
+    file: Any | None = None,
+    flush: Literal[False] = False
+):
+    print(f"[{iso_timestamp_now()}] " + msg, *values, sep=sep, end=end, file=file, flush=flush)

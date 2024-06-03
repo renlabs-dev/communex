@@ -11,11 +11,13 @@ import aiohttp.client_exceptions
 import aiohttp.web_exceptions
 from substrateinterface import Keypair  # type: ignore
 
-from ._signer import TESTING_MNEMONIC
-from ._protocol import create_request_data, create_method_endpoint
-from communex.types import Ss58Address
-from communex.key import check_ss58_address
 from communex.errors import NetworkTimeoutError
+from communex.key import check_ss58_address
+from communex.types import Ss58Address
+
+from ._protocol import create_method_endpoint, create_request_data
+from ._signer import TESTING_MNEMONIC
+
 
 class ModuleClient:
     host: str
@@ -33,7 +35,7 @@ class ModuleClient:
             target_key: Ss58Address,
             params: Any = {},
             timeout: int = 16,
-            ) -> Any:
+    ) -> Any:
         serialized_data, headers = create_request_data(self.key, target_key, params)
 
         out = aiohttp.ClientTimeout(total=timeout)

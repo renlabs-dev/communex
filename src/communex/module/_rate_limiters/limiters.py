@@ -3,9 +3,11 @@ from typing import Awaitable, Callable
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from keylimiter import TokenBucketLimiter
+from pydantic_settings import BaseSettings
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 from pydantic_settings import BaseSettings
+
 
 Callback = Callable[[Request], Awaitable[Response]]
 
@@ -17,6 +19,7 @@ class IpLimiterParams(BaseSettings):
     class config:
         env_prefix = "CONFIG_IP_LIMITER_"
         extra = "ignore"
+
 
 class StakeLimiterParams(BaseSettings):
     epoch: int = 800
@@ -59,14 +62,12 @@ class IpLimiterMiddleware(BaseHTTPMiddleware):
 
         if not is_allowed:
             response = JSONResponse(
-                status_code=429, 
+                status_code=429,
                 headers={"X-RateLimit-Remaining": str(self._limiter.remaining(ip))},
                 content={"error": "Rate limit exceeded"}
-                )
+            )
             return response
 
         response = await call_next(request)
 
         return response
-
-

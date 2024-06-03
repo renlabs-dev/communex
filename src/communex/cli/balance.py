@@ -1,22 +1,26 @@
+from typing import Optional
+
 import typer
 from typer import Context
-from typing import Optional
 
 from communex._common import BalanceUnit, format_balance
 from communex.balance import to_nano
 from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict)
-from communex.compat.key import try_classic_load_key, resolve_key_ss58_encrypted
+from communex.compat.key import (resolve_key_ss58_encrypted,
+                                 try_classic_load_key)
 from communex.errors import ChainTransactionError
+from communex.faucet.powv2 import solve_for_difficulty_fast
 
 balance_app = typer.Typer(no_args_is_help=True)
 
 
 @balance_app.command()
 def show(
-    ctx: Context, key: str, 
+    ctx: Context,
+    key: str,
     unit: BalanceUnit = BalanceUnit.joule,
-    password: Optional[str] = None
+    password: Optional[str] = None,
 ):
     """
     Gets the balances of a key.
@@ -41,20 +45,20 @@ def show(
         stake_dict = dict(zip(netuids, string_stakes))
 
         total = balance + sum(stakes)
-        free, total = format_balance(
-            balance, unit), format_balance(total, unit)
+        free, total = format_balance(balance, unit), format_balance(total, unit)
 
+        print_table_from_plain_dict(stake_dict, ["Netuid", "Staked"], context.console)
         print_table_from_plain_dict(
-            stake_dict, ["Netuid", "Staked"], context.console)
-        print_table_from_plain_dict({"Free": free, "Total": total}, [
-                                    "Result", "Amount"], context.console)
+            {"Free": free, "Total": total}, ["Result", "Amount"], context.console
+        )
 
 
 @balance_app.command()
 def free_balance(
-    ctx: Context, key: str, 
+    ctx: Context,
+    key: str,
     unit: BalanceUnit = BalanceUnit.joule,
-    password: Optional[str] = None
+    password: Optional[str] = None,
 ):
     """
     Gets free balance of a key.
@@ -63,7 +67,7 @@ def free_balance(
     client = context.com_client()
 
     key_address = resolve_key_ss58_encrypted(key, context, password)
-    
+
     with context.progress_status(f"Getting free balance of key {key_address}..."):
         balance = client.get_balance(key_address)
 
@@ -72,9 +76,11 @@ def free_balance(
 
 @balance_app.command()
 def staked_balance(
-    ctx: Context, key: str, 
-    netuid: int = 0, unit: BalanceUnit = BalanceUnit.joule,
-    password: Optional[str] = None
+    ctx: Context,
+    key: str,
+    netuid: int = 0,
+    unit: BalanceUnit = BalanceUnit.joule,
+    password: Optional[str] = None,
 ):
     """
     Gets the balance staked on the key itself.
@@ -94,10 +100,12 @@ def staked_balance(
 
 @balance_app.command()
 def all_balance(
-    ctx: Context, key: str, netuid: int = 0, 
+    ctx: Context,
+    key: str,
+    netuid: int = 0,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
-    ):
+):
     """
     Gets entire balance of a key (free balance + staked balance).
     """
@@ -117,10 +125,12 @@ def all_balance(
 
 @balance_app.command()
 def get_staked(
-    ctx: Context, key: str, netuid: int = 0, 
+    ctx: Context,
+    key: str,
+    netuid: int = 0,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
-    ):
+):
     """
     Gets total stake of a key it delegated across other keys.
     """
@@ -147,12 +157,15 @@ def transfer(ctx: Context, key: str, amount: float, dest: str):
     resolved_key = try_classic_load_key(key, context)
     resolved_dest = resolve_key_ss58_encrypted(dest, context)
 
-    if not context.confirm(f"Are you sure you want to transfer {amount} tokens to {dest}?"):
+    if not context.confirm(
+        f"Are you sure you want to transfer {amount} tokens to {dest}?"
+    ):
         raise typer.Abort()
 
     with context.progress_status(f"Transferring {amount} tokens to {dest}..."):
         response = client.transfer(
-            key=resolved_key, amount=nano_amount, dest=resolved_dest)
+            key=resolved_key, amount=nano_amount, dest=resolved_dest
+        )
 
     if response.is_success:
         context.info(f"Transferred {amount} tokens to {dest}")
@@ -161,7 +174,9 @@ def transfer(ctx: Context, key: str, amount: float, dest: str):
 
 
 @balance_app.command()
-def transfer_stake(ctx: Context, key: str, amount: float, from_key: str, dest: str, netuid: int = 0):
+def transfer_stake(
+    ctx: Context, key: str, amount: float, from_key: str, dest: str, netuid: int = 0
+):
     """
     Transfers stake of key from point A to point B
     """
@@ -192,9 +207,12 @@ def transfer_stake(ctx: Context, key: str, amount: float, from_key: str, dest: s
 
 @balance_app.command()
 def stake(
-    ctx: Context, key: str, amount: float, 
-    dest: str, netuid: int = 0,
-    ):
+    ctx: Context,
+    key: str,
+    amount: float,
+    dest: str,
+    netuid: int = 0,
+):
     """
     Stake amount to destination using key
     """
@@ -205,9 +223,12 @@ def stake(
     resolved_key = try_classic_load_key(key, context)
     resolved_dest = resolve_key_ss58_encrypted(dest, context)
 
-    with context.progress_status(f"Staking {amount} tokens to {dest} on a subnet with netuid '{netuid}'..."):
+    with context.progress_status(
+        f"Staking {amount} tokens to {dest} on a subnet with netuid '{netuid}'..."
+    ):
         response = client.stake(
-            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid)
+            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid
+        )
 
     if response.is_success:
         context.info(f"Staked {amount} tokens to {dest}")
@@ -227,11 +248,46 @@ def unstake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
     resolved_key = try_classic_load_key(key, context)
     resolved_dest = resolve_key_ss58_encrypted(dest, context)
 
-    with context.progress_status(f"Unstaking {amount} tokens from {dest} on a subnet with netuid '{netuid}'..."):
+    with context.progress_status(
+        f"Unstaking {amount} tokens from {dest} on a subnet with netuid '{netuid}'..."
+    ):
         response = client.unstake(
-            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid) # TODO: is it right?
+            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid
+        )  # TODO: is it right?
 
     if response.is_success:
         context.info(f"Unstaked {amount} tokens from {dest}")
     else:
         raise ChainTransactionError(response.error_message)  # type: ignore
+
+
+@balance_app.command()
+def run_faucet(
+    ctx: Context,
+    key: str,
+    num_processes: Optional[int] = None,
+    num_executions: int = 1,
+):
+    context = make_custom_context(ctx)
+    use_testnet = ctx.obj.use_testnet
+    if not use_testnet:
+        context.error("Faucet only enabled on testnet")
+        return
+    resolved_key = try_classic_load_key(key, context)
+    client = context.com_client()
+    for _ in range(num_executions):
+        with context.progress_status("Solving PoW..."):
+            solution = solve_for_difficulty_fast(
+                client,
+                resolved_key,
+                client.url,
+                num_processes=num_processes,
+            )
+        with context.progress_status("Sending solution to blockchain"):
+            params = {
+                "block_number": solution.block_number,
+                "nonce": solution.nonce,
+                "work": solution.seal,
+                "key": resolved_key.ss58_address,
+            }
+            client.compose_call("faucet", params=params, unsigned=True, key=resolved_key.ss58_address)  # type: ignore

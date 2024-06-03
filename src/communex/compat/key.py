@@ -5,14 +5,14 @@ WIP
 """
 
 import json
-from pathlib import Path
-from typing import Any, cast, Protocol
 import os
 from getpass import getpass
+from pathlib import Path
+from typing import Any, Protocol, cast
 
 from substrateinterface import Keypair  # type: ignore
 
-from communex.compat.storage import classic_load, classic_put, COMMUNE_HOME
+from communex.compat.storage import COMMUNE_HOME, classic_load, classic_put
 from communex.compat.types import CommuneKeyDict
 from communex.key import check_ss58_address, is_ss58_address
 from communex.types import Ss58Address
@@ -150,9 +150,9 @@ def classic_store_key(keypair: Keypair, name: str, password: str | None = None) 
 
 
 def try_classic_load_key(
-        name: str, context: GenericCtx,
-        password: str | None = None
-    ) -> Keypair:
+    name: str, context: GenericCtx,
+    password: str | None = None
+) -> Keypair:
     try:
         keypair = classic_load_key(name, password=password)
     except json.JSONDecodeError:
@@ -173,13 +173,13 @@ def try_load_key(name: str, context: GenericCtx, password: str | None = None):
 
 
 def local_key_addresses(
-        ctx: GenericCtx | None = None,
-        universal_password: str | None = None
-    ) -> dict[str, Ss58Address]:
+    ctx: GenericCtx | None = None,
+    universal_password: str | None = None
+) -> dict[str, Ss58Address]:
     """
     Retrieves a mapping of local key names to their SS58 addresses.
     If password is passed, it will be used to decrypt every key.
-    If password is not passed and ctx is, 
+    If password is not passed and ctx is,
     the user will be prompted for the password.
     """
     home = Path.home()
@@ -239,8 +239,8 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
 def resolve_key_ss58_encrypted(
         key: Ss58Address | Keypair | str, context: GenericCtx,
         password: str | None = None
-        
-        ) -> Ss58Address:
+
+) -> Ss58Address:
     """
     Resolves a keypair or key name to its corresponding SS58 address.
 
@@ -266,5 +266,3 @@ def resolve_key_ss58_encrypted(
     address = keypair.ss58_address
 
     return check_ss58_address(address, keypair.ss58_format)
-
-    

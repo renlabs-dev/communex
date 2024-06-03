@@ -12,9 +12,9 @@ from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict,
                                   print_table_standardize)
 from communex.compat.key import (classic_key_path, classic_store_key,
-                                 local_key_addresses, 
-                                try_classic_load_key, try_load_key)
-from communex.key import generate_keypair, is_ss58_address, check_ss58_address
+                                 local_key_addresses, try_classic_load_key,
+                                 try_load_key)
+from communex.key import check_ss58_address, generate_keypair, is_ss58_address
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
 
@@ -29,9 +29,9 @@ class SortBalance(str, Enum):
 
 @key_app.command()
 def create(
-    ctx: Context, name: str, 
+    ctx: Context, name: str,
     password: str = typer.Option(None)
-    ):
+):
     """
     Generates a new key and stores it on a disk with the given name.
     """
@@ -49,7 +49,7 @@ def create(
 
 @key_app.command()
 def regen(
-    ctx: Context, name: str, key_input: str, password: Optional[str] = None):
+        ctx: Context, name: str, key_input: str, password: Optional[str] = None):
     """
     Stores the given key on a disk. Works with private key or mnemonic.
     """
@@ -78,9 +78,9 @@ def regen(
 
 @key_app.command()
 def show(
-    ctx: Context, key: str, show_private: bool = False, 
+    ctx: Context, key: str, show_private: bool = False,
     password: Optional[str] = None
-    ):
+):
     """
     Show information about a key.
     """
@@ -100,19 +100,19 @@ def show(
 
 @key_app.command()
 def balances(
-    ctx: Context, 
+    ctx: Context,
     netuid: Optional[int] = None,
-    unit: BalanceUnit = BalanceUnit.joule, 
+    unit: BalanceUnit = BalanceUnit.joule,
     sort_balance: SortBalance = SortBalance.all,
     universal_password: Optional[str] = typer.Option(
         None, help="""
-        Password to decrypt all keys. 
+        Password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
         every password.
         """
     )
-    
+
 ):
     """
     Gets balances of all keys.
@@ -167,16 +167,16 @@ def balances(
 
 @key_app.command(name='list')
 def inventory(
-    ctx: Context, 
+    ctx: Context,
     universal_password: Optional[str] = typer.Option(
         None, help="""
-        Password to decrypt all keys. 
+        Password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
         every password.
         """
-        )
-    ):
+    )
+):
     """
     Lists all keys stored on disk.
     """
@@ -190,7 +190,7 @@ def inventory(
 
 @key_app.command()
 def stakefrom(
-    ctx: Context, key: str, netuid: int = 0, 
+    ctx: Context, key: str, netuid: int = 0,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -216,7 +216,7 @@ def stakefrom(
 
 @key_app.command()
 def staketo(
-    ctx: Context, key: str, netuid: int = 0, 
+    ctx: Context, key: str, netuid: int = 0,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -243,11 +243,11 @@ def staketo(
 
 @key_app.command()
 def total_free_balance(
-    ctx: Context, 
+    ctx: Context,
     unit: BalanceUnit = BalanceUnit.joule,
     universal_password: Optional[str] = typer.Option(
         None, help="""
-        Password to decrypt all keys. 
+        Password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
         every password.
@@ -271,11 +271,11 @@ def total_free_balance(
 
 @key_app.command()
 def total_staked_balance(
-    ctx: Context, unit: BalanceUnit = BalanceUnit.joule, 
+    ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
     netuid: int = 0,
     universal_password: Optional[str] = typer.Option(
-    None, help="""
-    Password to decrypt all keys. 
+        None, help="""
+    Password to decrypt all keys.
     This will only work if all encrypted keys uses the same password.
     If this is not the case, leave it blank and you will be prompted to give
     every password.
@@ -301,16 +301,16 @@ def total_staked_balance(
 
 @key_app.command()
 def total_balance(
-    ctx: Context, unit: BalanceUnit = BalanceUnit.joule, 
+    ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
     netuid: Optional[int] = None,
     universal_password: Optional[str] = typer.Option(
-    None, help="""
-    Password to decrypt all keys. 
+        None, help="""
+    Password to decrypt all keys.
     This will only work if all encrypted keys uses the same password.
     If this is not the case, leave it blank and you will be prompted to give
     every password.
     """
-)
+    )
 ):
     """
     Returns total tokens of all keys on a disk

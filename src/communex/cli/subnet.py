@@ -40,7 +40,7 @@ def list(ctx: Context):
         {**subnets_with_netuids[i], **subnets_with_stakes[i]} for i in range(len(keys))
     ]
     subnets_with_netuids = sorted(  # type: ignore
-        subnets_with_stakes, key=lambda x: x["emission"], reverse=True # type: ignore
+        subnets_with_stakes, key=lambda x: x["emission"], reverse=True  # type: ignore
     )  # type: ignore
     for subnet_dict in subnets_with_netuids:  # type: ignore
         bonds = subnet_dict["bonds_ma"]  # type: ignore
@@ -105,7 +105,6 @@ def update(
     max_allowed_uids: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
-    max_stake: int = typer.Option(None),
     min_stake: int = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
@@ -113,6 +112,9 @@ def update(
     max_weight_age: int = typer.Option(None),
     bonds_ma: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
+    target_registrations_per_interval: int = typer.Option(None),
+    target_registrations_interval: int = typer.Option(None),
+    max_registrations_per_interval: int = typer.Option(None),
 ):
     """
     Updates a subnet.
@@ -168,7 +170,6 @@ def propose_on_subnet(
     max_allowed_uids: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
-    max_stake: int = typer.Option(None),
     min_stake: int = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),

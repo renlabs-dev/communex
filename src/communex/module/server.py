@@ -7,6 +7,7 @@ from functools import partial
 from typing import Any
 import inspect
 
+
 import fastapi
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -93,10 +94,9 @@ class ModuleServer:
         self._router = APIRouter(route_class=route_class)
         self.register_endpoints(self._router)
         self._app.include_router(self._router)
-        
+
     def get_fastapi_app(self):
         return self._app
-
 
     def register_endpoints(self, router: APIRouter):
         endpoints = self._module.get_endpoints()

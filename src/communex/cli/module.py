@@ -6,16 +6,21 @@ import uvicorn
 from typer import Context
 
 import communex.balance as c_balance
-from communex.cli._common import make_custom_context, print_module_info, print_table_from_plain_dict
+from communex._common import intersection_update
+from communex.cli._common import (make_custom_context, print_module_info,
+                                  print_table_from_plain_dict)
 from communex.compat.key import classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_modules
+from communex.module._rate_limiters.limiters import (IpLimiterParams,
+                                                     StakeLimiterParams)
 from communex.module.server import ModuleServer
-from communex.module._rate_limiters.limiters import IpLimiterParams, StakeLimiterParams
 from communex.util import is_ip_valid
+
 from communex._common import intersection_update
 from communex.key import check_ss58_address
 from communex.types import Ss58Address
+
 
 module_app = typer.Typer(no_args_is_help=True)
 
@@ -138,8 +143,8 @@ def update(
     module = next(
         (
             item for item in modules_to_list if item["key"] == resolved_key.ss58_address
-        ), 
-            None
+        ),
+        None
     )
 
     if module is None:
@@ -160,7 +165,7 @@ def update(
     address = f"{new_ip}:{new_port}"
     to_update["address"] = address
     updated_module = intersection_update(dict(module), to_update)
-    module.update(updated_module) # type: ignore
+    module.update(updated_module)  # type: ignore
     with context.progress_status(
         f"Updating Module on a subnet with netuid '{netuid}' ..."
     ):
@@ -241,7 +246,7 @@ def serve(
         subnets_whitelist = None
     token_refill_rate = token_refill_rate_base_multiplier or 1
     limiter_params = IpLimiterParams() if use_ip_limiter else StakeLimiterParams(token_ratio=token_refill_rate)
-    
+
     if whitelist is None:
         context.info(
             "WARNING: No whitelist provided, will accept calls from any key"

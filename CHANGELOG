@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.30
+- removed min_stake
+- removed burn_rate
+- removed max_stake
+
+## 0.1.29.1
+- Fixed a bug on stakelimiter when calling retry_after for a key with no refresh rate
+
+## 0.1.29
+- The parameters `target_registrations_per_interval` and `target_registrations_interval` are now SubnetParams (instead of GlobalParams).
+- Added the paremeter `max_registrations_per_interval` to SubnetParams 
+
+## 0.1.28.2
+- Increased base value on stake limiter to 89
+
+## 0.1.28.1
+- Added a Faucet command that can be run on the testnet as `comx --testnet balance run-faucet`
+- Testnet and mainnet are compatible again
+
 ## 0.1.28
 - NetworkError now inherits from Exception instead of BaseException
 
