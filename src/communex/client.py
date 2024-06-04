@@ -2294,6 +2294,9 @@ class CommuneClient:
             params=[netuid],
         )
 
+    def get_dao_treasury_address(self) -> Ss58Address:
+        return self.query("DaoTreasuryAddress", module="GovernanceModule")
+
     def get_max_allowed_weights(self, netuid: int = 0) -> int:
         """
         Queries the network for the maximum allowed weights setting.
