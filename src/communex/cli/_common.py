@@ -130,7 +130,11 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
     console.print(table)
 
 
-def transform_module_into(to_exclude: list[str], last_block: int, immunity_period: int, modules: list[ModuleInfoWithOptionalBalance]):
+def transform_module_into(
+        to_exclude: list[str], last_block: int, 
+        immunity_period: int, modules: list[ModuleInfoWithOptionalBalance],
+        tempo: int
+    ):
     mods = cast(list[dict[str, Any]], modules)
     transformed_modules: list[dict[str, Any]] = []
     for mod in mods:
@@ -141,8 +145,12 @@ def transform_module_into(to_exclude: list[str], last_block: int, immunity_perio
         for key in to_exclude:
             del module[key]
         module["stake"] = round(from_nano(module["stake"]), 2)  # type: ignore
-        module["emission"] = round(from_horus(
-            module["emission"]), 4)  # type: ignore
+        module["emission"] = round(
+            from_horus(
+            module["emission"], tempo
+            ), 
+            4
+        )  # type: ignore
         if module.get("balance") is not None:
             module["balance"] = from_nano(module["balance"])  # type: ignore
         else:
@@ -154,8 +162,11 @@ def transform_module_into(to_exclude: list[str], last_block: int, immunity_perio
 
 
 def print_module_info(
-        client: CommuneClient, modules: list[ModuleInfoWithOptionalBalance], console: Console,
-        netuid: int, title: str | None = None,
+        client: CommuneClient, 
+        modules: list[ModuleInfoWithOptionalBalance], 
+        console: Console,
+        netuid: int, 
+        title: str | None = None,
 ) -> None:
     """
     Prints information about a module.
@@ -172,6 +183,7 @@ def print_module_info(
 
     # Get the immunity period on the netuid
     immunity_period = client.get_immunity_period(netuid)
+    tempo = client.get_tempo(netuid)
 
     # Transform the module dictionary to have immunity_period
     table = Table(
@@ -184,7 +196,8 @@ def print_module_info(
 
     to_exclude = ["stake_from", "metadata", "last_update", "regblock"]
     tranformed_modules = transform_module_into(
-        to_exclude, last_block, immunity_period, modules)
+        to_exclude, last_block, immunity_period, modules, tempo
+        )
 
     sample_mod = tranformed_modules[0]
     for key in sample_mod.keys():

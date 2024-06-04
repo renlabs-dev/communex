@@ -1,5 +1,4 @@
 DECIMALS = 9
-HORUS_DECIMALS = 11
 
 
 def from_nano(amount: int) -> float:
@@ -18,12 +17,12 @@ def to_nano(amount: float) -> int:
     return int(amount * (10**DECIMALS))
 
 
-def from_horus(amount: int) -> float:
+def from_horus(amount: int, subnet_tempo: int = 100) -> float:
     """
     Converts from horus to j
     """
 
-    return amount / (10**HORUS_DECIMALS)
+    return amount / (10**DECIMALS * subnet_tempo)
 
 
 def repr_j(amount: int):
