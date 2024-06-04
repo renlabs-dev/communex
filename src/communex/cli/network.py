@@ -83,19 +83,21 @@ def propose_globally(
     key: str,
     max_allowed_modules: int = typer.Option(None),
     max_registrations_per_block: int = typer.Option(None),
-    unit_emission: int = typer.Option(None),
+    min_name_length: int = typer.Option(None),
     max_name_length: int = typer.Option(None),
     min_burn: int = typer.Option(None),
     max_burn: int = typer.Option(None),
     min_weight_stake: int = typer.Option(None),
     max_allowed_subnets: int = typer.Option(None),
-    adjustment_alpha: int = typer.Option(None),
     floor_delegation_fee: int = typer.Option(None),
+    floor_founder_share: int = typer.Option(None),
+    subnet_stake_threshold: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
     curator: str = typer.Option(None),
     proposal_cost: int = typer.Option(None),
     proposal_expiration: int = typer.Option(None),
     proposal_participation_threshold: int = typer.Option(None),
+    general_subnet_application_cost: int = typer.Option(None),
 ):
     provided_params = locals().copy()
     provided_params.pop("ctx")

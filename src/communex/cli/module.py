@@ -17,7 +17,6 @@ from communex.module._rate_limiters.limiters import (IpLimiterParams,
 from communex.module.server import ModuleServer
 from communex.util import is_ip_valid
 
-from communex._common import intersection_update
 from communex.key import check_ss58_address
 from communex.types import Ss58Address
 

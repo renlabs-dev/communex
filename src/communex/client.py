@@ -1395,6 +1395,7 @@ class CommuneClient:
             fn="add_subnet_proposal",
             params=general_params,
             key=key,
+            module="GovernanceModule",
         )
 
         return response
@@ -1407,7 +1408,12 @@ class CommuneClient:
 
         params = {"data": cid}
 
-        response = self.compose_call(fn="add_custom_proposal", params=params, key=key)
+        response = self.compose_call(
+            fn="add_custom_proposal", 
+            params=params, 
+            key=key,
+            module="GovernanceModule",
+        )
         return response
 
     def add_custom_subnet_proposal(
@@ -1441,6 +1447,7 @@ class CommuneClient:
             fn="add_custom_subnet_proposal",
             params=params,
             key=key,
+            module="GovernanceModule",
         )
 
         return response
@@ -1479,6 +1486,7 @@ class CommuneClient:
             fn="add_global_proposal",
             params=general_params,
             key=key,
+            module="GovernanceModule",
         )
 
         return response
@@ -1507,7 +1515,12 @@ class CommuneClient:
 
         params = {"proposal_id": proposal_id, "agree": agree}
 
-        response = self.compose_call("vote_proposal", key=key, params=params)
+        response = self.compose_call(
+            "vote_proposal", 
+            key=key, 
+            params=params,
+            module="GovernanceModule",
+        )
 
         return response
 
@@ -1536,7 +1549,58 @@ class CommuneClient:
 
         params = {"proposal_id": proposal_id}
 
-        response = self.compose_call("unvote_proposal", key=key, params=params)
+        response = self.compose_call(
+            "remove_vote_proposal", 
+            key=key, 
+            params=params,
+            module="GovernanceModule",
+        )
+
+        return response
+
+    def enable_vote_power_delegation(self, key: Keypair) -> ExtrinsicReceipt:
+        """
+        Enables vote power delegation for the signer's account.
+
+        Args:
+            key: The keypair used for signing the delegation transaction.
+
+        Returns:
+            A receipt of the vote power delegation transaction.
+
+        Raises:
+            ChainTransactionError: If the transaction fails.
+        """
+
+        response = self.compose_call(
+            "enable_vote_power_delegation", 
+            params={},
+            key=key, 
+            module="GovernanceModule",
+        )
+
+        return response
+    
+    def disable_vote_power_delegation(self, key: Keypair) -> ExtrinsicReceipt:
+        """
+        Disables vote power delegation for the signer's account.
+
+        Args:
+            key: The keypair used for signing the delegation transaction.
+
+        Returns:
+            A receipt of the vote power delegation transaction.
+
+        Raises:
+            ChainTransactionError: If the transaction fails.
+        """
+
+        response = self.compose_call(
+            "disable_vote_power_delegation", 
+            params={},
+            key=key, 
+            module="GovernanceModule",
+        )
 
         return response
 
@@ -2872,3 +2936,12 @@ class CommuneClient:
             ).value  #  type: ignore
 
         return result
+
+    def get_voting_power_delegators(self) -> list[Ss58Address]:
+        result = self.query(
+            "DelegatingVotingPower", 
+            [], 
+            module="GovernanceModule"
+        )
+        return result
+

@@ -327,3 +327,23 @@ def total_balance(
         tokens_sum = sum(key2tokens.values())
 
         context.output(format_balance(tokens_sum, unit=unit))
+
+@key_app.command()
+def power_delegation(
+    ctx: Context, 
+    key: str, 
+    enable: bool = typer.Option(True, "--disable")
+    ):
+    """
+    Gets power delegation of a key.
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    keypair = try_classic_load_key(key, context)
+    if enable is True:
+        context.info("Enabling vote power delegation...")
+        client.enable_vote_power_delegation(keypair)
+    else:
+        context.info("Disabling vote power delegation...")
+        client.disable_vote_power_delegation(keypair)

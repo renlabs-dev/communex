@@ -222,7 +222,22 @@ def stake(
     nano_amount = to_nano(amount)
     resolved_key = try_classic_load_key(key, context)
     resolved_dest = resolve_key_ss58_encrypted(dest, context)
-
+    delegators = client.get_voting_power_delegators()
+    if resolved_key.ss58_address in delegators:
+        delegating_message = (
+            "You are delegating your voting power with your stake. "
+            "If you want to change this behavior, "
+            "call `comx key power-delegation <key> --disable`."
+        )
+        context.info(delegating_message)
+    else:
+        delegating_message = (
+            "You are not delegating your voting power with your stake. "
+            "If you want to change this behavior, "
+            "call `comx key power-delegation <key>`."
+        )
+        context.info(delegating_message)
+        
     with context.progress_status(
         f"Staking {amount} tokens to {dest} on a subnet with netuid '{netuid}'..."
     ):
