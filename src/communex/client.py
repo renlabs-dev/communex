@@ -1392,7 +1392,7 @@ class CommuneClient:
         general_params["netuid"] = netuid
 
         response = self.compose_call(
-            fn="add_subnet_proposal",
+            fn="add_subnet_params_proposal",
             params=general_params,
             key=key,
             module="GovernanceModule",
@@ -1409,7 +1409,7 @@ class CommuneClient:
         params = {"data": cid}
 
         response = self.compose_call(
-            fn="add_custom_proposal", 
+            fn="add_global_custom_proposal", 
             params=params, 
             key=key,
             module="GovernanceModule",
@@ -1444,7 +1444,7 @@ class CommuneClient:
         }
 
         response = self.compose_call(
-            fn="add_custom_subnet_proposal",
+            fn="add_subnet_custom_proposal",
             params=params,
             key=key,
             module="GovernanceModule",
@@ -1483,7 +1483,7 @@ class CommuneClient:
 
         general_params = vars(params)
         response = self.compose_call(
-            fn="add_global_proposal",
+            fn="add_global_params_proposal",
             params=general_params,
             key=key,
             module="GovernanceModule",
