@@ -162,6 +162,7 @@ def propose_on_subnet(
     ctx: Context,
     netuid: int,
     key: str,
+    cid: str,
     name: str = typer.Option(None),
     founder: str = typer.Option(None),
     founder_share: int = typer.Option(None),
@@ -181,6 +182,13 @@ def propose_on_subnet(
     """
     Adds a proposal to a specific subnet.
     """
+    context = make_custom_context(ctx)
+    if not re.match(IPFS_REGEX, cid):
+        context.error(f"CID provided is invalid: {cid}")
+        exit(1)
+    else:
+        ipfs_prefix = "ipfs://"
+        cid = ipfs_prefix + cid
 
     provided_params = locals().copy()
     provided_params.pop("ctx")
@@ -193,7 +201,6 @@ def propose_on_subnet(
         key: value for key, value in provided_params.items() if value is not None
     }
 
-    context = make_custom_context(ctx)
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
@@ -209,13 +216,17 @@ def propose_on_subnet(
         subnet_params["maximum_set_weight_calls_per_epoch"] = client.query(
             "MaximumSetWeightCallsPerEpoch"
         )
-    context = make_custom_context(ctx)
-    client = context.com_client()
 
     resolved_key = classic_load_key(key)
 
+
     with context.progress_status("Adding a proposal..."):
-        client.add_subnet_proposal(resolved_key, subnet_params, netuid=netuid)
+        client.add_subnet_proposal(
+            resolved_key, 
+            subnet_params, 
+            cid, 
+            netuid=netuid
+        )
 
 
 @subnet_app.command()

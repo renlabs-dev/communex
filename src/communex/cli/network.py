@@ -71,7 +71,10 @@ def list_proposals(ctx: Context, query_cid: bool = typer.Option(True)):
             return
 
     for proposal_id, batch_proposal in proposals.items():
-        print_table_from_plain_dict(
+        status = batch_proposal["status"]
+        if isinstance(status, dict):
+            batch_proposal["status"] = [*status.keys()][0]
+        print_table_from_plain_dict(    
             batch_proposal, [
                 f"Proposal id: {proposal_id}", "Params"], context.console
         )
@@ -81,6 +84,7 @@ def list_proposals(ctx: Context, query_cid: bool = typer.Option(True)):
 def propose_globally(
     ctx: Context,
     key: str,
+    cid: str,
     max_allowed_modules: int = typer.Option(None),
     max_registrations_per_block: int = typer.Option(None),
     min_name_length: int = typer.Option(None),
@@ -115,8 +119,12 @@ def propose_globally(
     provided_params = cast(NetworkParams, provided_params)
     global_params = get_global_params(client)
     global_params.update(provided_params)
+    
+    if not re.match(IPFS_REGEX, cid):
+        context.error(f"CID provided is invalid: {cid}")
+        exit(1)
     with context.progress_status("Adding a proposal..."):
-        client.add_global_proposal(resolved_key, global_params)
+        client.add_global_proposal(resolved_key, global_params, cid)
 
 
 def get_valid_voting_keys(
@@ -197,8 +205,10 @@ def add_custom_proposal(ctx: Context, key: str, cid: str):
     if not re.match(IPFS_REGEX, cid):
         context.error(f"CID provided is invalid: {cid}")
         exit(1)
+    else:
+        ipfs_prefix = "ipfs://"
+        cid = ipfs_prefix + cid
     client = context.com_client()
-
     # append the ipfs hash
     ipfs_prefix = "ipfs://"
     cid = ipfs_prefix + cid

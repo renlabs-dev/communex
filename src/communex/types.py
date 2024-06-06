@@ -42,7 +42,29 @@ class NetworkParams(TypedDict):
     max_proposal_reward_treasury_allocation: int
     proposal_reward_interval: int
     subnet_stake_threshold: int
+    floor_founder_share: int
+    general_subnet_application_cost: int
 
+
+class SubnetParamsMaps(TypedDict):
+    netuid_to_founder: dict[int, Ss58Address]
+    netuid_to_founder_share: dict[int, int]
+    netuid_to_immunity_period: dict[int, int]
+    netuid_to_incentive_ratio: dict[int, int]
+    netuid_to_max_allowed_uids: dict[int, int]
+    netuid_to_max_allowed_weights: dict[int, int]
+    netuid_to_min_allowed_weights: dict[int, int]
+    netuid_to_max_weight_age: dict[int, int]
+    netuid_to_min_stake: dict[int, int]
+    netuid_to_name: dict[int, str]
+    netuid_to_tempo: dict[int, int]
+    netuid_to_trust_ratio: dict[int, int]
+    netuid_to_bonds_ma: dict[int, int]
+    netuid_to_maximum_set_weight_calls_per_epoch: dict[int, int]
+    netuid_to_target_registrations_per_interval: dict[int, int]
+    netuid_to_target_registrations_interval: dict[int, int]
+    netuid_to_emission: dict[int, int]
+    netuid_to_max_registrations_per_interval: dict[int, int]
 
 class SubnetParams(TypedDict):
     founder: Ss58Address
@@ -57,7 +79,6 @@ class SubnetParams(TypedDict):
     name: str
     tempo: int
     trust_ratio: int
-    vote_mode: str
     bonds_ma: int | None
     maximum_set_weight_calls_per_epoch: int | None
     target_registrations_per_interval: int

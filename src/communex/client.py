@@ -4,7 +4,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Mapping, TypeVar
+from typing import Any, Mapping, TypeVar, cast
 
 from substrateinterface import ExtrinsicReceipt  # type: ignore
 from substrateinterface import Keypair  # type: ignore
@@ -580,7 +580,9 @@ class CommuneClient:
             {'function_name': 'query_result', ...}
         """
 
-        result = None
+        result: dict[str, str] = {}
+        if not functions:
+            raise Exception("No result")
         with self.get_conn(init=True) as substrate:
             for module, queries in functions.items():
                 storage_keys: list[Any] = []
@@ -595,16 +597,11 @@ class CommuneClient:
                     storage_keys=storage_keys, block_hash=block_hash
                 )
 
-                result: dict[str, str] | None = {}
-
                 for item in responses:
                     fun = item[0]
                     query = item[1]
                     storage_fun = fun.storage_function
                     result[storage_fun] = query.value
-
-            if result is None:
-                raise Exception("No result")
 
         return result
 
@@ -1365,7 +1362,7 @@ class CommuneClient:
         return response
 
     def add_subnet_proposal(
-        self, key: Keypair, params: SubnetParams, netuid: int = 0
+        self, key: Keypair, params: SubnetParams, ipfs: str, netuid: int = 0
     ) -> ExtrinsicReceipt:
         """
         Submits a proposal for creating or modifying a subnet within the
@@ -1390,7 +1387,8 @@ class CommuneClient:
 
         general_params = dict(params)
         general_params["netuid"] = netuid
-
+        general_params["data"] = ipfs
+        breakpoint()
         response = self.compose_call(
             fn="add_subnet_params_proposal",
             params=general_params,
@@ -1456,6 +1454,7 @@ class CommuneClient:
         self,
         key: Keypair,
         params: NetworkParams,
+        cid: str | None,
     ) -> ExtrinsicReceipt:
         """
         Submits a proposal for altering the global network parameters.
@@ -1480,8 +1479,10 @@ class CommuneClient:
                 parameters are invalid.
             ChainTransactionError: If the transaction fails.
         """
-
-        general_params = vars(params)
+        general_params = cast(dict[str, Any], params)
+        cid = cid or ""
+        general_params["data"] = cid
+        
         response = self.compose_call(
             fn="add_global_params_proposal",
             params=general_params,
@@ -1652,7 +1653,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Proposals", extract_value=extract_value)["Proposals"]
+        return self.query_map(
+            "Proposals", extract_value=extract_value, module="GovernanceModule"
+        )["Proposals"]
 
     def query_map_weights(
         self, netuid: int = 0, extract_value: bool = False
