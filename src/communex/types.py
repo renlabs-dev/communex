@@ -34,16 +34,12 @@ class NetworkParams(TypedDict):
     min_weight_stake: int
     max_allowed_subnets: int
     adjustment_alpha: int
-    floor_delegation_fee: int
-    max_allowed_weights: int
     curator: Ss58Address
     proposal_cost: int
     proposal_expiration: int
     max_proposal_reward_treasury_allocation: int
     proposal_reward_interval: int
     subnet_stake_threshold: int
-    floor_founder_share: int
-    general_subnet_application_cost: int
 
 
 class SubnetParamsMaps(TypedDict):

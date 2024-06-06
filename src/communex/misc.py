@@ -163,7 +163,6 @@ def get_map_subnets_params(
         block_hash,
     )
 
-    
     subnet_maps: SubnetParamsMaps = {
         "netuid_to_emission": bulk_query["SubnetEmission"],
         "netuid_to_tempo": bulk_query["Tempo"],
@@ -180,9 +179,9 @@ def get_map_subnets_params(
         "netuid_to_max_weight_age": bulk_query["MaxWeightAge"],
         "netuid_to_bonds_ma": bulk_query.get("BondsMovingAverage", {}),
         "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
-        "netuid_to_target_registrations_per_interval": bulk_query["TargetRegistrationsInterval"],
-        "netuid_to_target_registrations_interval": bulk_query["TargetRegistrationsPerInterval"],
-        "netuid_to_max_registrations_per_interval": bulk_query["MaxRegistrationsPerInterval"],
+        "netuid_to_target_registrations_per_interval": bulk_query.get("TargetRegistrationsInterval", {}),
+        "netuid_to_target_registrations_interval": bulk_query.get("TargetRegistrationsPerInterval", {}),
+        "netuid_to_max_registrations_per_interval": bulk_query.get("MaxRegistrationsPerInterval", {}),
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
     for netuid, name in subnet_maps["netuid_to_name"].items():
@@ -201,11 +200,11 @@ def get_map_subnets_params(
             "trust_ratio": subnet_maps["netuid_to_trust_ratio"][netuid],
             "emission": subnet_maps["netuid_to_emission"][netuid],
             "max_weight_age": subnet_maps["netuid_to_max_weight_age"][netuid],
-            "bonds_ma": subnet_maps["netuid_to_bonds_ma"][netuid],
-            "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"][netuid],
-            "target_registrations_per_interval": subnet_maps["netuid_to_target_registrations_per_interval"][netuid],
-            "target_registrations_interval": subnet_maps["netuid_to_target_registrations_interval"][netuid],
-            "max_registrations_per_interval": subnet_maps["netuid_to_max_registrations_per_interval"][netuid],
+            "bonds_ma": subnet_maps["netuid_to_bonds_ma"].get(netuid, -1),
+            "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"].get(netuid, -1),
+            "target_registrations_per_interval": subnet_maps["netuid_to_target_registrations_per_interval"].get(netuid, -1),
+            "target_registrations_interval": subnet_maps["netuid_to_target_registrations_interval"].get(netuid, -1),
+            "max_registrations_per_interval": subnet_maps["netuid_to_max_registrations_per_interval"].get(netuid, -1),
         }
 
         result_subnets[netuid] = subnet
@@ -248,7 +247,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
 
 
     governance_config: dict[str, int] = query_all["GlobalGovernanceConfig"] # type: ignore
-    burn_config: dict[str, int] = query_all["BurnConfig"] # type: ignore
+    # burn_config: dict[str, int] = query_all["BurnConfig"] # type: ignore
     global_params: NetworkParams = {
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
