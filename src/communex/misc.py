@@ -8,6 +8,7 @@ from communex.types import (
     NetworkParams,
     Ss58Address,
     SubnetParamsWithEmission,
+    BurnConfig,
 )
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
@@ -82,7 +83,9 @@ def get_map_modules(
         regblock = uid_to_regblock[uid]
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
-        delegation_fee = ss58_to_delegationfee.get(key, 20)  # 20% default delegation fee
+        delegation_fee = ss58_to_delegationfee.get(
+            key, 20
+        )  # 20% default delegation fee
         metadata = uid_to_metadata.get(uid, None)
 
         balance = None
@@ -116,7 +119,9 @@ def get_map_modules(
     return result_modules
 
 
-def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None) -> dict[int, SubnetParamsWithEmission]:
+def get_map_subnets_params(
+    client: CommuneClient, block_hash: str | None = None
+) -> dict[int, SubnetParamsWithEmission]:
     """
     Gets all subnets info on the network
     """
@@ -207,7 +212,9 @@ def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None)
         emission = netuid_to_emission[netuid]
         max_weight_age = netuid_to_weight_age[netuid]
         bonds_ma = netuid_to_bonds_ma.get(netuid, None)
-        maximum_weight_calls = netuid_to_maximum_weight_calls_per_epoch.get(netuid, None)
+        maximum_weight_calls = netuid_to_maximum_weight_calls_per_epoch.get(
+            netuid, None
+        )
         target_registrations_interval = netuid_to_target_reg_interval[netuid]
         target_registrations_per_interval = netuid_to_target_reg_per_interval[netuid]
         max_registrations_per_interval = netuid_to_max_reg_per_interval[netuid]
@@ -252,17 +259,11 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
                 ("MaxRegistrationsPerBlock", []),
                 ("UnitEmission", []),
                 ("MaxNameLength", []),
-                ("MinBurn", []),
-                ("MaxBurn", []),
+                ("BurnConfig", []),
                 ("MinWeightStake", []),
                 ("AdjustmentAlpha", []),
                 ("FloorDelegationFee", []),
                 ("MaxAllowedWeightsGlobal", []),
-                ("Curator", []),
-                ("ProposalCost", []),
-                ("ProposalExpiration", []),
-                ("ProposalParticipationThreshold", []),
-                ("Curator", []),
                 ("SubnetStakeThreshold", []),
                 ("MinWeightStake", []),
                 ("MinNameLength", []),
@@ -270,22 +271,34 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         }
     )
 
+    query_all_governance = c_client.query_batch(
+        {
+            "GovernanceModule": [("Curator", []), ("GlobalGovernanceConfig", [])],
+        }
+    )
+
+    global_governance_config = query_all_governance["GlobalGovernanceConfig"]
+
     global_params: NetworkParams = {
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
         "unit_emission": int(query_all["UnitEmission"]),
         "max_name_length": int(query_all["MaxNameLength"]),
-        "min_burn": int(query_all["MinBurn"]),
-        "max_burn": int(query_all["MaxBurn"]),
+        "burn_config": BurnConfig(query_all["BurnConfig"]),  # type: ignore
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
         "max_allowed_weights": int(query_all["MaxAllowedWeightsGlobal"]),
-        "curator": Ss58Address(query_all["Curator"]),
-        "proposal_cost": int(query_all["ProposalCost"]),
-        "proposal_expiration": int(query_all["ProposalExpiration"]),
-        "proposal_participation_threshold": int(query_all["ProposalParticipationThreshold"]),
+        "curator": Ss58Address(query_all_governance["Curator"]),
+        "proposal_cost": int(global_governance_config["proposal_cost"]),  # type: ignore
+        "proposal_expiration": int(global_governance_config["proposal_expiration"]),  # type: ignore
+        "max_proposal_reward_treasury_allocation": int(
+            global_governance_config["max_proposal_reward_treasury_allocation"]  # type: ignore
+        ),
+        "proposal_reward_interval": int(
+            global_governance_config["proposal_reward_interval"]  # type: ignore
+        ),
         "subnet_stake_threshold": int(query_all["SubnetStakeThreshold"]),
         "min_name_length": int(query_all["MinNameLength"]),
     }
@@ -293,8 +306,13 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
     return global_params
 
 
-def concat_to_local_keys(balance: dict[str, int], local_key_info: dict[str, Ss58Address]) -> dict[str, int]:
-    key2: dict[str, int] = {key_name: balance.get(key_address, 0) for key_name, key_address in local_key_info.items()}
+def concat_to_local_keys(
+    balance: dict[str, int], local_key_info: dict[str, Ss58Address]
+) -> dict[str, int]:
+    key2: dict[str, int] = {
+        key_name: balance.get(key_address, 0)
+        for key_name, key_address in local_key_info.items()
+    }
 
     return key2
 
@@ -311,7 +329,9 @@ def local_keys_to_freebalance(
     balance_map = query_all["Account"]
 
     format_balances: dict[str, int] = {
-        key: value["data"]["free"] for key, value in balance_map.items() if "data" in value and "free" in value["data"]
+        key: value["data"]["free"]
+        for key, value in balance_map.items()
+        if "data" in value and "free" in value["data"]
     }
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
@@ -332,7 +352,9 @@ def local_keys_to_stakedbalance(
 
     staketo_map = query_all["StakeTo"]
 
-    format_stake: dict[str, int] = {key: sum(stake for _, stake in value) for key, value in staketo_map.items()}
+    format_stake: dict[str, int] = {
+        key: sum(stake for _, stake in value) for key, value in staketo_map.items()
+    }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
@@ -368,7 +390,9 @@ def local_keys_allbalance(
         staketo_maps.append(staketo_map)
 
     format_balances: dict[str, int] = {
-        key: value["data"]["free"] for key, value in balance_map.items() if "data" in value and "free" in value["data"]
+        key: value["data"]["free"]
+        for key, value in balance_map.items()
+        if "data" in value and "free" in value["data"]
     }
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
@@ -386,12 +410,21 @@ def local_keys_allbalance(
                 # If the key exists, extend the existing list with the new values
                 merged_staketo_map[key].extend(value)
 
-    format_stake: dict[str, int] = {key: sum(stake for _, stake in value) for key, value in merged_staketo_map.items()}
+    format_stake: dict[str, int] = {
+        key: sum(stake for _, stake in value)
+        for key, value in merged_staketo_map.items()
+    }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
-    key2balance = {k: v for k, v in sorted(key2balance.items(), key=lambda item: item[1], reverse=True)}
+    key2balance = {
+        k: v
+        for k, v in sorted(key2balance.items(), key=lambda item: item[1], reverse=True)
+    }
 
-    key2stake = {k: v for k, v in sorted(key2stake.items(), key=lambda item: item[1], reverse=True)}
+    key2stake = {
+        k: v
+        for k, v in sorted(key2stake.items(), key=lambda item: item[1], reverse=True)
+    }
 
     return key2balance, key2stake

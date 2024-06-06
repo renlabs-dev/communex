@@ -18,6 +18,11 @@ chains.
 
 # TODO: replace with dataclasses
 
+# == Burn related
+MinBurn = NewType("MinBurn", int)
+MaxBurn = NewType("MaxBurn", int)
+BurnConfig = NewType("BurnConfig", dict[MinBurn, MaxBurn])
+
 
 class NetworkParams(TypedDict):
     max_allowed_modules: int
@@ -25,8 +30,7 @@ class NetworkParams(TypedDict):
     unit_emission: int
     max_name_length: int
     min_name_length: int
-    min_burn: int  # min burn to register
-    max_burn: int  # max burn to register
+    burn_config: BurnConfig
     min_weight_stake: int
     max_allowed_subnets: int
     adjustment_alpha: int
@@ -35,7 +39,8 @@ class NetworkParams(TypedDict):
     curator: Ss58Address
     proposal_cost: int
     proposal_expiration: int
-    proposal_participation_threshold: int
+    max_proposal_reward_treasury_allocation: int
+    proposal_reward_interval: int
     subnet_stake_threshold: int
 
 
