@@ -9,7 +9,10 @@ import communex.balance as c_balance
 from communex.cli._common import (CustomCtx, make_custom_context,
                                   print_table_from_plain_dict)
 from communex.client import CommuneClient
-from communex.compat.key import classic_load_key, local_key_addresses
+from communex.compat.key import (
+    local_key_addresses, 
+    try_classic_load_key
+    )
 from communex.misc import (IPFS_REGEX, get_global_params,
                            local_keys_to_stakedbalance)
 from communex.types import NetworkParams
@@ -113,7 +116,7 @@ def propose_globally(
     Adds a global proposal to the network.
     """
     context = make_custom_context(ctx)
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key, context)
     client = context.com_client()
 
     provided_params = cast(NetworkParams, provided_params)
@@ -174,7 +177,8 @@ def vote_proposal(
         keys_stake = {key: None}
 
     for voting_key in track(keys_stake.keys(), description="Voting..."):
-        resolved_key = classic_load_key(voting_key)
+        
+        resolved_key = try_classic_load_key(voting_key, context)
         try:
             client.vote_on_proposal(resolved_key, proposal_id, agree)
         except Exception as e:
@@ -191,7 +195,7 @@ def unvote_proposal(ctx: Context, key: str, proposal_id: int):
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key, context)
     with context.progress_status(f"Unvoting on a proposal {proposal_id}..."):
         client.unvote_on_proposal(resolved_key, proposal_id)
 
@@ -213,7 +217,7 @@ def add_custom_proposal(ctx: Context, key: str, cid: str):
     ipfs_prefix = "ipfs://"
     cid = ipfs_prefix + cid
 
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key, context)
 
     with context.progress_status("Adding a proposal..."):
         client.add_custom_proposal(resolved_key, cid)
