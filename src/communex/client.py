@@ -1439,7 +1439,7 @@ class CommuneClient:
 
         params = {
             "data": cid,
-            "netuid": netuid,
+            "subnet_id": netuid,
         }
 
         response = self.compose_call(
@@ -2952,3 +2952,17 @@ class CommuneClient:
         )
         return result
 
+    def add_transfer_dao_treasury_proposal(
+            self,
+            key: Keypair,
+            data: str, 
+            amount_nano: int,
+            dest: Ss58Address, 
+    ):
+        params = {"dest": dest, "value": amount_nano, "data": data}
+
+        return self.compose_call(
+            module="GovernanceModule", 
+            fn="add_transfer_dao_treasury_proposal", 
+            params=params, key = key
+        )

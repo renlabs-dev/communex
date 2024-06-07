@@ -1,9 +1,9 @@
 from typing import Optional
-
+import re
 import typer
 from typer import Context
 
-from communex._common import BalanceUnit, format_balance
+from communex._common import BalanceUnit, format_balance, IPFS_REGEX
 from communex.balance import to_nano
 from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict)
@@ -306,3 +306,28 @@ def run_faucet(
                 "key": resolved_key.ss58_address,
             }
             client.compose_call("faucet", params=params, unsigned=True, key=resolved_key.ss58_address)  # type: ignore
+
+
+@balance_app.command()
+def transfer_dao_funds(
+    ctx: Context,
+    signer_key: str,
+    amount: float,
+    cid_hash: str,
+    dest: str,
+):
+    context = make_custom_context(ctx)
+    if not re.match(IPFS_REGEX, cid_hash):
+        context.error(f"CID provided is invalid: {cid_hash}")
+        exit(1)
+    ipfs_prefix = "ipfs://"
+    cid = ipfs_prefix + cid_hash
+
+    client = context.com_client()
+
+    nano_amount = to_nano(amount)
+    dest = resolve_key_ss58_encrypted(dest, context)
+    signer_keypair = try_classic_load_key(signer_key, context)
+    client.add_transfer_dao_treasury_proposal(
+        signer_keypair, cid, nano_amount, dest
+    )
