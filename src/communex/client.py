@@ -2946,7 +2946,7 @@ class CommuneClient:
 
     def get_voting_power_delegators(self) -> list[Ss58Address]:
         result = self.query(
-            "DelegatingVotingPower", 
+            "NotDelegatingVotingPower", 
             [], 
             module="GovernanceModule"
         )
