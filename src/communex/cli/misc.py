@@ -115,22 +115,11 @@ def stats(ctx: Context, balances: bool = False, netuid: int = 0):
                       context.console, netuid, "validators")
 
 
-@misc_app.command(name="treasury")
-def get_dao_treasury(ctx: Context):
-    context = make_custom_context(ctx)
-    client = context.com_client()
-
-    with context.progress_status("Getting DAO treasury..."):
-        dao = client.get_global_dao_treasury()
-    j_dao = from_nano(dao)
-    context.output(f"{j_dao:.2f} J")
-
-
 @misc_app.command(name="treasury-address")
 def get_treasury_address(ctx: Context):
     context = make_custom_context(ctx)
     client = context.com_client()
-
+ 
     with context.progress_status("Getting DAO treasury address..."):
         dao_address = client.get_dao_treasury_address()
     context.output(dao_address)

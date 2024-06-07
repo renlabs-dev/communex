@@ -2374,7 +2374,7 @@ class CommuneClient:
         return self.query("SubnetNames", params=[netuid])
 
     def get_global_dao_treasury(self):
-        return self.query("GlobalDaoTreasury")
+        return self.query("GlobalDaoTreasury", module="GovernanceModule")
 
     def get_n(self, netuid: int = 0) -> int:
         """

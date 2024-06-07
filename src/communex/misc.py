@@ -8,7 +8,6 @@ from communex.types import (
     NetworkParams,
     Ss58Address,
     SubnetParamsWithEmission,
-    BurnConfig,
     SubnetParamsMaps,
 )
 
@@ -34,6 +33,7 @@ def get_map_modules(
             ("RegistrationBlock", [netuid]),
             ("DelegationFee", [netuid]),
             ("Emission", []),
+            
             ("Incentive", []),
             ("Dividends", []),
             ("LastUpdate", []),
@@ -44,6 +44,7 @@ def get_map_modules(
         request_dict["System"] = [("Account", [])]
 
     bulk_query = client.query_batch_map(request_dict)
+   
     (
         ss58_to_stakefrom,
         uid_to_key,
@@ -59,7 +60,7 @@ def get_map_modules(
         uid_to_metadata,
     ) = (
         bulk_query.get("StakeFrom", {}),
-        bulk_query.get("Keys", {}),
+       bulk_query.get("Keys", {}),
         bulk_query["Name"],
         bulk_query["Address"],
         bulk_query["RegistrationBlock"],
@@ -158,6 +159,7 @@ def get_map_subnets_params(
                 ("MaxWeightAge", []),
                 ("BondsMovingAverage", []),
                 ("MaximumSetWeightCallsPerEpoch", []),
+                ("AdjustmentAlpha", []),
             ],
                 "GovernanceModule": [
                     ("SubnetGovernanceConfig", []),
@@ -165,7 +167,6 @@ def get_map_subnets_params(
         },
         block_hash,
     )
-    breakpoint()
     subnet_maps: SubnetParamsMaps = {
         "netuid_to_emission": bulk_query["SubnetEmission"],
         "netuid_to_tempo": bulk_query["Tempo"],
@@ -181,6 +182,7 @@ def get_map_subnets_params(
         "netuid_to_name": bulk_query["SubnetNames"],
         "netuid_to_max_weight_age": bulk_query["MaxWeightAge"],
         "netuid_to_vote_mode": bulk_query["SubnetGovernanceConfig"],
+        "netuid_to_adjustment_alpha": bulk_query["AdjustmentAlpha"],
         "netuid_to_bonds_ma": bulk_query.get("BondsMovingAverage", {}),
         "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
         "netuid_to_target_registrations_per_interval": bulk_query.get("TargetRegistrationsInterval", {}),
@@ -209,6 +211,7 @@ def get_map_subnets_params(
             "emission": subnet_maps["netuid_to_emission"][netuid],
             "max_weight_age": subnet_maps["netuid_to_max_weight_age"][netuid],
             "vote_mode": subnet_maps["netuid_to_vote_mode"][netuid]["vote_mode"],
+            "adjustment_alpha": subnet_maps["netuid_to_adjustment_alpha"][netuid],
             "bonds_ma": subnet_maps["netuid_to_bonds_ma"].get(netuid, None),
             "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"].get(netuid, 30),
             "target_registrations_per_interval": subnet_maps["netuid_to_target_registrations_per_interval"].get(netuid, default_target_registrations_per_interval),
@@ -253,8 +256,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ]
         }
     )
-
-
     governance_config: dict[str, int] = query_all["GlobalGovernanceConfig"] # type: ignore
     # burn_config: dict[str, int] = query_all["BurnConfig"] # type: ignore
     global_params: NetworkParams = {
@@ -263,7 +264,9 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
         "unit_emission": int(query_all["UnitEmission"]),
         "max_name_length": int(query_all["MaxNameLength"]),
-        "burn_config": BurnConfig(query_all["BurnConfig"]),  # type: ignore
+        #"burn_config": BurnConfig(query_all["BurnConfig"]),  # type: ignore
+        "min_burn": int(query_all["BurnConfig"]["min_burn"]), # type: ignore
+        "max_burn": int(query_all["BurnConfig"]["max_burn"]), # type: ignore
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
@@ -276,10 +279,10 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "floor_founder_share": int(query_all["FloorFounderShare"]),
         "general_subnet_application_cost": int(query_all["GeneralSubnetApplicationCost"]),
         "max_proposal_reward_treasury_allocation": int(
-            query_all["max_proposal_reward_treasury_allocation"]  # type: ignore
+            governance_config["max_proposal_reward_treasury_allocation"]  # type: ignore
         ),
         "proposal_reward_interval": int(
-            query_all["proposal_reward_interval"]  # type: ignore
+            governance_config["proposal_reward_interval"]  # type: ignore
         ),
     }
     return global_params

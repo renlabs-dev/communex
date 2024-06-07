@@ -30,7 +30,9 @@ class NetworkParams(TypedDict):
     unit_emission: int
     max_name_length: int
     min_name_length: int
-    burn_config: BurnConfig
+    # burn_config: BurnConfig
+    min_burn: int
+    max_burn: int
     min_weight_stake: int
     max_allowed_subnets: int
     adjustment_alpha: int
@@ -62,6 +64,7 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_emission: dict[int, int]
     netuid_to_max_registrations_per_interval: dict[int, int]
     netuid_to_vote_mode: dict[int, dict[str, str]]
+    netuid_to_adjustment_alpha: dict[int, int]
 
 class SubnetParams(TypedDict):
     founder: Ss58Address
@@ -82,6 +85,7 @@ class SubnetParams(TypedDict):
     target_registrations_interval: int
     max_registrations_per_interval: int
     vote_mode: str
+    adjustment_alpha: int
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.
