@@ -159,10 +159,13 @@ def get_map_subnets_params(
                 ("BondsMovingAverage", []),
                 ("MaximumSetWeightCallsPerEpoch", []),
             ],
+                "GovernanceModule": [
+                    ("SubnetGovernanceConfig", []),
+                ]
         },
         block_hash,
     )
-
+    breakpoint()
     subnet_maps: SubnetParamsMaps = {
         "netuid_to_emission": bulk_query["SubnetEmission"],
         "netuid_to_tempo": bulk_query["Tempo"],
@@ -177,6 +180,7 @@ def get_map_subnets_params(
         "netuid_to_trust_ratio": bulk_query["TrustRatio"],
         "netuid_to_name": bulk_query["SubnetNames"],
         "netuid_to_max_weight_age": bulk_query["MaxWeightAge"],
+        "netuid_to_vote_mode": bulk_query["SubnetGovernanceConfig"],
         "netuid_to_bonds_ma": bulk_query.get("BondsMovingAverage", {}),
         "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
         "netuid_to_target_registrations_per_interval": bulk_query.get("TargetRegistrationsInterval", {}),
@@ -184,6 +188,10 @@ def get_map_subnets_params(
         "netuid_to_max_registrations_per_interval": bulk_query.get("MaxRegistrationsPerInterval", {}),
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
+
+    default_target_registrations_interval = 200
+    default_target_registrations_per_interval = int(default_target_registrations_interval / 2)
+    default_max_registrations_per_interval = 42
     for netuid, name in subnet_maps["netuid_to_name"].items():
 
         subnet: SubnetParamsWithEmission = {
@@ -200,11 +208,12 @@ def get_map_subnets_params(
             "trust_ratio": subnet_maps["netuid_to_trust_ratio"][netuid],
             "emission": subnet_maps["netuid_to_emission"][netuid],
             "max_weight_age": subnet_maps["netuid_to_max_weight_age"][netuid],
-            "bonds_ma": subnet_maps["netuid_to_bonds_ma"].get(netuid, -1),
-            "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"].get(netuid, -1),
-            "target_registrations_per_interval": subnet_maps["netuid_to_target_registrations_per_interval"].get(netuid, -1),
-            "target_registrations_interval": subnet_maps["netuid_to_target_registrations_interval"].get(netuid, -1),
-            "max_registrations_per_interval": subnet_maps["netuid_to_max_registrations_per_interval"].get(netuid, -1),
+            "vote_mode": subnet_maps["netuid_to_vote_mode"][netuid]["vote_mode"],
+            "bonds_ma": subnet_maps["netuid_to_bonds_ma"].get(netuid, None),
+            "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"].get(netuid, 30),
+            "target_registrations_per_interval": subnet_maps["netuid_to_target_registrations_per_interval"].get(netuid, default_target_registrations_per_interval),
+            "target_registrations_interval": subnet_maps["netuid_to_target_registrations_interval"].get(netuid, default_target_registrations_interval),
+            "max_registrations_per_interval": subnet_maps["netuid_to_max_registrations_per_interval"].get(netuid, default_max_registrations_per_interval),
         }
 
         result_subnets[netuid] = subnet

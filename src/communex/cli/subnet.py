@@ -192,8 +192,10 @@ def propose_on_subnet(
 
     provided_params = locals().copy()
     provided_params.pop("ctx")
+    provided_params.pop("context")
     provided_params.pop("key")
     provided_params.pop("netuid")
+    provided_params.pop("ipfs_prefix")
     if provided_params["founder"] is not None:
         resolve_founder = resolve_key_ss58(founder)
         provided_params["founder"] = resolve_founder

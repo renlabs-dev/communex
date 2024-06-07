@@ -61,6 +61,7 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_target_registrations_interval: dict[int, int]
     netuid_to_emission: dict[int, int]
     netuid_to_max_registrations_per_interval: dict[int, int]
+    netuid_to_vote_mode: dict[int, dict[str, str]]
 
 class SubnetParams(TypedDict):
     founder: Ss58Address
@@ -80,6 +81,7 @@ class SubnetParams(TypedDict):
     target_registrations_per_interval: int
     target_registrations_interval: int
     max_registrations_per_interval: int
+    vote_mode: str
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.

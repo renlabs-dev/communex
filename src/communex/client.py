@@ -1386,10 +1386,10 @@ class CommuneClient:
         """
 
         general_params = dict(params)
-        general_params["netuid"] = netuid
+        general_params["subnet_id"] = netuid
         general_params["data"] = ipfs
-        breakpoint()
-        general_params["burn_config"] = json.dumps(general_params["burn_config"])
+        # breakpoint()
+        # general_params["burn_config"] = json.dumps(general_params["burn_config"])
         response = self.compose_call(
             fn="add_subnet_params_proposal",
             params=general_params,
