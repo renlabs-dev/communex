@@ -27,21 +27,20 @@ BurnConfig = NewType("BurnConfig", dict[MinBurn, MaxBurn])
 class NetworkParams(TypedDict):
     max_allowed_modules: int
     max_registrations_per_block: int
-    unit_emission: int
     max_name_length: int
     min_name_length: int
-    # burn_config: BurnConfig
     min_burn: int
     max_burn: int
     min_weight_stake: int
     max_allowed_subnets: int
-    adjustment_alpha: int
     curator: Ss58Address
     proposal_cost: int
     proposal_expiration: int
-    max_proposal_reward_treasury_allocation: int
-    proposal_reward_interval: int
     subnet_stake_threshold: int
+    general_subnet_application_cost: int
+    floor_founder_share: int
+    floor_delegation_fee: int
+    max_allowed_weights: int
 
 
 class SubnetParamsMaps(TypedDict):
@@ -65,6 +64,7 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_max_registrations_per_interval: dict[int, int]
     netuid_to_vote_mode: dict[int, dict[str, str]]
     netuid_to_adjustment_alpha: dict[int, int]
+
 
 class SubnetParams(TypedDict):
     founder: Ss58Address
