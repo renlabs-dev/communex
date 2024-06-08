@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.31.1
+- fixing subnet update
+
 ## 0.1.31
 - Adequating to runtime 117
 
