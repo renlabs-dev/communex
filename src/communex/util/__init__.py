@@ -96,7 +96,8 @@ def convert_cid_on_proposal(proposals: dict[int, dict[str, Any]]):
     for prop_id, proposal in proposals.items():
         data = proposal.get("data")
         if data and "Custom" in data:
-            cid = data["Custom"].split("ipfs://")[-1]
+            metadata = proposal["metadata"]
+            cid = metadata.split("ipfs://")[-1]
             queried_cid = get_json_from_cid(cid)
             if queried_cid:
                 body = queried_cid.get("body")
@@ -105,7 +106,7 @@ def convert_cid_on_proposal(proposals: dict[int, dict[str, Any]]):
                         queried_cid["body"] = json.loads(body)
                     except Exception:
                         pass
-            data["Custom"] = queried_cid
+            proposal["Custom"] = queried_cid
         unwrapped[prop_id] = proposal
     return unwrapped
 

@@ -56,7 +56,8 @@ def test_module_server_call_blacklisted(serve, server_keypair: Keypair, some_mod
     server_ss58_address = check_ss58_address(server_keypair.ss58_address)
     
     my_keypair = random_keypair()
-    some_module_server.add_to_blacklist(my_keypair.ss58_address)
+    blacklisted = check_ss58_address(my_keypair.ss58_address)
+    some_module_server.add_to_blacklist(blacklisted)
     
     method_endpoint = module_endpoint("prompt")
     params = {
@@ -75,7 +76,7 @@ def test_module_server_call_not_blacklisted(serve, server_keypair: Keypair, some
     server_ss58_address = check_ss58_address(server_keypair.ss58_address)
     
     my_keypair = random_keypair()
-    some_module_server.add_to_blacklist("some other address")
+    some_module_server.add_to_blacklist("some other address") # type: ignore
     
     method_endpoint = module_endpoint("prompt")
     params = {
@@ -94,7 +95,8 @@ def test_module_server_call_whitelisted(serve, server_keypair: Keypair, my_keypa
     server_ss58_address = check_ss58_address(server_keypair.ss58_address)
     
     my_keypair = random_keypair()
-    some_module_server.add_to_whitelist(my_keypair.ss58_address)
+    whitelisted = check_ss58_address(my_keypair.ss58_address)
+    some_module_server.add_to_whitelist(whitelisted)
     
     method_endpoint = module_endpoint("prompt")
     params = {
@@ -113,7 +115,7 @@ def test_module_server_call_not_whitelisted(serve, server_keypair: Keypair, my_k
     server_ss58_address = check_ss58_address(server_keypair.ss58_address)
     
     my_keypair = random_keypair()
-    some_module_server.add_to_whitelist("some other address")
+    some_module_server.add_to_whitelist("some other address") # type: ignore
     
     method_endpoint = module_endpoint("prompt")
     params = {
@@ -132,8 +134,9 @@ def test_module_server_call_blacklist_overcomes_whitelist(serve, server_keypair:
     server_ss58_address = check_ss58_address(server_keypair.ss58_address)
     
     my_keypair = random_keypair()
-    some_module_server.add_to_blacklist(my_keypair.ss58_address)
-    some_module_server.add_to_whitelist(my_keypair.ss58_address)
+    ss58 = check_ss58_address(my_keypair.ss58_address)
+    some_module_server.add_to_blacklist(ss58)
+    some_module_server.add_to_whitelist(ss58)
     
     method_endpoint = module_endpoint("prompt")
     params = {

@@ -18,25 +18,52 @@ chains.
 
 # TODO: replace with dataclasses
 
+# == Burn related
+MinBurn = NewType("MinBurn", int)
+MaxBurn = NewType("MaxBurn", int)
+BurnConfig = NewType("BurnConfig", dict[MinBurn, MaxBurn])
+
 
 class NetworkParams(TypedDict):
     max_allowed_modules: int
     max_registrations_per_block: int
-    unit_emission: int
     max_name_length: int
     min_name_length: int
-    min_burn: int  # min burn to register
-    max_burn: int  # max burn to register
+    min_burn: int
+    max_burn: int
     min_weight_stake: int
     max_allowed_subnets: int
-    adjustment_alpha: int
-    floor_delegation_fee: int
-    max_allowed_weights: int
     curator: Ss58Address
     proposal_cost: int
     proposal_expiration: int
-    proposal_participation_threshold: int
     subnet_stake_threshold: int
+    general_subnet_application_cost: int
+    floor_founder_share: int
+    floor_delegation_fee: int
+    max_allowed_weights: int
+
+
+class SubnetParamsMaps(TypedDict):
+    netuid_to_founder: dict[int, Ss58Address]
+    netuid_to_founder_share: dict[int, int]
+    netuid_to_immunity_period: dict[int, int]
+    netuid_to_incentive_ratio: dict[int, int]
+    netuid_to_max_allowed_uids: dict[int, int]
+    netuid_to_max_allowed_weights: dict[int, int]
+    netuid_to_min_allowed_weights: dict[int, int]
+    netuid_to_max_weight_age: dict[int, int]
+    netuid_to_min_stake: dict[int, int]
+    netuid_to_name: dict[int, str]
+    netuid_to_tempo: dict[int, int]
+    netuid_to_trust_ratio: dict[int, int]
+    netuid_to_bonds_ma: dict[int, int]
+    netuid_to_maximum_set_weight_calls_per_epoch: dict[int, int]
+    netuid_to_target_registrations_per_interval: dict[int, int]
+    netuid_to_target_registrations_interval: dict[int, int]
+    netuid_to_emission: dict[int, int]
+    netuid_to_max_registrations_per_interval: dict[int, int]
+    netuid_to_vote_mode: dict[int, dict[str, str]]
+    netuid_to_adjustment_alpha: dict[int, int]
 
 
 class SubnetParams(TypedDict):
@@ -52,12 +79,13 @@ class SubnetParams(TypedDict):
     name: str
     tempo: int
     trust_ratio: int
-    vote_mode: str
     bonds_ma: int | None
     maximum_set_weight_calls_per_epoch: int | None
     target_registrations_per_interval: int
     target_registrations_interval: int
     max_registrations_per_interval: int
+    vote_mode: str
+    adjustment_alpha: int
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.

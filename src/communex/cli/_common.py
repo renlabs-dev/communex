@@ -54,11 +54,22 @@ class CustomCtx:
     def get_use_testnet(self) -> bool:
         return self.ctx.obj.use_testnet
 
-    def output(self, message: str) -> None:
-        self.console.print(message)
+    def output(
+            self, 
+            message: str, 
+            *args: tuple[Any, ...], 
+            **kwargs: dict[str, Any],
+        ) -> None:
+        self.console.print(message, *args, **kwargs) # type: ignore
 
-    def info(self, message: str) -> None:
-        self.console_err.print(message)
+    def info(
+            self, 
+            message: str,
+            *args: tuple[Any, ...], 
+            **kwargs: dict[str, Any],
+        ) -> None:
+        
+        self.console_err.print(message, *args, **kwargs) # type: ignore
 
     def error(self, message: str) -> None:
         message = f"ERROR: {message}"

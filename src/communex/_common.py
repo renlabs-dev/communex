@@ -1,11 +1,13 @@
 import random
 from enum import Enum
+import re
 from typing import Mapping, TypeVar
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from communex.balance import from_nano
 
+IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
 class ComxSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="COMX_")
@@ -104,3 +106,4 @@ def intersection_update(base: dict[K, V], update: dict[K, Z]) -> Mapping[K, V | 
     """
     updated = {k: update[k] for k in base if k in update}
     return updated
+

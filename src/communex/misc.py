@@ -1,5 +1,5 @@
 import re
-from typing import Any
+from typing import Any, TypeVar
 
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
@@ -8,10 +8,12 @@ from communex.types import (
     NetworkParams,
     Ss58Address,
     SubnetParamsWithEmission,
+    SubnetParamsMaps,
 )
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
+T = TypeVar("T")
 
 def get_map_modules(
     client: CommuneClient,
@@ -31,6 +33,7 @@ def get_map_modules(
             ("RegistrationBlock", [netuid]),
             ("DelegationFee", [netuid]),
             ("Emission", []),
+            
             ("Incentive", []),
             ("Dividends", []),
             ("LastUpdate", []),
@@ -41,6 +44,7 @@ def get_map_modules(
         request_dict["System"] = [("Account", [])]
 
     bulk_query = client.query_batch_map(request_dict)
+   
     (
         ss58_to_stakefrom,
         uid_to_key,
@@ -56,7 +60,7 @@ def get_map_modules(
         uid_to_metadata,
     ) = (
         bulk_query.get("StakeFrom", {}),
-        bulk_query.get("Keys", {}),
+       bulk_query.get("Keys", {}),
         bulk_query["Name"],
         bulk_query["Address"],
         bulk_query["RegistrationBlock"],
@@ -82,7 +86,9 @@ def get_map_modules(
         regblock = uid_to_regblock[uid]
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
-        delegation_fee = ss58_to_delegationfee.get(key, 20)  # 20% default delegation fee
+        delegation_fee = ss58_to_delegationfee.get(
+            key, 20
+        )  # 20% default delegation fee
         metadata = uid_to_metadata.get(uid, None)
 
         balance = None
@@ -115,8 +121,19 @@ def get_map_modules(
         result_modules[key] = module
     return result_modules
 
+def to_snake_case(d: dict[str, T]) -> dict[str, T]:
+    """
+    Converts a dictionary with camelCase keys to snake_case keys
+    """
+    def snakerize(camel: str) -> str:
+        return re.sub(r'(?<!^)(?=[A-Z])', '_', camel).lower()
+    snaked: dict[str, T] = {snakerize(k): v for k, v in d.items()}
+    return snaked
 
-def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None) -> dict[int, SubnetParamsWithEmission]:
+
+def get_map_subnets_params(
+    client: CommuneClient, block_hash: str | None = None
+) -> dict[int, SubnetParamsWithEmission]:
     """
     Gets all subnets info on the network
     """
@@ -138,100 +155,68 @@ def get_map_subnets_params(client: CommuneClient, block_hash: str | None = None)
                 ("FounderShare", []),
                 ("IncentiveRatio", []),
                 ("TrustRatio", []),
-                ("VoteModeSubnet", []),
                 ("SubnetNames", []),
                 ("MaxWeightAge", []),
                 ("BondsMovingAverage", []),
                 ("MaximumSetWeightCallsPerEpoch", []),
+                ("AdjustmentAlpha", []),
             ],
+                "GovernanceModule": [
+                    ("SubnetGovernanceConfig", []),
+                ]
         },
         block_hash,
     )
-
-    (
-        netuid_to_emission,
-        netuid_to_tempo,
-        netuid_to_immunity_period,
-        netuid_to_min_allowed_weights,
-        netuid_to_max_allowed_weights,
-        netuid_to_max_allowed_uids,
-        netuid_to_min_stake,
-        netuid_to_founder,
-        netuid_to_founder_share,
-        netuid_to_incentive_ratio,
-        netuid_to_trust_ratio,
-        netuid_to_vote_mode_subnet,
-        netuid_to_subnet_names,
-        netuid_to_weight_age,
-        netuid_to_bonds_ma,
-        netuid_to_maximum_weight_calls_per_epoch,
-        netuid_to_target_reg_interval,
-        netuid_to_target_reg_per_interval,
-        netuid_to_max_reg_per_interval,
-    ) = (
-        bulk_query["SubnetEmission"],
-        bulk_query["Tempo"],
-        bulk_query["ImmunityPeriod"],
-        bulk_query["MinAllowedWeights"],
-        bulk_query["MaxAllowedWeights"],
-        bulk_query["MaxAllowedUids"],
-        bulk_query["MinStake"],
-        bulk_query["Founder"],
-        bulk_query["FounderShare"],
-        bulk_query["IncentiveRatio"],
-        bulk_query["TrustRatio"],
-        bulk_query["VoteModeSubnet"],
-        bulk_query["SubnetNames"],
-        bulk_query["MaxWeightAge"],
-        bulk_query.get("BondsMovingAverage", {}),
-        bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
-        bulk_query["TargetRegistrationsInterval"],
-        bulk_query["TargetRegistrationsPerInterval"],
-        bulk_query["MaxRegistrationsPerInterval"],
-    )
+    subnet_maps: SubnetParamsMaps = {
+        "netuid_to_emission": bulk_query["SubnetEmission"],
+        "netuid_to_tempo": bulk_query["Tempo"],
+        "netuid_to_immunity_period": bulk_query["ImmunityPeriod"],
+        "netuid_to_min_allowed_weights": bulk_query["MinAllowedWeights"],
+        "netuid_to_max_allowed_weights": bulk_query["MaxAllowedWeights"],
+        "netuid_to_max_allowed_uids": bulk_query["MaxAllowedUids"],
+        "netuid_to_min_stake": bulk_query["MinStake"],
+        "netuid_to_founder": bulk_query["Founder"],
+        "netuid_to_founder_share": bulk_query["FounderShare"],
+        "netuid_to_incentive_ratio": bulk_query["IncentiveRatio"],
+        "netuid_to_trust_ratio": bulk_query["TrustRatio"],
+        "netuid_to_name": bulk_query["SubnetNames"],
+        "netuid_to_max_weight_age": bulk_query["MaxWeightAge"],
+        "netuid_to_vote_mode": bulk_query["SubnetGovernanceConfig"],
+        "netuid_to_adjustment_alpha": bulk_query["AdjustmentAlpha"],
+        "netuid_to_bonds_ma": bulk_query.get("BondsMovingAverage", {}),
+        "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
+        "netuid_to_target_registrations_per_interval": bulk_query.get("TargetRegistrationsInterval", {}),
+        "netuid_to_target_registrations_interval": bulk_query.get("TargetRegistrationsPerInterval", {}),
+        "netuid_to_max_registrations_per_interval": bulk_query.get("MaxRegistrationsPerInterval", {}),
+    }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
-    for netuid, name in netuid_to_subnet_names.items():
-        name = name
-        founder = Ss58Address(netuid_to_founder[netuid])
-        founder_share = netuid_to_founder_share[netuid]
-        immunity_period = netuid_to_immunity_period[netuid]
-        incentive_ratio = netuid_to_incentive_ratio[netuid]
-        max_allowed_uids = netuid_to_max_allowed_uids[netuid]
-        max_allowed_weights = netuid_to_max_allowed_weights[netuid]
-        min_allowed_weights = netuid_to_min_allowed_weights[netuid]
-        min_stake = netuid_to_min_stake[netuid]
-        tempo = netuid_to_tempo[netuid]
-        trust_ratio = netuid_to_trust_ratio[netuid]
-        vote_mode = netuid_to_vote_mode_subnet[netuid]
-        emission = netuid_to_emission[netuid]
-        max_weight_age = netuid_to_weight_age[netuid]
-        bonds_ma = netuid_to_bonds_ma.get(netuid, None)
-        maximum_weight_calls = netuid_to_maximum_weight_calls_per_epoch.get(netuid, None)
-        target_registrations_interval = netuid_to_target_reg_interval[netuid]
-        target_registrations_per_interval = netuid_to_target_reg_per_interval[netuid]
-        max_registrations_per_interval = netuid_to_max_reg_per_interval[netuid]
+    default_target_registrations_interval = 200
+    default_target_registrations_per_interval = int(default_target_registrations_interval / 2)
+    default_max_registrations_per_interval = 42
+    for netuid, name in subnet_maps["netuid_to_name"].items():
 
         subnet: SubnetParamsWithEmission = {
             "name": name,
-            "founder": founder,
-            "founder_share": founder_share,
-            "immunity_period": immunity_period,
-            "incentive_ratio": incentive_ratio,
-            "max_allowed_uids": max_allowed_uids,
-            "max_allowed_weights": max_allowed_weights,
-            "min_allowed_weights": min_allowed_weights,
-            "min_stake": min_stake,
-            "tempo": tempo,
-            "trust_ratio": trust_ratio,
-            "vote_mode": vote_mode,
-            "emission": emission,
-            "max_weight_age": max_weight_age,
-            "bonds_ma": bonds_ma,
-            "maximum_set_weight_calls_per_epoch": maximum_weight_calls,
-            "target_registrations_per_interval": target_registrations_per_interval,
-            "target_registrations_interval": target_registrations_interval,
-            "max_registrations_per_interval": max_registrations_per_interval,
+            "founder": subnet_maps["netuid_to_founder"][netuid],
+            "founder_share": subnet_maps["netuid_to_founder_share"][netuid],
+            "immunity_period": subnet_maps["netuid_to_immunity_period"][netuid],
+            "incentive_ratio": subnet_maps["netuid_to_incentive_ratio"][netuid],
+            "max_allowed_uids": subnet_maps["netuid_to_max_allowed_uids"][netuid],
+            "max_allowed_weights": subnet_maps["netuid_to_max_allowed_weights"][netuid],
+            "min_allowed_weights": subnet_maps["netuid_to_min_allowed_weights"][netuid],
+            "min_stake": subnet_maps["netuid_to_min_stake"][netuid],
+            "tempo": subnet_maps["netuid_to_tempo"][netuid],
+            "trust_ratio": subnet_maps["netuid_to_trust_ratio"][netuid],
+            "emission": subnet_maps["netuid_to_emission"][netuid],
+            "max_weight_age": subnet_maps["netuid_to_max_weight_age"][netuid],
+            "vote_mode": subnet_maps["netuid_to_vote_mode"][netuid]["vote_mode"],
+            "adjustment_alpha": subnet_maps["netuid_to_adjustment_alpha"][netuid],
+            "bonds_ma": subnet_maps["netuid_to_bonds_ma"].get(netuid, None),
+            "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"].get(netuid, 30),
+            "target_registrations_per_interval": subnet_maps["netuid_to_target_registrations_per_interval"].get(netuid, default_target_registrations_per_interval),
+            "target_registrations_interval": subnet_maps["netuid_to_target_registrations_interval"].get(netuid, default_target_registrations_interval),
+            "max_registrations_per_interval": subnet_maps["netuid_to_max_registrations_per_interval"].get(netuid, default_max_registrations_per_interval),
         }
 
         result_subnets[netuid] = subnet
@@ -250,51 +235,53 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
                 ("MaxAllowedSubnets", []),
                 ("MaxAllowedModules", []),
                 ("MaxRegistrationsPerBlock", []),
-                ("UnitEmission", []),
                 ("MaxNameLength", []),
-                ("MinBurn", []),
-                ("MaxBurn", []),
-                ("MinWeightStake", []),
-                ("AdjustmentAlpha", []),
                 ("FloorDelegationFee", []),
                 ("MaxAllowedWeightsGlobal", []),
-                ("Curator", []),
-                ("ProposalCost", []),
-                ("ProposalExpiration", []),
-                ("ProposalParticipationThreshold", []),
-                ("Curator", []),
                 ("SubnetStakeThreshold", []),
                 ("MinWeightStake", []),
                 ("MinNameLength", []),
+                ("BurnConfig", []),
+                ("FloorFounderShare", []),
             ],
+            "GovernanceModule": [
+                ("GlobalGovernanceConfig", []),
+                ("GeneralSubnetApplicationCost", []),
+                ("Curator", []),
+            ]
         }
     )
-
+    governance_config: dict[str, int] = query_all["GlobalGovernanceConfig"] # type: ignore
     global_params: NetworkParams = {
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
-        "unit_emission": int(query_all["UnitEmission"]),
         "max_name_length": int(query_all["MaxNameLength"]),
-        "min_burn": int(query_all["MinBurn"]),
-        "max_burn": int(query_all["MaxBurn"]),
+        "min_burn": int(query_all["BurnConfig"]["min_burn"]), # type: ignore
+        "max_burn": int(query_all["BurnConfig"]["max_burn"]), # type: ignore
         "min_weight_stake": int(query_all["MinWeightStake"]),
-        "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
         "max_allowed_weights": int(query_all["MaxAllowedWeightsGlobal"]),
         "curator": Ss58Address(query_all["Curator"]),
-        "proposal_cost": int(query_all["ProposalCost"]),
-        "proposal_expiration": int(query_all["ProposalExpiration"]),
-        "proposal_participation_threshold": int(query_all["ProposalParticipationThreshold"]),
+        "proposal_cost": int(governance_config["proposal_cost"]),
+        "proposal_expiration": int(governance_config["proposal_expiration"]),
         "subnet_stake_threshold": int(query_all["SubnetStakeThreshold"]),
         "min_name_length": int(query_all["MinNameLength"]),
-    }
+        "floor_founder_share": int(query_all["FloorFounderShare"]),
+        "general_subnet_application_cost": int(query_all["GeneralSubnetApplicationCost"]),
 
+
+    }
     return global_params
 
 
-def concat_to_local_keys(balance: dict[str, int], local_key_info: dict[str, Ss58Address]) -> dict[str, int]:
-    key2: dict[str, int] = {key_name: balance.get(key_address, 0) for key_name, key_address in local_key_info.items()}
+def concat_to_local_keys(
+    balance: dict[str, int], local_key_info: dict[str, Ss58Address]
+) -> dict[str, int]:
+    key2: dict[str, int] = {
+        key_name: balance.get(key_address, 0)
+        for key_name, key_address in local_key_info.items()
+    }
 
     return key2
 
@@ -311,7 +298,9 @@ def local_keys_to_freebalance(
     balance_map = query_all["Account"]
 
     format_balances: dict[str, int] = {
-        key: value["data"]["free"] for key, value in balance_map.items() if "data" in value and "free" in value["data"]
+        key: value["data"]["free"]
+        for key, value in balance_map.items()
+        if "data" in value and "free" in value["data"]
     }
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
@@ -332,7 +321,9 @@ def local_keys_to_stakedbalance(
 
     staketo_map = query_all["StakeTo"]
 
-    format_stake: dict[str, int] = {key: sum(stake for _, stake in value) for key, value in staketo_map.items()}
+    format_stake: dict[str, int] = {
+        key: sum(stake for _, stake in value) for key, value in staketo_map.items()
+    }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
@@ -368,7 +359,9 @@ def local_keys_allbalance(
         staketo_maps.append(staketo_map)
 
     format_balances: dict[str, int] = {
-        key: value["data"]["free"] for key, value in balance_map.items() if "data" in value and "free" in value["data"]
+        key: value["data"]["free"]
+        for key, value in balance_map.items()
+        if "data" in value and "free" in value["data"]
     }
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
@@ -386,12 +379,21 @@ def local_keys_allbalance(
                 # If the key exists, extend the existing list with the new values
                 merged_staketo_map[key].extend(value)
 
-    format_stake: dict[str, int] = {key: sum(stake for _, stake in value) for key, value in merged_staketo_map.items()}
+    format_stake: dict[str, int] = {
+        key: sum(stake for _, stake in value)
+        for key, value in merged_staketo_map.items()
+    }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
-    key2balance = {k: v for k, v in sorted(key2balance.items(), key=lambda item: item[1], reverse=True)}
+    key2balance = {
+        k: v
+        for k, v in sorted(key2balance.items(), key=lambda item: item[1], reverse=True)
+    }
 
-    key2stake = {k: v for k, v in sorted(key2stake.items(), key=lambda item: item[1], reverse=True)}
+    key2stake = {
+        k: v
+        for k, v in sorted(key2stake.items(), key=lambda item: item[1], reverse=True)
+    }
 
     return key2balance, key2stake

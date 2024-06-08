@@ -4,7 +4,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Mapping, TypeVar
+from typing import Any, Mapping, TypeVar, cast
 
 from substrateinterface import ExtrinsicReceipt  # type: ignore
 from substrateinterface import Keypair  # type: ignore
@@ -580,7 +580,9 @@ class CommuneClient:
             {'function_name': 'query_result', ...}
         """
 
-        result = None
+        result: dict[str, str] = {}
+        if not functions:
+            raise Exception("No result")
         with self.get_conn(init=True) as substrate:
             for module, queries in functions.items():
                 storage_keys: list[Any] = []
@@ -595,16 +597,11 @@ class CommuneClient:
                     storage_keys=storage_keys, block_hash=block_hash
                 )
 
-                result: dict[str, str] | None = {}
-
                 for item in responses:
                     fun = item[0]
                     query = item[1]
                     storage_fun = fun.storage_function
                     result[storage_fun] = query.value
-
-            if result is None:
-                raise Exception("No result")
 
         return result
 
@@ -1365,7 +1362,7 @@ class CommuneClient:
         return response
 
     def add_subnet_proposal(
-        self, key: Keypair, params: SubnetParams, netuid: int = 0
+        self, key: Keypair, params: SubnetParams, ipfs: str, netuid: int = 0
     ) -> ExtrinsicReceipt:
         """
         Submits a proposal for creating or modifying a subnet within the
@@ -1389,12 +1386,15 @@ class CommuneClient:
         """
 
         general_params = dict(params)
-        general_params["netuid"] = netuid
-
+        general_params["subnet_id"] = netuid
+        general_params["data"] = ipfs
+        # breakpoint()
+        # general_params["burn_config"] = json.dumps(general_params["burn_config"])
         response = self.compose_call(
-            fn="add_subnet_proposal",
+            fn="add_subnet_params_proposal",
             params=general_params,
             key=key,
+            module="GovernanceModule",
         )
 
         return response
@@ -1407,7 +1407,12 @@ class CommuneClient:
 
         params = {"data": cid}
 
-        response = self.compose_call(fn="add_custom_proposal", params=params, key=key)
+        response = self.compose_call(
+            fn="add_global_custom_proposal", 
+            params=params, 
+            key=key,
+            module="GovernanceModule",
+        )
         return response
 
     def add_custom_subnet_proposal(
@@ -1434,13 +1439,14 @@ class CommuneClient:
 
         params = {
             "data": cid,
-            "netuid": netuid,
+            "subnet_id": netuid,
         }
 
         response = self.compose_call(
-            fn="add_custom_subnet_proposal",
+            fn="add_subnet_custom_proposal",
             params=params,
             key=key,
+            module="GovernanceModule",
         )
 
         return response
@@ -1449,6 +1455,7 @@ class CommuneClient:
         self,
         key: Keypair,
         params: NetworkParams,
+        cid: str | None,
     ) -> ExtrinsicReceipt:
         """
         Submits a proposal for altering the global network parameters.
@@ -1473,12 +1480,15 @@ class CommuneClient:
                 parameters are invalid.
             ChainTransactionError: If the transaction fails.
         """
-
-        general_params = vars(params)
+        general_params = cast(dict[str, Any], params)
+        cid = cid or ""
+        general_params["data"] = cid
+        
         response = self.compose_call(
-            fn="add_global_proposal",
+            fn="add_global_params_proposal",
             params=general_params,
             key=key,
+            module="GovernanceModule",
         )
 
         return response
@@ -1507,7 +1517,12 @@ class CommuneClient:
 
         params = {"proposal_id": proposal_id, "agree": agree}
 
-        response = self.compose_call("vote_proposal", key=key, params=params)
+        response = self.compose_call(
+            "vote_proposal", 
+            key=key, 
+            params=params,
+            module="GovernanceModule",
+        )
 
         return response
 
@@ -1536,7 +1551,58 @@ class CommuneClient:
 
         params = {"proposal_id": proposal_id}
 
-        response = self.compose_call("unvote_proposal", key=key, params=params)
+        response = self.compose_call(
+            "remove_vote_proposal", 
+            key=key, 
+            params=params,
+            module="GovernanceModule",
+        )
+
+        return response
+
+    def enable_vote_power_delegation(self, key: Keypair) -> ExtrinsicReceipt:
+        """
+        Enables vote power delegation for the signer's account.
+
+        Args:
+            key: The keypair used for signing the delegation transaction.
+
+        Returns:
+            A receipt of the vote power delegation transaction.
+
+        Raises:
+            ChainTransactionError: If the transaction fails.
+        """
+
+        response = self.compose_call(
+            "enable_vote_power_delegation", 
+            params={},
+            key=key, 
+            module="GovernanceModule",
+        )
+
+        return response
+    
+    def disable_vote_power_delegation(self, key: Keypair) -> ExtrinsicReceipt:
+        """
+        Disables vote power delegation for the signer's account.
+
+        Args:
+            key: The keypair used for signing the delegation transaction.
+
+        Returns:
+            A receipt of the vote power delegation transaction.
+
+        Raises:
+            ChainTransactionError: If the transaction fails.
+        """
+
+        response = self.compose_call(
+            "disable_vote_power_delegation", 
+            params={},
+            key=key, 
+            module="GovernanceModule",
+        )
 
         return response
 
@@ -1588,7 +1654,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Proposals", extract_value=extract_value)["Proposals"]
+        return self.query_map(
+            "Proposals", extract_value=extract_value, module="GovernanceModule"
+        )["Proposals"]
 
     def query_map_weights(
         self, netuid: int = 0, extract_value: bool = False
@@ -2230,6 +2298,9 @@ class CommuneClient:
             params=[netuid],
         )
 
+    def get_dao_treasury_address(self) -> Ss58Address:
+        return self.query("DaoTreasuryAddress", module="GovernanceModule")
+
     def get_max_allowed_weights(self, netuid: int = 0) -> int:
         """
         Queries the network for the maximum allowed weights setting.
@@ -2303,7 +2374,7 @@ class CommuneClient:
         return self.query("SubnetNames", params=[netuid])
 
     def get_global_dao_treasury(self):
-        return self.query("GlobalDaoTreasury")
+        return self.query("GlobalDaoTreasury", module="GovernanceModule")
 
     def get_n(self, netuid: int = 0) -> int:
         """
@@ -2872,3 +2943,26 @@ class CommuneClient:
             ).value  #  type: ignore
 
         return result
+
+    def get_voting_power_delegators(self) -> list[Ss58Address]:
+        result = self.query(
+            "NotDelegatingVotingPower", 
+            [], 
+            module="GovernanceModule"
+        )
+        return result
+
+    def add_transfer_dao_treasury_proposal(
+            self,
+            key: Keypair,
+            data: str, 
+            amount_nano: int,
+            dest: Ss58Address, 
+    ):
+        params = {"dest": dest, "value": amount_nano, "data": data}
+
+        return self.compose_call(
+            module="GovernanceModule", 
+            fn="add_transfer_dao_treasury_proposal", 
+            params=params, key = key
+        )
