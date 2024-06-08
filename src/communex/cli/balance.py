@@ -223,14 +223,13 @@ def stake(
     resolved_key = try_classic_load_key(key, context)
     resolved_dest = resolve_key_ss58_encrypted(dest, context)
     delegating_message = (
-        "INFO: By default you delegate DAO " 
+        "By default you delegate DAO " 
         "voting power to the validator you stake to. "
         "In case you want to change this, call: "
         "`comx key power-delegation <key> --disable`."
     )
-    
-    context.info(delegating_message, style="bold green") # type: ignore
-
+    context.info("INFO: ", style="bold green", end="") # type: ignore
+    context.info(delegating_message) # type: ignore
     with context.progress_status(
         f"Staking {amount} tokens to {dest} on a subnet with netuid '{netuid}'..."
     ):
