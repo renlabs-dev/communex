@@ -163,7 +163,6 @@ def propose_on_subnet(
     netuid: int,
     key: str,
     cid: str,
-    name: str = typer.Option(None),
     founder: str = typer.Option(None),
     founder_share: int = typer.Option(None),
     immunity_period: int = typer.Option(None),
@@ -171,13 +170,18 @@ def propose_on_subnet(
     max_allowed_uids: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
+    max_weight_age: int = typer.Option(None),
     min_stake: int = typer.Option(None),
+    name: str = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
-    vote_mode: str = typer.Option(None),
-    max_weight_age: int = typer.Option(None),
     bonds_ma: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
+    target_registrations_per_interval: int = typer.Option(None),
+    target_registrations_interval: int = typer.Option(None),
+    max_registrations_per_interval: int = typer.Option(None),
+    vote_mode: str = typer.Option(None),
+    adjustment_alpha: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.
