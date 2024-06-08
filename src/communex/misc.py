@@ -235,11 +235,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
                 ("MaxAllowedSubnets", []),
                 ("MaxAllowedModules", []),
                 ("MaxRegistrationsPerBlock", []),
-                ("UnitEmission", []),
                 ("MaxNameLength", []),
-                ("BurnConfig", []),
-                ("MinWeightStake", []),
-                ("AdjustmentAlpha", []),
                 ("FloorDelegationFee", []),
                 ("MaxAllowedWeightsGlobal", []),
                 ("SubnetStakeThreshold", []),
@@ -250,25 +246,20 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ],
             "GovernanceModule": [
                 ("GlobalGovernanceConfig", []),
-                ("SubnetGovernanceConfig", []),
                 ("GeneralSubnetApplicationCost", []),
                 ("Curator", []),
             ]
         }
     )
     governance_config: dict[str, int] = query_all["GlobalGovernanceConfig"] # type: ignore
-    # burn_config: dict[str, int] = query_all["BurnConfig"] # type: ignore
     global_params: NetworkParams = {
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
-        "unit_emission": int(query_all["UnitEmission"]),
         "max_name_length": int(query_all["MaxNameLength"]),
-        #"burn_config": BurnConfig(query_all["BurnConfig"]),  # type: ignore
         "min_burn": int(query_all["BurnConfig"]["min_burn"]), # type: ignore
         "max_burn": int(query_all["BurnConfig"]["max_burn"]), # type: ignore
         "min_weight_stake": int(query_all["MinWeightStake"]),
-        "adjustment_alpha": int(query_all["AdjustmentAlpha"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
         "max_allowed_weights": int(query_all["MaxAllowedWeightsGlobal"]),
         "curator": Ss58Address(query_all["Curator"]),
@@ -278,12 +269,8 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "min_name_length": int(query_all["MinNameLength"]),
         "floor_founder_share": int(query_all["FloorFounderShare"]),
         "general_subnet_application_cost": int(query_all["GeneralSubnetApplicationCost"]),
-        "max_proposal_reward_treasury_allocation": int(
-            governance_config["max_proposal_reward_treasury_allocation"]  # type: ignore
-        ),
-        "proposal_reward_interval": int(
-            governance_config["proposal_reward_interval"]  # type: ignore
-        ),
+
+
     }
     return global_params
 
