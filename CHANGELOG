@@ -1,8 +1,7 @@
 # Changelog
 
-# 0.1.31
-
-TODO
+## 0.1.31
+- Adequating to runtime 117
 
 ## 0.1.30.1
 - Fixed a display bug when showing emission on subnets with tempo different from 100
