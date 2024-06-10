@@ -41,6 +41,7 @@ starlette = "^0.36.3"
 uvicorn = "^0.29.0"
 keylimiter = "^0.1.5"
 typeguard = "^4.2.1"
+eth-utils = "<2.3.0"
 
 
 [tool.poetry.group.dev]
