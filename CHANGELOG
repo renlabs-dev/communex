@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.31.2
+- Pinned eth-utils to version <2.3.0 (should fix the obnoxious warning issues)
+
 ## 0.1.31.1
 - fixing subnet update
 
