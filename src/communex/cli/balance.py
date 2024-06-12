@@ -297,7 +297,7 @@ def run_faucet(
                 "work": solution.seal,
                 "key": resolved_key.ss58_address,
             }
-            client.compose_call("faucet", params=params, unsigned=True, key=resolved_key.ss58_address)  # type: ignore
+            client.compose_call("faucet", params=params, unsigned=True, module="FaucetModule", key=resolved_key.ss58_address)  # type: ignore
 
 
 @balance_app.command()
