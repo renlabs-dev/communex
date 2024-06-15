@@ -331,19 +331,32 @@ def total_balance(
 @key_app.command()
 def power_delegation(
     ctx: Context, 
-    key: str, 
-    enable: bool = typer.Option(True, "--disable")
+    key: Optional[str] = None, 
+    enable: bool = typer.Option(True, "--disable"),
+    universal_password: Optional[str] = typer.Option(None)
     ):
     """
     Gets power delegation of a key.
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-
-    keypair = try_classic_load_key(key, context)
-    if enable is True:
-        context.info("Enabling vote power delegation...")
-        client.enable_vote_power_delegation(keypair)
+    if key is None:
+        action = "enable" if enable else "disable"
+        confirm_message = (
+            f"Key was not set, this will {action} vote power delegation for all"
+            " keys on disk. Do you want to proceed?"
+        )
+        if not typer.confirm(confirm_message):
+            context.info("Aborted.")
+            exit(0)
+        local_keys = local_key_addresses(context, universal_password)
     else:
-        context.info("Disabling vote power delegation...")
-        client.disable_vote_power_delegation(keypair)
+        local_keys = {key: None}
+    for key_name in local_keys.keys():
+        keypair = try_classic_load_key(key_name, context)
+        if enable is True:
+            context.info(f"Enabling vote power delegation on key {key_name} ...")
+            client.enable_vote_power_delegation(keypair)
+        else:
+            context.info(f"Disabling vote power delegation on key {key_name} ...")
+            client.disable_vote_power_delegation(keypair)
