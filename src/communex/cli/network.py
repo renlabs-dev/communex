@@ -171,7 +171,12 @@ def vote_proposal(
 
     if key is None:
         context.info("Voting with all keys on disk...")
+        delegators = client.get_voting_power_delegators()
         keys_stake = get_valid_voting_keys(context, client, proposal)
+        keys_stake = {
+            key: stake for key,
+            stake in keys_stake.items() if key not in delegators
+            }
     else:
         keys_stake = {key: None}
 
