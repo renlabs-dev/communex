@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.31.4
+- When voting with all keys with `comx network vote-proposal` skips keys that
+are delegating voting power away
+
 ## 0.1.31.3
 - Fixed run-faucet command to call the correct module
 
