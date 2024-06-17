@@ -185,7 +185,7 @@ def local_key_addresses(
     home = Path.home()
     key_dir = home / '.commune' / "key"
 
-    key_names = [f.stem for f in key_dir.iterdir() if f.is_file()]
+    key_names = [f.stem for f in key_dir.iterdir() if f.is_file() and not f.name.startswith('.')]
 
     addresses_map: dict[str, Ss58Address] = {}
 
