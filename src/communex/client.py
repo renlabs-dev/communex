@@ -214,7 +214,7 @@ class CommuneClient:
                 pass
             while len(results) < len(request_ids):
                 received_messages = json.loads(
-                    substrate.websocket.recv() # type: ignore
+                    substrate.websocket.recv()  # type: ignore
                 )  # type: ignore
                 if isinstance(received_messages, dict):
                     received_messages: list[dict[Any, Any]] = [received_messages]
@@ -396,7 +396,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i: i + max_n_keys]
+                        splitted_keys = result_keys[i : i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -532,7 +532,7 @@ class CommuneClient:
 
                     item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
-                        scale_bytes="0x" + item[0][len(prefix):],
+                        scale_bytes="0x" + item[0][len(prefix) :],
                         return_scale_obj=True,
                         block_hash=block_hash,
                     )
@@ -889,7 +889,7 @@ class CommuneClient:
 
             # send the multisig extrinsic
             extrinsic = substrate.create_multisig_extrinsic(  # type: ignore
-                call=call, # type: ignore
+                call=call,  # type: ignore
                 keypair=key,
                 multisig_account=multisig_acc,  # type: ignore
                 era=era,  # type: ignore
@@ -1408,8 +1408,8 @@ class CommuneClient:
         params = {"data": cid}
 
         response = self.compose_call(
-            fn="add_global_custom_proposal", 
-            params=params, 
+            fn="add_global_custom_proposal",
+            params=params,
             key=key,
             module="GovernanceModule",
         )
@@ -1483,7 +1483,7 @@ class CommuneClient:
         general_params = cast(dict[str, Any], params)
         cid = cid or ""
         general_params["data"] = cid
-        
+
         response = self.compose_call(
             fn="add_global_params_proposal",
             params=general_params,
@@ -1518,8 +1518,8 @@ class CommuneClient:
         params = {"proposal_id": proposal_id, "agree": agree}
 
         response = self.compose_call(
-            "vote_proposal", 
-            key=key, 
+            "vote_proposal",
+            key=key,
             params=params,
             module="GovernanceModule",
         )
@@ -1552,8 +1552,8 @@ class CommuneClient:
         params = {"proposal_id": proposal_id}
 
         response = self.compose_call(
-            "remove_vote_proposal", 
-            key=key, 
+            "remove_vote_proposal",
+            key=key,
             params=params,
             module="GovernanceModule",
         )
@@ -1575,14 +1575,14 @@ class CommuneClient:
         """
 
         response = self.compose_call(
-            "enable_vote_power_delegation", 
+            "enable_vote_power_delegation",
             params={},
-            key=key, 
+            key=key,
             module="GovernanceModule",
         )
 
         return response
-    
+
     def disable_vote_power_delegation(self, key: Keypair) -> ExtrinsicReceipt:
         """
         Disables vote power delegation for the signer's account.
@@ -1598,9 +1598,9 @@ class CommuneClient:
         """
 
         response = self.compose_call(
-            "disable_vote_power_delegation", 
+            "disable_vote_power_delegation",
             params={},
-            key=key, 
+            key=key,
             module="GovernanceModule",
         )
 
@@ -2627,9 +2627,9 @@ class CommuneClient:
         """
 
         return self.query(
-            "MinBurn",
+            "BurnConfig",
             params=[],
-        )
+        )["min_burn"]
 
     def get_min_weight_stake(self) -> int:
         """
@@ -2945,24 +2945,21 @@ class CommuneClient:
         return result
 
     def get_voting_power_delegators(self) -> list[Ss58Address]:
-        result = self.query(
-            "NotDelegatingVotingPower", 
-            [], 
-            module="GovernanceModule"
-        )
+        result = self.query("NotDelegatingVotingPower", [], module="GovernanceModule")
         return result
 
     def add_transfer_dao_treasury_proposal(
-            self,
-            key: Keypair,
-            data: str, 
-            amount_nano: int,
-            dest: Ss58Address, 
+        self,
+        key: Keypair,
+        data: str,
+        amount_nano: int,
+        dest: Ss58Address,
     ):
         params = {"dest": dest, "value": amount_nano, "data": data}
 
         return self.compose_call(
-            module="GovernanceModule", 
-            fn="add_transfer_dao_treasury_proposal", 
-            params=params, key = key
+            module="GovernanceModule",
+            fn="add_transfer_dao_treasury_proposal",
+            params=params,
+            key=key,
         )
