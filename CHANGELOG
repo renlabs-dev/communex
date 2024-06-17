@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.31.6
+- Fix on CommuneClient
+
 ## 0.1.31.5
 - If key is not passed to `comx key power-delegation`, will apply the action on
 every key on disk
