@@ -185,8 +185,8 @@ def get_map_subnets_params(
         "netuid_to_adjustment_alpha": bulk_query["AdjustmentAlpha"],
         "netuid_to_bonds_ma": bulk_query.get("BondsMovingAverage", {}),
         "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
-        "netuid_to_target_registrations_per_interval": bulk_query.get("TargetRegistrationsInterval", {}),
-        "netuid_to_target_registrations_interval": bulk_query.get("TargetRegistrationsPerInterval", {}),
+        "netuid_to_target_registrations_per_interval": bulk_query.get("TargetRegistrationsPerInterval", {}),
+        "netuid_to_target_registrations_interval": bulk_query.get("TargetRegistrationsInterval", {}),
         "netuid_to_max_registrations_per_interval": bulk_query.get("MaxRegistrationsPerInterval", {}),
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
