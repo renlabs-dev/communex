@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.32
+- Changed how universal password is passed so it doesn't show on history
+
 ## 0.1.31.6
 - Fix on CommuneClient
 
