@@ -7,6 +7,7 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 from typer import Context
+from getpass import getpass
 
 from communex._common import get_node_url
 from communex.balance import from_horus, from_nano
@@ -232,3 +233,8 @@ def print_module_info(
     console.print(table)
     for _ in range(3):
         console.print()
+
+def get_universal_password(ctx: CustomCtx) -> str:
+    ctx.info("Please provide the universal password for all keys")
+    universal_password = getpass()
+    return universal_password

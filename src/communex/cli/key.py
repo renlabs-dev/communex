@@ -4,16 +4,22 @@ from enum import Enum
 from typing import Any, Optional, cast
 
 import typer
+from getpass import getpass
 from substrateinterface import Keypair  # type: ignore
 from typer import Context
 
 from communex._common import BalanceUnit, format_balance
-from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict,
-                                  print_table_standardize)
-from communex.compat.key import (classic_key_path, classic_store_key,
-                                 local_key_addresses, try_classic_load_key,
-                                 try_load_key)
+from communex.cli._common import (
+    make_custom_context,
+    print_table_from_plain_dict,
+    print_table_standardize,
+    get_universal_password,
+    )
+from communex.compat.key import (
+    classic_key_path, classic_store_key,
+    local_key_addresses, try_classic_load_key,
+    try_load_key
+    )
 from communex.key import check_ss58_address, generate_keypair, is_ss58_address
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
@@ -104,9 +110,9 @@ def balances(
     netuid: Optional[int] = None,
     unit: BalanceUnit = BalanceUnit.joule,
     sort_balance: SortBalance = SortBalance.all,
-    universal_password: Optional[str] = typer.Option(
-        None, help="""
-        Password to decrypt all keys.
+    use_universal_password: bool = typer.Option(
+        False, help="""
+        If you want to use a password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
         every password.
@@ -119,6 +125,11 @@ def balances(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
+    if use_universal_password:
+        universal_password = get_universal_password(context)
+    else:
+        universal_password = None
+
     local_keys = local_key_addresses(context, universal_password=universal_password)
     with context.console.status("Getting balances of all keys, this might take a while..."):
         key2freebalance, key2stake = local_keys_allbalance(client, local_keys, netuid)
@@ -168,8 +179,8 @@ def balances(
 @key_app.command(name='list')
 def inventory(
     ctx: Context,
-    universal_password: Optional[str] = typer.Option(
-        None, help="""
+    use_universal_password: bool = typer.Option(
+        False, help="""
         Password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
@@ -181,6 +192,10 @@ def inventory(
     Lists all keys stored on disk.
     """
     context = make_custom_context(ctx)
+    if use_universal_password:
+        universal_password = get_universal_password(context)
+    else:
+        universal_password = None
     key_to_address = local_key_addresses(context, universal_password)
     general_key_to_address: dict[str, str] = cast(
         dict[str, str], key_to_address)
@@ -235,6 +250,7 @@ def staketo(
 
     with context.progress_status(f"Getting stake-to of {key_address}..."):
         result = client.get_staketo(key_addr=key_address, netuid=netuid)
+    breakpoint()
 
     result = {k: format_balance(v, unit) for k, v in result.items()}
 
@@ -245,8 +261,8 @@ def staketo(
 def total_free_balance(
     ctx: Context,
     unit: BalanceUnit = BalanceUnit.joule,
-    universal_password: Optional[str] = typer.Option(
-        None, help="""
+    use_universal_password: Optional[str] = typer.Option(
+        False, help="""
         Password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
@@ -259,7 +275,11 @@ def total_free_balance(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-
+    
+    if use_universal_password:
+        universal_password = get_universal_password(context)
+    else:
+        universal_password = None
     local_keys = local_key_addresses(context, universal_password)
     with context.progress_status("Getting total free balance of all keys..."):
         key2balance: dict[str, int] = local_keys_to_freebalance(client, local_keys)
@@ -273,8 +293,8 @@ def total_free_balance(
 def total_staked_balance(
     ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
     netuid: int = 0,
-    universal_password: Optional[str] = typer.Option(
-        None, help="""
+    use_universal_password: bool = typer.Option(
+        False, help="""
     Password to decrypt all keys.
     This will only work if all encrypted keys uses the same password.
     If this is not the case, leave it blank and you will be prompted to give
@@ -287,6 +307,11 @@ def total_staked_balance(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
+
+    if use_universal_password:
+        universal_password = get_universal_password(context)
+    else:
+        universal_password = None
     local_keys = local_key_addresses(context, universal_password)
     with context.progress_status("Getting total staked balance of all keys..."):
         key2stake: dict[str, int] = local_keys_to_stakedbalance(
@@ -303,8 +328,8 @@ def total_staked_balance(
 def total_balance(
     ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
     netuid: Optional[int] = None,
-    universal_password: Optional[str] = typer.Option(
-        None, help="""
+    use_universal_password: bool = typer.Option(
+        False, help="""
     Password to decrypt all keys.
     This will only work if all encrypted keys uses the same password.
     If this is not the case, leave it blank and you will be prompted to give
@@ -317,7 +342,11 @@ def total_balance(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-
+    
+    if use_universal_password:
+        universal_password = get_universal_password(context)
+    else:
+        universal_password = None
     local_keys = local_key_addresses(context, universal_password)
     with context.progress_status("Getting total tokens of all keys..."):
         key2balance, key2stake = local_keys_allbalance(
@@ -333,7 +362,7 @@ def power_delegation(
     ctx: Context, 
     key: Optional[str] = None, 
     enable: bool = typer.Option(True, "--disable"),
-    universal_password: Optional[str] = typer.Option(None)
+    use_universal_password: bool = typer.Option(False)
     ):
     """
     Gets power delegation of a key.
@@ -349,6 +378,11 @@ def power_delegation(
         if not typer.confirm(confirm_message):
             context.info("Aborted.")
             exit(0)
+        
+        if use_universal_password:
+            universal_password = get_universal_password(context)
+        else:
+            universal_password = None
         local_keys = local_key_addresses(context, universal_password)
     else:
         local_keys = {key: None}

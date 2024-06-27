@@ -7,7 +7,7 @@ from typer import Context
 from communex.balance import from_nano
 from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict)
-from communex.compat.key import classic_load_key, resolve_key_ss58
+from communex.compat.key import try_classic_load_key, resolve_key_ss58
 from communex.errors import ChainTransactionError
 from communex.misc import IPFS_REGEX, get_map_subnets_params
 from communex.types import SubnetParams
@@ -144,7 +144,7 @@ def update(
         subnet_params["maximum_set_weight_calls_per_epoch"] = client.query(
             "MaximumSetWeightCallsPerEpoch"
         )
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key)
     with context.progress_status("Updating subnet ..."):
         response = client.update_subnet(
             key=resolved_key, params=subnet_params, netuid=netuid
@@ -224,7 +224,7 @@ def propose_on_subnet(
             "MaximumSetWeightCallsPerEpoch"
         )
 
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key)
 
 
     with context.progress_status("Adding a proposal..."):
@@ -251,7 +251,7 @@ def submit_general_subnet_application(
 
     client = context.com_client()
 
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key)
     resolved_application_key = resolve_key_ss58(application_key)
 
     # append the ipfs hash
@@ -280,7 +280,7 @@ def add_custom_proposal(
 
     client = context.com_client()
 
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key)
 
     # append the ipfs hash
     ipfs_prefix = "ipfs://"

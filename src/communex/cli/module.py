@@ -9,7 +9,7 @@ import communex.balance as c_balance
 from communex._common import intersection_update
 from communex.cli._common import (make_custom_context, print_module_info,
                                   print_table_from_plain_dict)
-from communex.compat.key import classic_load_key
+from communex.compat.key import try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import get_map_modules
 from communex.module._rate_limiters.limiters import (IpLimiterParams,
@@ -94,7 +94,7 @@ def register(
                 min_stake + burn + c_balance.to_nano(0.1)
             )  # 0.1 extra needed for the call to succeed
 
-        resolved_key = classic_load_key(key)
+        resolved_key = try_classic_load_key(key, context)
 
         address = f"{ip}:{port}"
 
@@ -132,7 +132,7 @@ def update(
     client = context.com_client()
     if metadata and len(metadata) > 59:
         raise ValueError("Metadata must be less than 60 characters")
-    resolved_key = classic_load_key(key)
+    resolved_key = try_classic_load_key(key)
 
     if ip and not is_ip_valid(ip):
         raise ValueError("Invalid ip address")
@@ -240,7 +240,7 @@ def serve(
         context.error(f"Class `{class_name}` not found in module `{module}`")
         raise typer.Exit(code=1)
 
-    keypair = classic_load_key(key)
+    keypair = try_classic_load_key(key, context)
     if test_mode:
         subnets_whitelist = None
     token_refill_rate = token_refill_rate_base_multiplier or 1

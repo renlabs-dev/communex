@@ -20,7 +20,7 @@ from communex.util import bytes_to_hex, check_str
 
 
 class GenericCtx(Protocol):
-    def output(self, message: str):
+    def info(self, message: str):
         ...
 
 
@@ -150,23 +150,35 @@ def classic_store_key(keypair: Keypair, name: str, password: str | None = None) 
 
 
 def try_classic_load_key(
-    name: str, context: GenericCtx,
+    name: str, context: GenericCtx | None = None,
     password: str | None = None
 ) -> Keypair:
     try:
         keypair = classic_load_key(name, password=password)
     except json.JSONDecodeError:
-        context.output(f"Please provide the password for the key {name}")
+        prompt = f"Please provide the password for the key {name}"
+        if context is not None:
+            context.info(prompt)
+        else:
+            print(prompt)
         password = getpass()
         keypair = classic_load_key(name, password=password)
     return keypair
 
 
-def try_load_key(name: str, context: GenericCtx, password: str | None = None):
+def try_load_key(
+        name: str, 
+        context: GenericCtx | None = None, 
+        password: str | None = None
+    ):
     try:
         key_dict = classic_load(name, password=password)
     except json.JSONDecodeError:
-        context.output(f"Please provide the password for the key {name}")
+        prompt = f"Please provide the password for the key {name}"
+        if context is not None:
+            context.info(prompt)
+        else:
+            print(prompt)
         password = getpass()
         key_dict = classic_load(name, password=password)
     return key_dict
@@ -199,7 +211,7 @@ def local_key_addresses(
             if universal_password:
                 password = universal_password
             elif ctx:
-                ctx.output(f"Please provide the password for the key '{key_name}'")
+                ctx.info(f"Please provide the password for the key '{key_name}'")
                 password = getpass()
             else:
                 print(f"Please provide the password for the key '{key_name}'")
@@ -256,7 +268,7 @@ def resolve_key_ss58_encrypted(
     try:
         keypair = classic_load_key(key, password=password)
     except json.JSONDecodeError:
-        context.output(f"Please provide the password for the key {key}")
+        context.info(f"Please provide the password for the key {key}")
         password = getpass()
         keypair = classic_load_key(key, password=password)
     except FileNotFoundError:
