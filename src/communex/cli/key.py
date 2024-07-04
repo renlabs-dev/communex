@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Any, Optional, cast
 
 import typer
-from getpass import getpass
 from substrateinterface import Keypair  # type: ignore
 from typer import Context
 

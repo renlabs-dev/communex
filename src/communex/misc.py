@@ -145,7 +145,6 @@ def get_map_subnets_params(
                 ("MinAllowedWeights", []),
                 ("MaxAllowedWeights", []),
                 ("MinStake", []),
-                ("SubnetEmission", []),
                 ("Tempo", []),
                 ("MaxAllowedUids", []),
                 ("TargetRegistrationsInterval", []),
@@ -163,7 +162,11 @@ def get_map_subnets_params(
             ],
                 "GovernanceModule": [
                     ("SubnetGovernanceConfig", []),
-                ]
+                ],
+            "SubnetEmissionModule": [
+                ("SubnetEmission", []),
+            ],
+
         },
         block_hash,
     )

@@ -1812,21 +1812,6 @@ class CommuneClient:
 
         return self.query_map("LastUpdate", extract_value=extract_value)["LastUpdate"]
 
-    def query_map_total_stake(self, extract_value: bool = False) -> dict[int, int]:
-        """
-        Retrieves a mapping of total stakes for keys on the network.
-
-        Queries the network for a mapping of key UIDs to their total stake amounts.
-
-        Returns:
-            A dictionary mapping key UIDs to their total stake amounts.
-
-        Raises:
-            QueryError: If the query to the network fails or is invalid.
-        """
-
-        return self.query_map("TotalStake", extract_value=extract_value)["TotalStake"]
-
     def query_map_stakefrom(
         self, netuid: int = 0, extract_value: bool = False
     ) -> dict[str, list[tuple[str, int]]]:
@@ -2183,7 +2168,7 @@ class CommuneClient:
 
     def query_map_balances(
         self, extract_value: bool = False
-    ) -> dict[str, dict["str", int | dict[str, int]]]:
+    )   -> dict[str, dict[str, int | dict[str, int | float]]]:
         """
         Retrieves a mapping of account balances within the network.
 
@@ -2411,26 +2396,20 @@ class CommuneClient:
 
         return self.query("Tempo", params=[netuid])
 
-    def get_total_stake(self, netuid: int = 0):
+    def get_total_stake(self) -> int:
         """
-        Queries the network for the total stake amount.
+        Retrieves a mapping of total stakes for keys on the network.
 
-        Retrieves the total amount of stake within a specific network subnet.
-
-        Args:
-            netuid: The network UID for which to query the total stake.
+        Queries the network for a mapping of key UIDs to their total stake amounts.
 
         Returns:
-            The total stake amount for the specified network subnet.
+            A dictionary mapping key UIDs to their total stake amounts.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query(
-            "TotalStake",
-            params=[netuid],
-        )
+        return self.query("TotalStake")
 
     def get_registrations_per_block(self):
         """

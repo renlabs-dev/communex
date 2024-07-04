@@ -1,3 +1,5 @@
+from typing import Any
+
 import typer
 from typer import Context
 
@@ -17,20 +19,13 @@ def circulating_tokens(c_client: CommuneClient) -> int:
     Gets total circulating supply
     """
 
-    query_all = c_client.query_batch_map(
-        {
-            "SubspaceModule": [("TotalStake", [])],
-            "System": [("Account", [])],
-        }
-    )
-
-    balances, stake = query_all["Account"], query_all["TotalStake"]
-    format_balances: dict[str, int] = {
-        key: value["data"]["free"] for key, value in balances.items() if "data" in value and "free" in value["data"]
+    balances = c_client.query_map_balances()
+    total_stake = c_client.get_total_stake()
+    format_balances: dict[Any, Any] = {
+        key: value["data"]["free"] for key, value in balances.items() if "data" in value and "free" in value["data"] # type: ignore
     }
 
     total_balance = sum(format_balances.values())
-    total_stake = sum(stake.values())
 
     return total_stake + total_balance
 

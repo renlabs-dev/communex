@@ -31,17 +31,6 @@ def list(ctx: Context):
         {"netuid": key, **value} for key, value in zip(keys, values)
     ]
 
-    subnet_stakes = client.query_map_total_stake()
-
-    subnets_with_stakes = [
-        {"stake": from_nano(subnet_stakes.get(netuid, 0))} for netuid in keys
-    ]
-    subnets_with_stakes = [
-        {**subnets_with_netuids[i], **subnets_with_stakes[i]} for i in range(len(keys))
-    ]
-    subnets_with_netuids = sorted(  # type: ignore
-        subnets_with_stakes, key=lambda x: x["emission"], reverse=True  # type: ignore
-    )  # type: ignore
     for subnet_dict in subnets_with_netuids:  # type: ignore
         bonds = subnet_dict["bonds_ma"]  # type: ignore
         if bonds:
