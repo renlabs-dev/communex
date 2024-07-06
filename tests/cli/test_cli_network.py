@@ -2,7 +2,6 @@ import re
 from string import hexdigits
 
 import pytest
-
 from tests.conftest import InvokeCli
 from tests.str_utils import clean
 

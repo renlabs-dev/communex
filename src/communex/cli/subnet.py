@@ -7,7 +7,7 @@ from typer import Context
 from communex.balance import from_nano
 from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict)
-from communex.compat.key import try_classic_load_key, resolve_key_ss58
+from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import IPFS_REGEX, get_map_subnets_params
 from communex.types import SubnetParams

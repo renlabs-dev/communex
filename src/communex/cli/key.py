@@ -8,17 +8,12 @@ from substrateinterface import Keypair  # type: ignore
 from typer import Context
 
 from communex._common import BalanceUnit, format_balance
-from communex.cli._common import (
-    make_custom_context,
-    print_table_from_plain_dict,
-    print_table_standardize,
-    get_universal_password,
-    )
-from communex.compat.key import (
-    classic_key_path, classic_store_key,
-    local_key_addresses, try_classic_load_key,
-    try_load_key
-    )
+from communex.cli._common import (get_universal_password, make_custom_context,
+                                  print_table_from_plain_dict,
+                                  print_table_standardize)
+from communex.compat.key import (classic_key_path, classic_store_key,
+                                 local_key_addresses, try_classic_load_key,
+                                 try_load_key)
 from communex.key import check_ss58_address, generate_keypair, is_ss58_address
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)

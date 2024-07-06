@@ -3,10 +3,9 @@ from typing import Awaitable, Callable
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from keylimiter import TokenBucketLimiter
+from pydantic_settings import BaseSettings
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-from pydantic_settings import BaseSettings
-
 
 Callback = Callable[[Request], Awaitable[Response]]
 

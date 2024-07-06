@@ -1,9 +1,10 @@
-from typing import Optional
 import re
+from typing import Optional
+
 import typer
 from typer import Context
 
-from communex._common import BalanceUnit, format_balance, IPFS_REGEX
+from communex._common import IPFS_REGEX, BalanceUnit, format_balance
 from communex.balance import to_nano
 from communex.cli._common import (make_custom_context,
                                   print_table_from_plain_dict)

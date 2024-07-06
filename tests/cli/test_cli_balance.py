@@ -2,10 +2,10 @@ import random
 import re
 
 import pytest
-
-from communex.key import is_ss58_address
 from tests.conftest import InvokeCli
 from tests.str_utils import clean
+
+from communex.key import is_ss58_address
 
 TEST_KEY_ALIAS = "dev01"
 TEST_SS58_ADDRESS = "5EA6Dd3vejQco2FZomoAQgxacsTp7ZPFuR25TwxTiUKbkep1"
