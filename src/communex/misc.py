@@ -1,19 +1,17 @@
 import re
 from typing import Any, TypeVar
 
+from communex._common import transform_stake_dmap
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
-from communex.types import (
-    ModuleInfoWithOptionalBalance,
-    NetworkParams,
-    Ss58Address,
-    SubnetParamsWithEmission,
-    SubnetParamsMaps,
-)
+from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
+                            Ss58Address, SubnetParamsMaps,
+                            SubnetParamsWithEmission)
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
 T = TypeVar("T")
+
 
 def get_map_modules(
     client: CommuneClient,
@@ -26,14 +24,13 @@ def get_map_modules(
 
     request_dict: dict[Any, Any] = {
         "SubspaceModule": [
-            ("StakeFrom", [netuid]),
+            ("StakeFrom", []),
             ("Keys", [netuid]),
             ("Name", [netuid]),
             ("Address", [netuid]),
             ("RegistrationBlock", [netuid]),
             ("DelegationFee", [netuid]),
             ("Emission", []),
-            
             ("Incentive", []),
             ("Dividends", []),
             ("LastUpdate", []),
@@ -44,7 +41,6 @@ def get_map_modules(
         request_dict["System"] = [("Account", [])]
 
     bulk_query = client.query_batch_map(request_dict)
-   
     (
         ss58_to_stakefrom,
         uid_to_key,
@@ -60,7 +56,7 @@ def get_map_modules(
         uid_to_metadata,
     ) = (
         bulk_query.get("StakeFrom", {}),
-       bulk_query.get("Keys", {}),
+        bulk_query.get("Keys", {}),
         bulk_query["Name"],
         bulk_query["Address"],
         bulk_query["RegistrationBlock"],
@@ -74,10 +70,9 @@ def get_map_modules(
     )
 
     result_modules: dict[str, ModuleInfoWithOptionalBalance] = {}
-
+    ss58_to_stakefrom = transform_stake_dmap(ss58_to_stakefrom)
     for uid, key in uid_to_key.items():
         key = check_ss58_address(key)
-
         name = uid_to_name[uid]
         address = uid_to_address[uid]
         emission = uid_to_emission[netuid][uid]
@@ -121,6 +116,7 @@ def get_map_modules(
         result_modules[key] = module
     return result_modules
 
+
 def to_snake_case(d: dict[str, T]) -> dict[str, T]:
     """
     Converts a dictionary with camelCase keys to snake_case keys
@@ -160,9 +156,9 @@ def get_map_subnets_params(
                 ("MaximumSetWeightCallsPerEpoch", []),
                 ("AdjustmentAlpha", []),
             ],
-                "GovernanceModule": [
-                    ("SubnetGovernanceConfig", []),
-                ],
+            "GovernanceModule": [
+                ("SubnetGovernanceConfig", []),
+            ],
             "SubnetEmissionModule": [
                 ("SubnetEmission", []),
             ],
@@ -254,14 +250,14 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ]
         }
     )
-    governance_config: dict[str, int] = query_all["GlobalGovernanceConfig"] # type: ignore
+    governance_config: dict[str, int] = query_all["GlobalGovernanceConfig"]  # type: ignore
     global_params: NetworkParams = {
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
         "max_name_length": int(query_all["MaxNameLength"]),
-        "min_burn": int(query_all["BurnConfig"]["min_burn"]), # type: ignore
-        "max_burn": int(query_all["BurnConfig"]["max_burn"]), # type: ignore
+        "min_burn": int(query_all["BurnConfig"]["min_burn"]),  # type: ignore
+        "max_burn": int(query_all["BurnConfig"]["max_burn"]),  # type: ignore
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
         "max_allowed_weights": int(query_all["MaxAllowedWeightsGlobal"]),
@@ -314,15 +310,8 @@ def local_keys_to_freebalance(
 def local_keys_to_stakedbalance(
     c_client: CommuneClient,
     local_keys: dict[str, Ss58Address],
-    netuid: int = 0,
 ) -> dict[str, int]:
-    query_all = c_client.query_batch_map(
-        {
-            "SubspaceModule": [("StakeTo", [netuid])],
-        }
-    )
-
-    staketo_map = query_all["StakeTo"]
+    staketo_map = c_client.query_map_staketo()
 
     format_stake: dict[str, int] = {
         key: sum(stake for _, stake in value) for key, value in staketo_map.items()
@@ -336,30 +325,17 @@ def local_keys_to_stakedbalance(
 def local_keys_allbalance(
     c_client: CommuneClient,
     local_keys: dict[str, Ss58Address],
-    netuid: int | None = None,
 ) -> tuple[dict[str, int], dict[str, int]]:
-    staketo_maps: list[Any] = []
-    query_result = c_client.query_batch_map(
+    query_all = c_client.query_batch_map(
         {
-            "SubspaceModule": [("SubnetNames", [])],
             "System": [("Account", [])],
+            "SubspaceModule": [
+                ("StakeTo", []),
+            ],
         }
     )
-    balance_map = query_result["Account"]
-    all_netuids = list(query_result["SubnetNames"].keys())
 
-    # update for all subnets
-    netuids = all_netuids if netuid is None else [netuid]
-    for uid in netuids:
-        query_result = c_client.query_batch_map(
-            {
-                "SubspaceModule": [
-                    ("StakeTo", [uid]),
-                ],
-            }
-        )
-        staketo_map = query_result.get("StakeTo", {})
-        staketo_maps.append(staketo_map)
+    balance_map, staketo_map = query_all["Account"], transform_stake_dmap(query_all["StakeTo"])
 
     format_balances: dict[str, int] = {
         key: value["data"]["free"]
@@ -369,22 +345,8 @@ def local_keys_allbalance(
 
     key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
 
-    merged_staketo_map: dict[Any, Any] = {}
-
-    # Iterate through each staketo_map in the staketo_maps list
-    for staketo_map in staketo_maps:
-        # Iterate through key-value pairs in the current staketo_map
-        for key, value in staketo_map.items():
-            # If the key is not present in the merged dictionary, add it
-            if key not in merged_staketo_map:
-                merged_staketo_map[key] = value
-            else:
-                # If the key exists, extend the existing list with the new values
-                merged_staketo_map[key].extend(value)
-
     format_stake: dict[str, int] = {
-        key: sum(stake for _, stake in value)
-        for key, value in merged_staketo_map.items()
+        key: sum(stake for _, stake in value) for key, value in staketo_map.items()
     }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)

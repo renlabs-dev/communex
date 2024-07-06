@@ -11,6 +11,7 @@ from substrateinterface import Keypair  # type: ignore
 from substrateinterface import SubstrateInterface  # type: ignore
 from substrateinterface.storage import StorageKey  # type: ignore
 
+from communex._common import transform_stake_dmap
 from communex.errors import ChainTransactionError, NetworkQueryError
 from communex.types import NetworkParams, Ss58Address, SubnetParams
 
@@ -396,7 +397,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i : i + max_n_keys]
+                        splitted_keys = result_keys[i: i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -481,6 +482,11 @@ class CommuneClient:
             {'storage_function_name': {decoded_key: decoded_value, ...}, ...}
         """
 
+        def get_item_key_value(item_key: tuple[Any, ...] | Any) -> tuple[Any, ...] | Any:
+            if isinstance(item_key, tuple):
+                return tuple(k.value for k in item_key)
+            return item_key.value
+
         def concat_hash_len(key_hasher: str) -> int:
             """
             Determines the length of the hash based on the given key hasher type.
@@ -532,7 +538,7 @@ class CommuneClient:
 
                     item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
-                        scale_bytes="0x" + item[0][len(prefix) :],
+                        scale_bytes="0x" + item[0][len(prefix):],
                         return_scale_obj=True,
                         block_hash=block_hash,
                     )
@@ -554,8 +560,8 @@ class CommuneClient:
                         block_hash=block_hash,
                     )
                     result_dict.setdefault(storage_function, {})
-
-                    result_dict[storage_function][item_key.value] = item_value.value  # type: ignore
+                    key = get_item_key_value(item_key)  # type: ignore
+                    result_dict[storage_function][key] = item_value.value  # type: ignore
 
         return result_dict
 
@@ -1813,7 +1819,7 @@ class CommuneClient:
         return self.query_map("LastUpdate", extract_value=extract_value)["LastUpdate"]
 
     def query_map_stakefrom(
-        self, netuid: int = 0, extract_value: bool = False
+        self, extract_value: bool = False
     ) -> dict[str, list[tuple[str, int]]]:
         """
         Retrieves a mapping of stakes from various sources for keys on the network.
@@ -1832,12 +1838,14 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("StakeFrom", [netuid], extract_value=extract_value)[
+        result = self.query_map("StakeFrom", [], extract_value=extract_value)[
             "StakeFrom"
         ]
 
+        return transform_stake_dmap(result)
+
     def query_map_staketo(
-        self, netuid: int = 0, extract_value: bool = False
+        self, extract_value: bool = False
     ) -> dict[str, list[tuple[str, int]]]:
         """
         Retrieves a mapping of stakes to destinations for keys on the network.
@@ -1856,12 +1864,13 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("StakeTo", [netuid], extract_value=extract_value)[
+        result = self.query_map("StakeTo", [], extract_value=extract_value)[
             "StakeTo"
         ]
+        return transform_stake_dmap(result)
 
     def query_map_stake(
-        self, netuid: int = 0, extract_value: bool = False
+        self, extract_value: bool = False
     ) -> dict[str, int]:
         """
         Retrieves a mapping of stakes for keys on the network.
@@ -1880,7 +1889,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Stake", [netuid], extract_value=extract_value)["Stake"]
+        return self.query_map("Stake", [], extract_value=extract_value)["Stake"]
 
     def query_map_delegationfee(
         self, netuid: int = 0, extract_value: bool = False
@@ -2168,7 +2177,7 @@ class CommuneClient:
 
     def query_map_balances(
         self, extract_value: bool = False
-    )   -> dict[str, dict[str, int | dict[str, int | float]]]:
+    ) -> dict[str, dict[str, int | dict[str, int | float]]]:
         """
         Retrieves a mapping of account balances within the network.
 
