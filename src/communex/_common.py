@@ -14,7 +14,7 @@ IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 class ComxSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="COMX_")
     # TODO: improve node lists
-    NODE_URLS: list[str] = ["ws://localhost:9952"]
+    NODE_URLS: list[str] = ["wss://testnet-commune-api-node-0.communeai.net"]
     # NODE_URLS: list[str] = [
     #     "wss://commune-api-node-0.communeai.net",
     #     "wss://commune-api-node-1.communeai.net",

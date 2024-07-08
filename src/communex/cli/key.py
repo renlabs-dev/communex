@@ -198,7 +198,7 @@ def inventory(
 
 @key_app.command()
 def stakefrom(
-    ctx: Context, key: str, netuid: int = 0,
+    ctx: Context, key: str,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -215,7 +215,7 @@ def stakefrom(
         key_address = keypair.ss58_address
         key_address = check_ss58_address(key_address)
     with context.progress_status(f"Getting stake-from map for {key_address}..."):
-        result = client.get_stakefrom(key_addr=key_address, netuid=netuid)
+        result = client.get_stakefrom(key=key_address)
 
     result = {k: format_balance(v, unit) for k, v in result.items()}
 
@@ -224,7 +224,7 @@ def stakefrom(
 
 @key_app.command()
 def staketo(
-    ctx: Context, key: str, netuid: int = 0,
+    ctx: Context, key: str,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -242,8 +242,7 @@ def staketo(
         key_address = check_ss58_address(key_address)
 
     with context.progress_status(f"Getting stake-to of {key_address}..."):
-        result = client.get_staketo(key_addr=key_address, netuid=netuid)
-    breakpoint()
+        result = client.get_staketo(key=key_address)
 
     result = {k: format_balance(v, unit) for k, v in result.items()}
 
@@ -268,7 +267,7 @@ def total_free_balance(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-    
+
     if use_universal_password:
         universal_password = get_universal_password(context)
     else:
@@ -332,7 +331,7 @@ def total_balance(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-    
+
     if use_universal_password:
         universal_password = get_universal_password(context)
     else:
@@ -347,13 +346,14 @@ def total_balance(
 
         context.output(format_balance(tokens_sum, unit=unit))
 
+
 @key_app.command()
 def power_delegation(
-    ctx: Context, 
-    key: Optional[str] = None, 
+    ctx: Context,
+    key: Optional[str] = None,
     enable: bool = typer.Option(True, "--disable"),
     use_universal_password: bool = typer.Option(False)
-    ):
+):
     """
     Gets power delegation of a key.
     """
@@ -368,7 +368,7 @@ def power_delegation(
         if not typer.confirm(confirm_message):
             context.info("Aborted.")
             exit(0)
-        
+
         if use_universal_password:
             universal_password = get_universal_password(context)
         else:

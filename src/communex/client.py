@@ -684,6 +684,7 @@ class CommuneClient:
         name: str,
         params: list[Any] = [],
         module: str = "SubspaceModule",
+        block_hash: str | None = None,
     ) -> Any:
         """
         Queries a storage function on the network.
@@ -994,7 +995,6 @@ class CommuneClient:
         key: Keypair,
         amount: int,
         dest: Ss58Address,
-        netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
         Stakes the specified amount of tokens to a module key address.
@@ -1014,7 +1014,7 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        params = {"amount": amount, "netuid": netuid, "module_key": dest}
+        params = {"amount": amount, "module_key": dest}
 
         return self.compose_call(fn="add_stake", params=params, key=key)
 
@@ -1023,7 +1023,6 @@ class CommuneClient:
         key: Keypair,
         amount: int,
         dest: Ss58Address,
-        netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
         Unstakes the specified amount of tokens from a module key address.
@@ -1043,7 +1042,7 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        params = {"amount": amount, "netuid": netuid, "module_key": dest}
+        params = {"amount": amount, "module_key": dest}
         return self.compose_call(fn="remove_stake", params=params, key=key)
 
     def update_module(
@@ -1218,7 +1217,6 @@ class CommuneClient:
         amount: int,
         from_module_key: Ss58Address,
         dest_module_address: Ss58Address,
-        netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
         Realocate staked tokens from one staked module to another module.
@@ -1243,7 +1241,6 @@ class CommuneClient:
 
         params = {
             "amount": amount,
-            "netuid": netuid,
             "module_key": from_module_key,
             "new_module_key": dest_module_address,
         }
@@ -1257,7 +1254,6 @@ class CommuneClient:
         key: Keypair,
         keys: list[Ss58Address],
         amounts: list[int],
-        netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
         Unstakes tokens from multiple module keys.
@@ -1284,7 +1280,7 @@ class CommuneClient:
 
         assert len(keys) == len(amounts)
 
-        params = {"netuid": netuid, "module_keys": keys, "amounts": amounts}
+        params = {"module_keys": keys, "amounts": amounts}
 
         response = self.compose_call("remove_stake_multiple", params=params, key=key)
 
@@ -1295,7 +1291,6 @@ class CommuneClient:
         key: Keypair,
         keys: list[Ss58Address],
         amounts: list[int],
-        netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
         Stakes tokens to multiple module keys.
@@ -1324,7 +1319,6 @@ class CommuneClient:
         params = {
             "module_keys": keys,
             "amounts": amounts,
-            "netuid": netuid,
         }
 
         response = self.compose_call("add_stake_multiple", params=params, key=key)
@@ -1748,6 +1742,35 @@ class CommuneClient:
 
         return self.query_map("Emission", extract_value=extract_value)["Emission"]
 
+    def query_map_pending_emission(self, extract_value: bool = False) -> int:
+        """
+        Retrieves a map of pending emissions for the subnets.
+
+        Queries the network for a mapping of subnet UIDs to their pending emission values.
+
+        Returns:
+            A dictionary mapping subnet UIDs to their pending emission values.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+        return self.query_map("PendingEmission", extract_value=extract_value, module="SubnetEmissionModule")["PendingEmission"]
+
+    def query_map_subnet_emission(self, extract_value: bool = False) -> dict[int, int]:
+        """
+        Retrieves a map of subnet emissions for the network.
+
+        Queries the network for a mapping of subnet UIDs to their emission values.
+
+        Returns:
+            A dictionary mapping subnet UIDs to their emission values.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query_map("SubnetEmission", extract_value=extract_value, module="SubnetEmissionModule")["SubnetEmission"]
+
     def query_map_incentive(self, extract_value: bool = False) -> dict[int, list[int]]:
         """
         Retrieves a mapping of incentives for keys on the network.
@@ -1868,28 +1891,6 @@ class CommuneClient:
             "StakeTo"
         ]
         return transform_stake_dmap(result)
-
-    def query_map_stake(
-        self, extract_value: bool = False
-    ) -> dict[str, int]:
-        """
-        Retrieves a mapping of stakes for keys on the network.
-
-        Queries the network and returns a mapping of key addresses to their
-        respective delegated staked balances amounts.
-        The query can be targeted at a specific network UID if required.
-
-        Args:
-            netuid: The network UID from which to get the stakes.
-
-        Returns:
-            A dictionary mapping key addresses to their stake amounts.
-
-        Raises:
-            QueryError: If the query to the network fails or is invalid.
-        """
-
-        return self.query_map("Stake", [], extract_value=extract_value)["Stake"]
 
     def query_map_delegationfee(
         self, netuid: int = 0, extract_value: bool = False
@@ -2529,7 +2530,7 @@ class CommuneClient:
         Queries the network for the unit emission setting.
 
         Retrieves the unit emission value, which represents the
-        emission rate or quantity for the $COMAI token.
+        emission rate or quantity for the $COMM token.
 
         Returns:
             The unit emission value in nanos for the network.
@@ -2538,7 +2539,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query("UnitEmission")
+        return self.query("UnitEmission", module="SubnetEmissionModule")
 
     def get_tx_rate_limit(self) -> int:
         """
@@ -2564,7 +2565,7 @@ class CommuneClient:
         Queries the network for the burn rate setting.
 
         Retrieves the burn rate, which represents the rate at
-        which the $COMAI token is permanently
+        which the $COMM token is permanently
         removed or 'burned' from circulation.
 
         Returns:
@@ -2584,7 +2585,7 @@ class CommuneClient:
         Queries the network for the burn setting.
 
         Retrieves the burn value, which represents the amount of the
-        $COMAI token that is 'burned' or permanently removed from
+        $COMM token that is 'burned' or permanently removed from
         circulation.
 
         Args:
@@ -2604,7 +2605,7 @@ class CommuneClient:
         Queries the network for the minimum burn setting.
 
         Retrieves the minimum burn value, indicating the lowest
-        amount of the $COMAI tokens that can be 'burned' or
+        amount of the $COMM tokens that can be 'burned' or
         permanently removed from circulation.
 
         Returns:
@@ -2785,87 +2786,51 @@ class CommuneClient:
 
         return self.query("MinStake", params=[netuid])
 
-    def get_stake(
-        self,
-        key: Ss58Address,
-        netuid: int = 0,
-    ) -> int:
-        """
-        Queries the network for the stake delegated with a specific key.
-
-        Retrieves the amount of total staked tokens
-        delegated a specific key address
-
-        Args:
-            key: The address of the key to query the stake for.
-            netuid: The network UID from which to get the query.
-
-        Returns:
-            The amount of stake held by the specified key in nanos.
-
-        Raises:
-            QueryError: If the query to the network fails or is invalid.
-        """
-
-        return self.query(
-            "Stake",
-            params=[netuid, key],
-        )
-
     def get_stakefrom(
         self,
-        key_addr: Ss58Address,
-        netuid: int = 0,
+        key: Ss58Address,
     ) -> dict[str, int]:
         """
-        Retrieves a list of keys from which a specific key address is staked.
+        Retrieves the stake amounts from all stakers to a specific staked address.
 
-        Queries the network for all the stakes received by a
-        particular key from different sources.
+        Queries the network for the stakes received by a particular staked address
+        from all stakers.
 
         Args:
-            key_addr: The address of the key to query stakes from.
-
-            netuid: The network UID from which to get the query.
+            key: The address of the key receiving the stakes.
 
         Returns:
-            A dictionary mapping key addresses to the amount of stake
-            received from each.
+            A dictionary mapping staker addresses to their respective stake amounts.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-        result = self.query("StakeFrom", [netuid, key_addr])
 
-        return {k: v for k, v in result}
+        # Has to use query map in order to iterate through the storage prefix.
+        return self.query_map("StakeFrom", [key], extract_value=False)["StakeFrom"]
 
     def get_staketo(
         self,
-        key_addr: Ss58Address,
-        netuid: int = 0,
+        key: Ss58Address,
     ) -> dict[str, int]:
         """
-        Retrieves a list of keys to which a specific key address stakes to.
+        Retrieves the stake amounts provided by a specific staker to all staked addresses.
 
-        Queries the network for all the stakes made by a particular key to
-        different destinations.
+        Queries the network for the stakes provided by a particular staker to
+        all staked addresses.
 
         Args:
-            key_addr: The address of the key to query stakes to.
-
-            netuid: The network UID from which to get the query.
+            key: The address of the key providing the stakes.
 
         Returns:
-            A dictionary mapping key addresses to the
-            amount of stake given to each.
+            A dictionary mapping staked addresses to their respective received stake amounts.
 
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        result = self.query("StakeTo", [netuid, key_addr])
-
-        return {k: v for k, v in result}
+        # Has to use query map in order to iterate through the storage prefix.
+        return self.query_map("StakeTo", [key], extract_value=False)["StakeTo"]
 
     def get_balance(
         self,
