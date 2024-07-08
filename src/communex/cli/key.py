@@ -101,7 +101,6 @@ def show(
 @key_app.command()
 def balances(
     ctx: Context,
-    netuid: Optional[int] = None,
     unit: BalanceUnit = BalanceUnit.joule,
     sort_balance: SortBalance = SortBalance.all,
     use_universal_password: bool = typer.Option(
@@ -126,7 +125,7 @@ def balances(
 
     local_keys = local_key_addresses(context, universal_password=universal_password)
     with context.console.status("Getting balances of all keys, this might take a while..."):
-        key2freebalance, key2stake = local_keys_allbalance(client, local_keys, netuid)
+        key2freebalance, key2stake = local_keys_allbalance(client, local_keys)
     key_to_freebalance = {k: format_balance(
         v, unit) for k, v in key2freebalance.items()}
     key_to_stake = {k: format_balance(v, unit) for k, v in key2stake.items()}
@@ -286,7 +285,6 @@ def total_free_balance(
 @key_app.command()
 def total_staked_balance(
     ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
-    netuid: int = 0,
     use_universal_password: bool = typer.Option(
         False, help="""
     Password to decrypt all keys.
@@ -310,7 +308,6 @@ def total_staked_balance(
     with context.progress_status("Getting total staked balance of all keys..."):
         key2stake: dict[str, int] = local_keys_to_stakedbalance(
             client, local_keys,
-            netuid=netuid
         )
 
         stake_sum = sum(key2stake.values())
@@ -321,7 +318,6 @@ def total_staked_balance(
 @key_app.command()
 def total_balance(
     ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
-    netuid: Optional[int] = None,
     use_universal_password: bool = typer.Option(
         False, help="""
     Password to decrypt all keys.
@@ -344,7 +340,7 @@ def total_balance(
     local_keys = local_key_addresses(context, universal_password)
     with context.progress_status("Getting total tokens of all keys..."):
         key2balance, key2stake = local_keys_allbalance(
-            client, local_keys, netuid=netuid
+            client, local_keys
         )
         key2tokens = {k: v + key2stake[k] for k, v in key2balance.items()}
         tokens_sum = sum(key2tokens.values())

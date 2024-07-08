@@ -129,25 +129,12 @@ def propose_globally(
 def get_valid_voting_keys(
     ctx: CustomCtx,
     client: CommuneClient,
-    proposal: dict[str, Any],
+    threshold: int = 25000000000, # 25 $COMAI
 ) -> dict[str, int]:
     local_keys = local_key_addresses(ctx=ctx, universal_password=None)
-
-    if proposal.get("SubnetParams"):
-        proposal_netuid = proposal["SubnetParams"]["netuid"]
-        assert (isinstance(proposal_netuid, int))
-        keys_stake = local_keys_to_stakedbalance(client, local_keys, netuid=proposal_netuid)
-    else:
-        keys_stake: dict[str, int] = {}
-        subnets = client.query_map_subnet_names()
-        for netuid in track(subnets.keys(), description="Checking valid keys..."):
-            subnet_stake = local_keys_to_stakedbalance(client, local_keys, netuid=netuid)
-            keys_stake = {
-                key: keys_stake.get(key, 0) + subnet_stake.get(key, 0)
-                for key in set(keys_stake) | set(subnet_stake)
-            }
+    keys_stake = local_keys_to_stakedbalance(client, local_keys)
     keys_stake = {key: stake for key,
-                  stake in keys_stake.items() if stake >= 5}
+                  stake in keys_stake.items() if stake >= threshold}
     return keys_stake
 
 
@@ -163,13 +150,11 @@ def vote_proposal(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-    proposals = client.query_map_proposals()
-    proposal = proposals[proposal_id]
 
     if key is None:
         context.info("Voting with all keys on disk...")
         delegators = client.get_voting_power_delegators()
-        keys_stake = get_valid_voting_keys(context, client, proposal)
+        keys_stake = get_valid_voting_keys(context, client)
         keys_stake = {
             key: stake for key,
             stake in keys_stake.items() if key not in delegators
