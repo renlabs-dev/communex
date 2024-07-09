@@ -6,7 +6,7 @@ from typer import Context
 
 from communex._common import IPFS_REGEX, BalanceUnit, format_balance
 from communex.balance import to_nano
-from communex.cli._common import (make_custom_context)
+from communex.cli._common import (make_custom_context, print_table_from_plain_dict)
 from communex.compat.key import (resolve_key_ss58_encrypted,
                                  try_classic_load_key)
 from communex.errors import ChainTransactionError
@@ -58,7 +58,7 @@ def staked_balance(
 
 
 @balance_app.command()
-def all_balance(
+def show(
     ctx: Context,
     key: str,
     unit: BalanceUnit = BalanceUnit.joule,
@@ -75,9 +75,12 @@ def all_balance(
     with context.progress_status(f"Getting value of key {key_address}..."):
         staked_balance = sum(client.get_staketo(key=key_address).values())
         free_balance = client.get_balance(key_address)
-        result = free_balance + staked_balance
+        balance_sum = free_balance + staked_balance
 
-    context.output(format_balance(result, unit))
+    print_table_from_plain_dict(
+        {"Free": format_balance(free_balance, unit), "Staked": format_balance(staked_balance, unit), "Total": format_balance(balance_sum, unit)}, [
+            "Result", "Amount"], context.console
+    )
 
 
 @balance_app.command()
