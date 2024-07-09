@@ -1771,6 +1771,21 @@ class CommuneClient:
 
         return self.query_map("SubnetEmission", extract_value=extract_value, module="SubnetEmissionModule")["SubnetEmission"]
 
+    def query_map_subnet_consensus(self, extract_value: bool = False) -> dict[int, str]:
+        """
+        Retrieves a map of subnet consensus types for the network.
+
+        Queries the network for a mapping of subnet UIDs to their consensus types.
+
+        Returns:
+            A dictionary mapping subnet UIDs to their consensus types.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query_map("SubnetConsensusType", extract_value=extract_value, module="SubnetEmissionModule")["SubnetConsensusType"]
+
     def query_map_incentive(self, extract_value: bool = False) -> dict[int, list[int]]:
         """
         Retrieves a mapping of incentives for keys on the network.

@@ -6,7 +6,7 @@ from typer import Context
 
 from communex.balance import from_nano
 from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict)
+                                  print_table_from_plain_dict, print_table_standardize)
 from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import IPFS_REGEX, get_map_subnets_params
@@ -40,6 +40,39 @@ def list(ctx: Context):
     for dict in subnets_with_netuids:  # type: ignore
         print_table_from_plain_dict(
             dict, ["Params", "Values"], context.console)  # type: ignore
+
+
+@subnet_app.command()
+def distribution(ctx: Context):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    with context.progress_status("Getting emission distribution..."):
+        subnets_emission = client.query_map_subnet_emission()
+        subnet_consensus = client.query_map_subnet_consensus()
+        subnet_names = client.query_map_subnet_names()
+        total_emission = sum(subnets_emission.values())
+        breakpoint()
+        subnet_emission_percentages = {
+            key: value / total_emission * 100 for key, value in subnets_emission.items()
+        }
+
+    # Prepare the data for the table
+    table_data: dict[str, Any] = {
+        "Subnet": [],
+        "Name": [],
+        "Consensus": [],
+        "Emission %": []
+    }
+
+    for subnet, emission_percentage in subnet_emission_percentages.items():
+        if emission_percentage > 0:
+            table_data["Subnet"].append(str(subnet))
+            table_data["Name"].append(subnet_names.get(subnet, "N/A"))
+            table_data["Consensus"].append(subnet_consensus.get(subnet, "N/A"))
+            table_data["Emission %"].append(f"{round(emission_percentage, 2)}%")
+
+    print_table_standardize(table_data, context.console)
 
 
 @subnet_app.command()
@@ -215,12 +248,11 @@ def propose_on_subnet(
 
     resolved_key = try_classic_load_key(key)
 
-
     with context.progress_status("Adding a proposal..."):
         client.add_subnet_proposal(
-            resolved_key, 
-            subnet_params, 
-            cid, 
+            resolved_key,
+            subnet_params,
+            cid,
             netuid=netuid
         )
 
@@ -283,6 +315,9 @@ def add_custom_proposal(
 def list_curator_applications(
     ctx: Context
 ):
+    """
+    Lists all curator applications.
+    """
     context = make_custom_context(ctx)
     client = context.com_client()
 
