@@ -52,7 +52,6 @@ def distribution(ctx: Context):
         subnet_consensus = client.query_map_subnet_consensus()
         subnet_names = client.query_map_subnet_names()
         total_emission = sum(subnets_emission.values())
-        breakpoint()
         subnet_emission_percentages = {
             key: value / total_emission * 100 for key, value in subnets_emission.items()
         }
