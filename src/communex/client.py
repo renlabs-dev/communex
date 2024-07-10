@@ -2822,7 +2822,7 @@ class CommuneClient:
         """
 
         # Has to use query map in order to iterate through the storage prefix.
-        return self.query_map("StakeFrom", [key], extract_value=False)["StakeFrom"]
+        return self.query_map("StakeFrom", [key], extract_value=False).get("StakeFrom", {})
 
     def get_staketo(
         self,
