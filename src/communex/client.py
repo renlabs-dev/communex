@@ -2845,7 +2845,7 @@ class CommuneClient:
         """
 
         # Has to use query map in order to iterate through the storage prefix.
-        return self.query_map("StakeTo", [key], extract_value=False)["StakeTo"]
+        return self.query_map("StakeTo", [key], extract_value=False).get("StakeTo", {})
 
     def get_balance(
         self,
