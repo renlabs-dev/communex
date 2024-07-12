@@ -74,7 +74,7 @@ def list_proposals(ctx: Context, query_cid: bool = typer.Option(True)):
         status = batch_proposal["status"]
         if isinstance(status, dict):
             batch_proposal["status"] = [*status.keys()][0]
-        print_table_from_plain_dict(    
+        print_table_from_plain_dict(
             batch_proposal, [
                 f"Proposal id: {proposal_id}", "Params"], context.console
         )
@@ -96,11 +96,12 @@ def propose_globally(
     curator: str = typer.Option(None),
     proposal_cost: int = typer.Option(None),
     proposal_expiration: int = typer.Option(None),
-    subnet_stake_threshold: int = typer.Option(None),
     general_subnet_application_cost: int = typer.Option(None),
     floor_founder_share: int = typer.Option(None),
     floor_delegation_fee: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
+    kappa: int = typer.Option(None),
+    rho: int = typer.Option(None),
 ):
     provided_params = locals().copy()
     provided_params.pop("ctx")
@@ -118,7 +119,7 @@ def propose_globally(
     provided_params = cast(NetworkParams, provided_params)
     global_params = get_global_params(client)
     global_params.update(provided_params)
-    
+
     if not re.match(IPFS_REGEX, cid):
         context.error(f"CID provided is invalid: {cid}")
         exit(1)
@@ -129,7 +130,7 @@ def propose_globally(
 def get_valid_voting_keys(
     ctx: CustomCtx,
     client: CommuneClient,
-    threshold: int = 25000000000, # 25 $COMAI
+    threshold: int = 25000000000,  # 25 $COMAI
 ) -> dict[str, int]:
     local_keys = local_key_addresses(ctx=ctx, universal_password=None)
     keys_stake = local_keys_to_stakedbalance(client, local_keys)
@@ -158,12 +159,12 @@ def vote_proposal(
         keys_stake = {
             key: stake for key,
             stake in keys_stake.items() if key not in delegators
-            }
+        }
     else:
         keys_stake = {key: None}
 
     for voting_key in track(keys_stake.keys(), description="Voting..."):
-        
+
         resolved_key = try_classic_load_key(voting_key, context)
         try:
             client.vote_on_proposal(resolved_key, proposal_id, agree)
@@ -226,4 +227,3 @@ def registration_burn(
     context.info(
         f"The cost to register on a netuid: {netuid} is: {registration_cost} $COMAI"
     )
-

@@ -36,11 +36,12 @@ class NetworkParams(TypedDict):
     curator: Ss58Address
     proposal_cost: int
     proposal_expiration: int
-    subnet_stake_threshold: int
     general_subnet_application_cost: int
     floor_founder_share: int
     floor_delegation_fee: int
     max_allowed_weights: int
+    kappa: int
+    rho: int
 
 
 class SubnetParamsMaps(TypedDict):
@@ -64,6 +65,7 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_max_registrations_per_interval: dict[int, int]
     netuid_to_vote_mode: dict[int, dict[str, str]]
     netuid_to_adjustment_alpha: dict[int, int]
+    netuid_to_min_immunity_stake: dict[int, int]
 
 
 class SubnetParams(TypedDict):
@@ -86,6 +88,7 @@ class SubnetParams(TypedDict):
     max_registrations_per_interval: int
     vote_mode: str
     adjustment_alpha: int
+    min_immunity_stake: int
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.

@@ -155,6 +155,7 @@ def get_map_subnets_params(
                 ("BondsMovingAverage", []),
                 ("MaximumSetWeightCallsPerEpoch", []),
                 ("AdjustmentAlpha", []),
+                ("MinImmunityStake", []),
             ],
             "GovernanceModule": [
                 ("SubnetGovernanceConfig", []),
@@ -187,6 +188,7 @@ def get_map_subnets_params(
         "netuid_to_target_registrations_per_interval": bulk_query.get("TargetRegistrationsPerInterval", {}),
         "netuid_to_target_registrations_interval": bulk_query.get("TargetRegistrationsInterval", {}),
         "netuid_to_max_registrations_per_interval": bulk_query.get("MaxRegistrationsPerInterval", {}),
+        "netuid_to_min_immunity_stake": bulk_query.get("MinImmunityStake", {}),
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
@@ -216,6 +218,7 @@ def get_map_subnets_params(
             "target_registrations_per_interval": subnet_maps["netuid_to_target_registrations_per_interval"].get(netuid, default_target_registrations_per_interval),
             "target_registrations_interval": subnet_maps["netuid_to_target_registrations_interval"].get(netuid, default_target_registrations_interval),
             "max_registrations_per_interval": subnet_maps["netuid_to_max_registrations_per_interval"].get(netuid, default_max_registrations_per_interval),
+            "min_immunity_stake": subnet_maps["netuid_to_min_immunity_stake"].get(netuid, 0),
         }
 
         result_subnets[netuid] = subnet
@@ -237,11 +240,12 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
                 ("MaxNameLength", []),
                 ("FloorDelegationFee", []),
                 ("MaxAllowedWeightsGlobal", []),
-                ("SubnetStakeThreshold", []),
                 ("MinWeightStake", []),
                 ("MinNameLength", []),
                 ("BurnConfig", []),
                 ("FloorFounderShare", []),
+                ("Kappa", []),
+                ("Rho", []),
             ],
             "GovernanceModule": [
                 ("GlobalGovernanceConfig", []),
@@ -264,12 +268,11 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "curator": Ss58Address(query_all["Curator"]),
         "proposal_cost": int(governance_config["proposal_cost"]),
         "proposal_expiration": int(governance_config["proposal_expiration"]),
-        "subnet_stake_threshold": int(query_all["SubnetStakeThreshold"]),
         "min_name_length": int(query_all["MinNameLength"]),
         "floor_founder_share": int(query_all["FloorFounderShare"]),
         "general_subnet_application_cost": int(query_all["GeneralSubnetApplicationCost"]),
-
-
+        "kappa": int(query_all["Kappa"]),
+        "rho": int(query_all["Rho"]),
     }
     return global_params
 

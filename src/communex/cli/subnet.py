@@ -137,6 +137,7 @@ def update(
     max_registrations_per_interval: int = typer.Option(None),
     vote_mode: str = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
+    min_immunity_stake: int = typer.Option(None),
 ):
     """
     Updates a subnet.
@@ -204,6 +205,7 @@ def propose_on_subnet(
     max_registrations_per_interval: int = typer.Option(None),
     vote_mode: str = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
+    min_immunity_stake: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.
