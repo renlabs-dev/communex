@@ -2614,7 +2614,15 @@ class CommuneClient:
         """
 
         return self.query("Burn", params=[netuid])
-
+    
+    def query_map_subnet_burn(self) -> dict[str, dict[str, str]]:
+        query_result = self.query_map(
+            "SubnetBurn", params=[], extract_value=False
+        )
+        applications = query_result.get("SubnetBurn", {})
+        return applications
+    
+    
     def get_min_burn(self) -> int:
         """
         Queries the network for the minimum burn setting.
