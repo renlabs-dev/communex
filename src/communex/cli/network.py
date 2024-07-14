@@ -209,6 +209,49 @@ def add_custom_proposal(ctx: Context, key: str, cid: str):
     with context.progress_status("Adding a proposal..."):
         client.add_custom_proposal(resolved_key, cid)
 
+# TODO
+# refactor this
+@network_app.command()
+def set_root_weights(ctx: Context, key: str):
+    """
+    Command for rootnet validators to set the weights on subnets.
+    """
+
+    context = make_custom_context(ctx)
+    client = context.com_client()
+    rootnet_id = 0
+
+    # Ask set new weights ?
+    with context.progress_status("Getting subnets to vote on..."):
+        # dict[netuid, subnet_names]
+        subnet_names = client.query_map_subnet_names()
+    
+    choices = [f"{uid}: {name}" for uid, name in subnet_names.items()]
+    
+    # Prompt user to select subnets
+    selected_subnets = typer.prompt(
+        "Select subnets to set weights for (space-separated list of UIDs)",
+        prompt_suffix="\n" + "\n".join(choices) + "\nEnter UIDs: "
+    )
+
+    # Parse the input string into a list of integers
+    uids = [int(uid.strip()) for uid in selected_subnets.split()]
+    
+    weights: list[int] = []
+    for uid in uids:
+        weight = typer.prompt(
+            f"Enter weight for subnet {uid} ({subnet_names[uid]})",
+            type=float
+        )
+        weights.append(weight)
+    
+    typer.echo("Selected subnets and weights:")
+    for uid, weight in zip(uids, weights):
+        typer.echo(f"Subnet {uid} ({subnet_names[uid]}): {weight}")
+
+    resolved_key = try_classic_load_key(key, context)
+
+    client.vote(netuid=rootnet_id, uids=uids, weights=weights, key=resolved_key)
 
 @network_app.command()
 def registration_burn(
