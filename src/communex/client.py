@@ -396,7 +396,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i : i + max_n_keys]
+                        splitted_keys = result_keys[i: i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -532,7 +532,7 @@ class CommuneClient:
 
                     item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
-                        scale_bytes="0x" + item[0][len(prefix) :],
+                        scale_bytes="0x" + item[0][len(prefix):],
                         return_scale_obj=True,
                         block_hash=block_hash,
                     )
@@ -1660,7 +1660,7 @@ class CommuneClient:
 
     def query_map_weights(
         self, netuid: int = 0, extract_value: bool = False
-    ) -> dict[int, list[int]]:
+    ) -> dict[int, list[tuple[int, int]]] | None:
         """
         Retrieves a mapping of weights for keys on the network.
 
@@ -1677,9 +1677,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Weights", [netuid], extract_value=extract_value)[
-            "Weights"
-        ]
+        return self.query_map("Weights", [netuid], extract_value=extract_value).get("Weights")
 
     def query_map_key(
         self,
