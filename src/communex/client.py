@@ -1660,7 +1660,7 @@ class CommuneClient:
 
     def query_map_weights(
         self, netuid: int = 0, extract_value: bool = False
-    ) -> dict[int, list[int]]:
+    ) -> dict[int, list[tuple[int, int]]] | None:
         """
         Retrieves a mapping of weights for keys on the network.
 
@@ -1676,10 +1676,12 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-
-        return self.query_map("Weights", [netuid], extract_value=extract_value)[
-            "Weights"
-        ]
+        weights_dict = self.query_map(
+            "Weights",
+            [netuid],
+            extract_value=extract_value
+        ).get("Weights")
+        return weights_dict
 
     def query_map_key(
         self,
@@ -2614,15 +2616,14 @@ class CommuneClient:
         """
 
         return self.query("Burn", params=[netuid])
-    
+
     def query_map_subnet_burn(self) -> dict[str, dict[str, str]]:
         query_result = self.query_map(
             "SubnetBurn", params=[], extract_value=False
         )
         applications = query_result.get("SubnetBurn", {})
         return applications
-    
-    
+
     def get_min_burn(self) -> int:
         """
         Queries the network for the minimum burn setting.
