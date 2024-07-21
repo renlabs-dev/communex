@@ -126,7 +126,6 @@ def update(
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
     max_weight_age: int = typer.Option(None),
-    min_stake: int = typer.Option(None),
     name: str = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
@@ -135,9 +134,15 @@ def update(
     target_registrations_per_interval: int = typer.Option(None),
     target_registrations_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
-    vote_mode: str = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
     min_immunity_stake: int = typer.Option(None),
+
+    proposal_cost: int = typer.Option(None),
+    proposal_expiration: int = typer.Option(None),
+    vote_mode: int = typer.Option(None),
+    proposal_reward_treasury_allocation: float = typer.Option(None),
+    max_proposal_reward_treasury_allocation: int = typer.Option(None),
+    proposal_reward_interval: int = typer.Option(None),
 ):
     """
     Updates a subnet.
@@ -146,9 +151,23 @@ def update(
     provided_params.pop("ctx")
     provided_params.pop("key")
     provided_params.pop("netuid")
+
+    new_governance_configuration =  {
+        "proposal_cost": provided_params.pop("proposal_cost"),
+        "proposal_expiration": provided_params.pop("proposal_expiration"),
+        "vote_mode": provided_params.pop("vote_mode"),
+        "proposal_reward_treasury_allocation": provided_params.pop("proposal_reward_treasury_allocation"),
+        "max_proposal_reward_treasury_allocation": provided_params.pop("max_proposal_reward_treasury_allocation"),
+        "proposal_reward_interval": provided_params.pop("proposal_reward_interval"),
+
+    }
+    new_governance_configuration = {
+        key: value for key, value in new_governance_configuration.items() if value is not None
+    }
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
+    provided_params["governance_config"] = new_governance_configuration
 
     context = make_custom_context(ctx)
     client = context.com_client()
@@ -194,7 +213,6 @@ def propose_on_subnet(
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
     max_weight_age: int = typer.Option(None),
-    min_stake: int = typer.Option(None),
     name: str = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
@@ -203,9 +221,15 @@ def propose_on_subnet(
     target_registrations_per_interval: int = typer.Option(None),
     target_registrations_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
-    vote_mode: str = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
     min_immunity_stake: int = typer.Option(None),
+
+    proposal_cost: int = typer.Option(None),
+    proposal_expiration: int = typer.Option(None),
+    vote_mode: int = typer.Option(None),
+    proposal_reward_treasury_allocation: float = typer.Option(None),
+    max_proposal_reward_treasury_allocation: int = typer.Option(None),
+    proposal_reward_interval: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.
@@ -227,9 +251,23 @@ def propose_on_subnet(
     if provided_params["founder"] is not None:
         resolve_founder = resolve_key_ss58(founder)
         provided_params["founder"] = resolve_founder
+    
+    new_governance_configuration =  {
+        "proposal_cost": provided_params.pop("proposal_cost"),
+        "proposal_expiration": provided_params.pop("proposal_expiration"),
+        "vote_mode": provided_params.pop("vote_mode"),
+        "proposal_reward_treasury_allocation": provided_params.pop("proposal_reward_treasury_allocation"),
+        "max_proposal_reward_treasury_allocation": provided_params.pop("max_proposal_reward_treasury_allocation"),
+        "proposal_reward_interval": provided_params.pop("proposal_reward_interval"),
+
+    }
+    new_governance_configuration = {
+        key: value for key, value in new_governance_configuration.items() if value is not None
+    }
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
+    provided_params["governance_config"] = new_governance_configuration
 
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
