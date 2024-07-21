@@ -1096,7 +1096,6 @@ class CommuneClient:
         name: str,
         address: str | None = None,
         subnet: str = "commune",
-        min_stake: int | None = None,
         metadata: str | None = None,
     ) -> ExtrinsicReceipt:
         """
@@ -1120,15 +1119,12 @@ class CommuneClient:
             ChainTransactionError: If the transaction fails.
         """
 
-        stake = self.get_min_stake() if min_stake is None else min_stake
-
         key_addr = key.ss58_address
 
         params = {
             "network": subnet,
             "address": address,
             "name": name,
-            "stake": stake,
             "module_key": key_addr,
             "metadata": metadata,
         }
