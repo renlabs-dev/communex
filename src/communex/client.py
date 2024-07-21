@@ -2940,3 +2940,13 @@ class CommuneClient:
             params=params,
             key=key,
         )
+
+    def delegate_rootnet_control(self, key: Keypair, dest: Ss58Address):
+        params = {"origin": key, "target": dest}
+        
+        return self.compose_call(
+            module="SubspaceModule",
+            fn="delegate_rootnet_control",
+            params=params,
+            key=key,
+        )
