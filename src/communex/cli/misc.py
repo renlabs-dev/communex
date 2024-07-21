@@ -7,7 +7,7 @@ from communex._common import BalanceUnit, format_balance
 from communex.balance import from_nano
 from communex.cli._common import make_custom_context, print_module_info
 from communex.client import CommuneClient
-from communex.compat.key import local_key_addresses
+from communex.compat.key import local_key_addresses, try_classic_load_key, resolve_key_ss58_encrypted
 from communex.misc import get_map_modules
 from communex.types import ModuleInfoWithOptionalBalance
 
@@ -118,3 +118,20 @@ def get_treasury_address(ctx: Context):
     with context.progress_status("Getting DAO treasury address..."):
         dao_address = client.get_dao_treasury_address()
     context.output(dao_address)
+
+
+@misc_app.command()
+def delegate_rootnet_control(ctx: Context, key: str, target: str):
+    """
+    Delegates control of the rootnet to a key
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
+    resolved_key = try_classic_load_key(key, context)
+    ss58_target = resolve_key_ss58_encrypted(target, context)
+
+    with context.progress_status("Delegating control of the rootnet..."):
+        client.delegate_rootnet_control(
+            resolved_key, ss58_target
+        )
+    context.info("Control delegated.")
