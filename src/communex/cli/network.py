@@ -94,21 +94,40 @@ def propose_globally(
     min_weight_stake: int = typer.Option(None),
     max_allowed_subnets: int = typer.Option(None),
     curator: str = typer.Option(None),
-    proposal_cost: int = typer.Option(None),
-    proposal_expiration: int = typer.Option(None),
     general_subnet_application_cost: int = typer.Option(None),
     floor_founder_share: int = typer.Option(None),
     floor_delegation_fee: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
     kappa: int = typer.Option(None),
     rho: int = typer.Option(None),
+
+    proposal_cost: int = typer.Option(None),
+    proposal_expiration: int = typer.Option(None),
+    vote_mode: int = typer.Option(None),
+    proposal_reward_treasury_allocation: float = typer.Option(None),
+    max_proposal_reward_treasury_allocation: int = typer.Option(None),
+    proposal_reward_interval: int = typer.Option(None),
 ):
     provided_params = locals().copy()
     provided_params.pop("ctx")
     provided_params.pop("key")
+
+    new_governance_configuration =  {
+    "proposal_cost": provided_params.pop("proposal_cost"),
+    "proposal_expiration": provided_params.pop("proposal_expiration"),
+    "vote_mode": provided_params.pop("vote_mode"),
+    "proposal_reward_treasury_allocation": provided_params.pop("proposal_reward_treasury_allocation"),
+    "max_proposal_reward_treasury_allocation": provided_params.pop("max_proposal_reward_treasury_allocation"),
+    "proposal_reward_interval": provided_params.pop("proposal_reward_interval"),
+
+    }
+    new_governance_configuration = {
+        key: value for key, value in new_governance_configuration.items() if value is not None
+    }
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
+    provided_params["governance_config"] = new_governance_configuration
     """
     Adds a global proposal to the network.
     """
