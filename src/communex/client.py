@@ -1628,7 +1628,8 @@ class CommuneClient:
 
     def query_map_curator_applications(self) -> dict[str, dict[str, str]]:
         query_result = self.query_map(
-            "CuratorApplications", params=[], extract_value=False
+            "CuratorApplications", module="GovernanceModule", params=[], 
+            extract_value=False
         )
         applications = query_result.get("CuratorApplications", {})
         return applications
@@ -2168,7 +2169,8 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("LegitWhitelist", extract_value=extract_value)[
+        return self.query_map(
+            "LegitWhitelist", module="GovernanceModule", extract_value=extract_value)[
             "LegitWhitelist"
         ]
 
