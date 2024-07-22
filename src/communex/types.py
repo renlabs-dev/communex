@@ -81,6 +81,7 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_max_registrations_per_interval: dict[int, int]
     netuid_to_adjustment_alpha: dict[int, int]
     netuid_to_min_immunity_stake: dict[int, int]
+    netuid_to_immunity_period: dict[int, int]
     netuid_to_governance_configuration: dict[int, GovernanceConfiguration]
 
 
@@ -102,6 +103,7 @@ class SubnetParams(TypedDict):
     max_registrations_per_interval: int
     adjustment_alpha: int
     min_immunity_stake: int
+    immunity_period: int
     governance_config: GovernanceConfiguration
 
 

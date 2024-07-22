@@ -185,7 +185,8 @@ def get_map_subnets_params(
         "netuid_to_target_registrations_interval": bulk_query.get("TargetRegistrationsInterval", {}),
         "netuid_to_max_registrations_per_interval": bulk_query.get("MaxRegistrationsPerInterval", {}),
         "netuid_to_min_immunity_stake": bulk_query.get("MinImmunityStake", {}),
-        "netuid_to_governance_configuration": bulk_query["SubnetGovernanceConfig"]
+        "netuid_to_governance_configuration": bulk_query["SubnetGovernanceConfig"],
+        "netuid_to_immunity_period": bulk_query["ImmunityPeriod"],
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
@@ -215,6 +216,7 @@ def get_map_subnets_params(
             "max_registrations_per_interval": subnet_maps["netuid_to_max_registrations_per_interval"].get(netuid, default_max_registrations_per_interval),
             "min_immunity_stake": subnet_maps["netuid_to_min_immunity_stake"].get(netuid, 0),
             "governance_config": subnet_maps["netuid_to_governance_configuration"][netuid],
+            "immunity_period": subnet_maps["netuid_to_immunity_period"][netuid],
         }
 
         result_subnets[netuid] = subnet
