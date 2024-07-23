@@ -334,7 +334,7 @@ def local_keys_to_stakedfrom_balance(
     }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
-    key2stake = {key: stake for key, stake in key2stake.items() if stake > THRESHOLD}
+    key2stake = {key: stake for key, stake in key2stake.items()}
     return key2stake
 
 
