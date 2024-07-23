@@ -74,7 +74,7 @@ def register(
                 "`--netuid` and `--new_subnet_name` cannot be provided at the same time"
             )
 
-    if netuid != 0 and netuid is not None:
+    if netuid != 0:
         do_burn = context.confirm(
             f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?"
         )
