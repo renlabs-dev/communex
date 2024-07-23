@@ -1,3 +1,5 @@
+from typing import Any
+
 import typer
 from typer import Context
 
@@ -5,7 +7,7 @@ from communex._common import BalanceUnit, format_balance
 from communex.balance import from_nano
 from communex.cli._common import make_custom_context, print_module_info
 from communex.client import CommuneClient
-from communex.compat.key import local_key_addresses
+from communex.compat.key import local_key_addresses, try_classic_load_key, resolve_key_ss58_encrypted
 from communex.misc import get_map_modules
 from communex.types import ModuleInfoWithOptionalBalance
 
@@ -17,20 +19,13 @@ def circulating_tokens(c_client: CommuneClient) -> int:
     Gets total circulating supply
     """
 
-    query_all = c_client.query_batch_map(
-        {
-            "SubspaceModule": [("TotalStake", [])],
-            "System": [("Account", [])],
-        }
-    )
-
-    balances, stake = query_all["Account"], query_all["TotalStake"]
-    format_balances: dict[str, int] = {
-        key: value["data"]["free"] for key, value in balances.items() if "data" in value and "free" in value["data"]
+    balances = c_client.query_map_balances()
+    total_stake = c_client.get_total_stake()
+    format_balances: dict[Any, Any] = {
+        key: value["data"]["free"] for key, value in balances.items() if "data" in value and "free" in value["data"] # type: ignore
     }
 
     total_balance = sum(format_balances.values())
-    total_stake = sum(stake.values())
 
     return total_stake + total_balance
 
@@ -69,14 +64,7 @@ def apr(ctx: Context, fee: int = 0):
 
     with context.progress_status("Getting staking APR..."):
         unit_emission = client.get_unit_emission()
-        staked = client.query_batch_map(
-            {
-                "SubspaceModule": [("TotalStake", [])],
-            }
-        )["TotalStake"]
-
-        total_staked_tokens = from_nano(sum(staked.values()))
-
+        total_staked_tokens = client.query("TotalStake")
     # 50% of the total emission goes to stakers
     daily_token_rewards = blocks_in_a_day * from_nano(unit_emission) / 2
     _apr = (daily_token_rewards * (1 - fee_to_float)
@@ -123,3 +111,20 @@ def get_treasury_address(ctx: Context):
     with context.progress_status("Getting DAO treasury address..."):
         dao_address = client.get_dao_treasury_address()
     context.output(dao_address)
+
+
+@misc_app.command()
+def delegate_rootnet_control(ctx: Context, key: str, target: str):
+    """
+    Delegates control of the rootnet to a key
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
+    resolved_key = try_classic_load_key(key, context)
+    ss58_target = resolve_key_ss58_encrypted(target, context)
+
+    with context.progress_status("Delegating control of the rootnet..."):
+        client.delegate_rootnet_control(
+            resolved_key, ss58_target
+        )
+    context.info("Control delegated.")

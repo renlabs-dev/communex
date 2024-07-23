@@ -6,14 +6,14 @@ from typer import Context
 
 from communex.balance import from_nano
 from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict)
-from communex.compat.key import try_classic_load_key, resolve_key_ss58
+                                  print_table_from_plain_dict, print_table_standardize)
+from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import IPFS_REGEX, get_map_subnets_params
-from communex.types import SubnetParams
+from communex.types import SubnetParams, VoteMode
+
 
 subnet_app = typer.Typer(no_args_is_help=True)
-
 
 @subnet_app.command()
 def list(ctx: Context):
@@ -31,17 +31,6 @@ def list(ctx: Context):
         {"netuid": key, **value} for key, value in zip(keys, values)
     ]
 
-    subnet_stakes = client.query_map_total_stake()
-
-    subnets_with_stakes = [
-        {"stake": from_nano(subnet_stakes.get(netuid, 0))} for netuid in keys
-    ]
-    subnets_with_stakes = [
-        {**subnets_with_netuids[i], **subnets_with_stakes[i]} for i in range(len(keys))
-    ]
-    subnets_with_netuids = sorted(  # type: ignore
-        subnets_with_stakes, key=lambda x: x["emission"], reverse=True  # type: ignore
-    )  # type: ignore
     for subnet_dict in subnets_with_netuids:  # type: ignore
         bonds = subnet_dict["bonds_ma"]  # type: ignore
         if bonds:
@@ -51,6 +40,38 @@ def list(ctx: Context):
     for dict in subnets_with_netuids:  # type: ignore
         print_table_from_plain_dict(
             dict, ["Params", "Values"], context.console)  # type: ignore
+
+
+@subnet_app.command()
+def distribution(ctx: Context):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    with context.progress_status("Getting emission distribution..."):
+        subnets_emission = client.query_map_subnet_emission()
+        subnet_consensus = client.query_map_subnet_consensus()
+        subnet_names = client.query_map_subnet_names()
+        total_emission = sum(subnets_emission.values())
+        subnet_emission_percentages = {
+            key: value / total_emission * 100 for key, value in subnets_emission.items()
+        }
+
+    # Prepare the data for the table
+    table_data: dict[str, Any] = {
+        "Subnet": [],
+        "Name": [],
+        "Consensus": [],
+        "Emission %": []
+    }
+
+    for subnet, emission_percentage in subnet_emission_percentages.items():
+        if emission_percentage > 0:
+            table_data["Subnet"].append(str(subnet))
+            table_data["Name"].append(subnet_names.get(subnet, "N/A"))
+            table_data["Consensus"].append(subnet_consensus.get(subnet, "N/A"))
+            table_data["Emission %"].append(f"{round(emission_percentage, 2)}%")
+
+    print_table_standardize(table_data, context.console)
 
 
 @subnet_app.command()
@@ -105,7 +126,6 @@ def update(
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
     max_weight_age: int = typer.Option(None),
-    min_stake: int = typer.Option(None),
     name: str = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
@@ -114,8 +134,14 @@ def update(
     target_registrations_per_interval: int = typer.Option(None),
     target_registrations_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
-    vote_mode: str = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
+    min_immunity_stake: int = typer.Option(None),
+
+    proposal_cost: int = typer.Option(None),
+    proposal_expiration: int = typer.Option(None),
+    vote_mode: VoteMode = typer.Option(
+        None, help="0 for Authority, 1 for Vote"
+    ),
 ):
     """
     Updates a subnet.
@@ -124,6 +150,7 @@ def update(
     provided_params.pop("ctx")
     provided_params.pop("key")
     provided_params.pop("netuid")
+
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
@@ -132,8 +159,11 @@ def update(
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
+    subnet_vote_mode = subnet_params["governance_config"]["vote_mode"] # type: ignore
     subnet_params = dict(subnet_params)
     subnet_params.pop("emission")
+    subnet_params.pop("governance_config")
+    subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)
@@ -161,10 +191,11 @@ def update(
 @subnet_app.command()
 def propose_on_subnet(
     ctx: Context,
-    netuid: int,
     key: str,
+    netuid: int,
     cid: str,
     founder: str = typer.Option(None),
+    name: str = typer.Option(None),
     founder_share: int = typer.Option(None),
     immunity_period: int = typer.Option(None),
     incentive_ratio: int = typer.Option(None),
@@ -172,17 +203,22 @@ def propose_on_subnet(
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
     max_weight_age: int = typer.Option(None),
-    min_stake: int = typer.Option(None),
-    name: str = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
     bonds_ma: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
-    target_registrations_per_interval: int = typer.Option(None),
     target_registrations_interval: int = typer.Option(None),
+    target_registrations_per_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
-    vote_mode: str = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
+    min_immunity_stake: int = typer.Option(None),
+
+    vote_mode: VoteMode = typer.Option(
+        None, help="0 for Authority, 1 for Vote"
+    ),
+    proposal_reward_treasury_allocation: float = typer.Option(None),
+    max_proposal_reward_treasury_allocation: int = typer.Option(None),
+    proposal_reward_interval: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.
@@ -204,6 +240,7 @@ def propose_on_subnet(
     if provided_params["founder"] is not None:
         resolve_founder = resolve_key_ss58(founder)
         provided_params["founder"] = resolve_founder
+    
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
@@ -211,10 +248,12 @@ def propose_on_subnet(
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
+    subnet_vote_mode = subnet_params["governance_config"]["vote_mode"] # type: ignore
     subnet_params = dict(subnet_params)
     subnet_params.pop("emission")
-    subnet_params = cast(SubnetParams, subnet_params)
-    provided_params = cast(SubnetParams, provided_params)
+    subnet_params.pop("governance_config")
+    subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
+    
     subnet_params.update(provided_params)
     # because bonds_ma and maximum_set_weights dont have a default value
     if subnet_params.get("bonds_ma", None) is None:
@@ -226,15 +265,14 @@ def propose_on_subnet(
 
     resolved_key = try_classic_load_key(key)
 
-
     with context.progress_status("Adding a proposal..."):
         client.add_subnet_proposal(
-            resolved_key, 
-            subnet_params, 
-            cid, 
+            resolved_key,
+            subnet_params,
+            cid,
             netuid=netuid
         )
-
+    context.info("Proposal added.")
 
 @subnet_app.command()
 def submit_general_subnet_application(
@@ -294,6 +332,9 @@ def add_custom_proposal(
 def list_curator_applications(
     ctx: Context
 ):
+    """
+    Lists all curator applications.
+    """
     context = make_custom_context(ctx)
     client = context.com_client()
 

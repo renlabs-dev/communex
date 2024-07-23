@@ -10,23 +10,15 @@ from communex.balance import to_nano
 from communex.client import CommuneClient
 
 
-def local_keys_to_stakedbalance(netuid: list[int]) -> dict[str, int]:
+def keys_to_stakedbalance() -> dict[str, int]:
     url = get_node_url()
     client = CommuneClient(url)
     total_stake: dict[str, int] = {}
-    for uid in netuid:
-
-        query_all = client.query_batch_map(
-            {
-                "SubspaceModule": [("StakeFrom", [uid])],
-            })
-
-        staketo_map = query_all["StakeFrom"]
-
-        for key, value in staketo_map.items():
-            key_stake = sum(stake for _, stake in value)
-            total_stake.setdefault(key, 0)
-            total_stake[key] += key_stake
+    qmap = client.query_map_staketo()
+    for key, value in qmap.items():
+        key_stake = sum(stake for _, stake in value)
+        total_stake.setdefault(key, 0)
+        total_stake[key] += key_stake
 
     return total_stake
 
@@ -54,13 +46,9 @@ def calls_per_epoch(stake: int, multiplier: int = 1) -> float:
 
 
 def build_keys_refill_rate(
-    netuid: list[int] | None,
     get_refill_rate: Callable[[int], float] = calls_per_epoch
 ):
-    if netuid is None:
-        empty_dict: dict[str, float] = {}
-        return empty_dict
-    key_to_stake = local_keys_to_stakedbalance(netuid)
+    key_to_stake = keys_to_stakedbalance()
     key_to_ratio = {ss58_decode(key): get_refill_rate(stake) for key, stake in key_to_stake.items()}
     return key_to_ratio
 
@@ -85,7 +73,7 @@ class StakeLimiter():
 
         self.whitelist = subnets_whitelist
         self.key_ratio = build_keys_refill_rate(
-            netuid=subnets_whitelist, get_refill_rate=self.refiller_function
+            get_refill_rate=self.refiller_function
         )
         self.key_ratio_age = monotonic()
         self.max_cache_age = max_cache_age
@@ -100,7 +88,6 @@ class StakeLimiter():
             return 1000
         if monotonic() - self.key_ratio_age > self.max_cache_age:
             self.key_ratio = build_keys_refill_rate(
-                netuid=self.whitelist,
                 get_refill_rate=self.refiller_function,
             )
             self.key_ratio_age = monotonic()

@@ -4,22 +4,16 @@ from enum import Enum
 from typing import Any, Optional, cast
 
 import typer
-from getpass import getpass
 from substrateinterface import Keypair  # type: ignore
 from typer import Context
 
 from communex._common import BalanceUnit, format_balance
-from communex.cli._common import (
-    make_custom_context,
-    print_table_from_plain_dict,
-    print_table_standardize,
-    get_universal_password,
-    )
-from communex.compat.key import (
-    classic_key_path, classic_store_key,
-    local_key_addresses, try_classic_load_key,
-    try_load_key
-    )
+from communex.cli._common import (get_universal_password, make_custom_context,
+                                  print_table_from_plain_dict,
+                                  print_table_standardize)
+from communex.compat.key import (classic_key_path, classic_store_key,
+                                 local_key_addresses, try_classic_load_key,
+                                 try_load_key)
 from communex.key import check_ss58_address, generate_keypair, is_ss58_address
 from communex.misc import (local_keys_allbalance, local_keys_to_freebalance,
                            local_keys_to_stakedbalance)
@@ -107,7 +101,6 @@ def show(
 @key_app.command()
 def balances(
     ctx: Context,
-    netuid: Optional[int] = None,
     unit: BalanceUnit = BalanceUnit.joule,
     sort_balance: SortBalance = SortBalance.all,
     use_universal_password: bool = typer.Option(
@@ -132,7 +125,7 @@ def balances(
 
     local_keys = local_key_addresses(context, universal_password=universal_password)
     with context.console.status("Getting balances of all keys, this might take a while..."):
-        key2freebalance, key2stake = local_keys_allbalance(client, local_keys, netuid)
+        key2freebalance, key2stake = local_keys_allbalance(client, local_keys)
     key_to_freebalance = {k: format_balance(
         v, unit) for k, v in key2freebalance.items()}
     key_to_stake = {k: format_balance(v, unit) for k, v in key2stake.items()}
@@ -205,7 +198,7 @@ def inventory(
 
 @key_app.command()
 def stakefrom(
-    ctx: Context, key: str, netuid: int = 0,
+    ctx: Context, key: str,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -222,7 +215,7 @@ def stakefrom(
         key_address = keypair.ss58_address
         key_address = check_ss58_address(key_address)
     with context.progress_status(f"Getting stake-from map for {key_address}..."):
-        result = client.get_stakefrom(key_addr=key_address, netuid=netuid)
+        result = client.get_stakefrom(key=key_address)
 
     result = {k: format_balance(v, unit) for k, v in result.items()}
 
@@ -231,7 +224,7 @@ def stakefrom(
 
 @key_app.command()
 def staketo(
-    ctx: Context, key: str, netuid: int = 0,
+    ctx: Context, key: str,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -249,8 +242,7 @@ def staketo(
         key_address = check_ss58_address(key_address)
 
     with context.progress_status(f"Getting stake-to of {key_address}..."):
-        result = client.get_staketo(key_addr=key_address, netuid=netuid)
-    breakpoint()
+        result = client.get_staketo(key=key_address)
 
     result = {k: format_balance(v, unit) for k, v in result.items()}
 
@@ -275,7 +267,7 @@ def total_free_balance(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-    
+
     if use_universal_password:
         universal_password = get_universal_password(context)
     else:
@@ -292,7 +284,6 @@ def total_free_balance(
 @key_app.command()
 def total_staked_balance(
     ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
-    netuid: int = 0,
     use_universal_password: bool = typer.Option(
         False, help="""
     Password to decrypt all keys.
@@ -316,7 +307,6 @@ def total_staked_balance(
     with context.progress_status("Getting total staked balance of all keys..."):
         key2stake: dict[str, int] = local_keys_to_stakedbalance(
             client, local_keys,
-            netuid=netuid
         )
 
         stake_sum = sum(key2stake.values())
@@ -327,7 +317,6 @@ def total_staked_balance(
 @key_app.command()
 def total_balance(
     ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
-    netuid: Optional[int] = None,
     use_universal_password: bool = typer.Option(
         False, help="""
     Password to decrypt all keys.
@@ -342,7 +331,7 @@ def total_balance(
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-    
+
     if use_universal_password:
         universal_password = get_universal_password(context)
     else:
@@ -350,20 +339,21 @@ def total_balance(
     local_keys = local_key_addresses(context, universal_password)
     with context.progress_status("Getting total tokens of all keys..."):
         key2balance, key2stake = local_keys_allbalance(
-            client, local_keys, netuid=netuid
+            client, local_keys
         )
         key2tokens = {k: v + key2stake[k] for k, v in key2balance.items()}
         tokens_sum = sum(key2tokens.values())
 
         context.output(format_balance(tokens_sum, unit=unit))
 
+
 @key_app.command()
 def power_delegation(
-    ctx: Context, 
-    key: Optional[str] = None, 
+    ctx: Context,
+    key: Optional[str] = None,
     enable: bool = typer.Option(True, "--disable"),
     use_universal_password: bool = typer.Option(False)
-    ):
+):
     """
     Gets power delegation of a key.
     """
@@ -378,7 +368,7 @@ def power_delegation(
         if not typer.confirm(confirm_message):
             context.info("Aborted.")
             exit(0)
-        
+
         if use_universal_password:
             universal_password = get_universal_password(context)
         else:

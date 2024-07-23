@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from getpass import getpass
 from typing import Any, Mapping, cast
 
 import rich
@@ -7,7 +8,6 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 from typer import Context
-from getpass import getpass
 
 from communex._common import get_node_url
 from communex.balance import from_horus, from_nano

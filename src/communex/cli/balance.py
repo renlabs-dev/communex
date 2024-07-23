@@ -1,56 +1,18 @@
-from typing import Optional
 import re
+from typing import Optional
+
 import typer
 from typer import Context
 
-from communex._common import BalanceUnit, format_balance, IPFS_REGEX
+from communex._common import IPFS_REGEX, BalanceUnit, format_balance
 from communex.balance import to_nano
-from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict)
+from communex.cli._common import (make_custom_context, print_table_from_plain_dict)
 from communex.compat.key import (resolve_key_ss58_encrypted,
                                  try_classic_load_key)
 from communex.errors import ChainTransactionError
 from communex.faucet.powv2 import solve_for_difficulty_fast
 
 balance_app = typer.Typer(no_args_is_help=True)
-
-
-@balance_app.command()
-def show(
-    ctx: Context,
-    key: str,
-    unit: BalanceUnit = BalanceUnit.joule,
-    password: Optional[str] = None,
-):
-    """
-    Gets the balances of a key.
-    """
-    context = make_custom_context(ctx)
-    client = context.com_client()
-
-    key_address = resolve_key_ss58_encrypted(key, context, password)
-
-    with context.progress_status(f"Getting balance of key {key_address}..."):
-        subnets = client.query_map_subnet_names()
-        netuids = list(subnets.keys())
-        balance = client.get_balance(key_address)
-
-        stakes: list[int] = []
-        for uid in netuids:
-            staketo = client.get_staketo(key_addr=key_address, netuid=uid)
-            stakes.append(sum(staketo.values()))
-
-        string_stakes = [format_balance(stake, unit) for stake in stakes]
-        netuids = [str(uid) for uid in netuids]
-        stake_dict = dict(zip(netuids, string_stakes))
-
-        total = balance + sum(stakes)
-        free, total = format_balance(balance, unit), format_balance(total, unit)
-
-        print_table_from_plain_dict(stake_dict, ["Netuid", "Staked"], context.console)
-        print_table_from_plain_dict(
-            {"Free": free, "Total": total}, ["Result", "Amount"], context.console
-        )
 
 
 @balance_app.command()
@@ -78,7 +40,6 @@ def free_balance(
 def staked_balance(
     ctx: Context,
     key: str,
-    netuid: int = 0,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -91,18 +52,15 @@ def staked_balance(
     key_address = resolve_key_ss58_encrypted(key, context, password)
 
     with context.progress_status(f"Getting staked balance of key {key_address}..."):
-        staketo = client.get_staketo(key_addr=key_address, netuid=netuid)
-
-    result = sum(staketo.values())
+        result = sum(client.get_staketo(key=key_address).values())
 
     context.output(format_balance(result, unit))
 
 
 @balance_app.command()
-def all_balance(
+def show(
     ctx: Context,
     key: str,
-    netuid: int = 0,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -115,19 +73,20 @@ def all_balance(
     key_address = resolve_key_ss58_encrypted(key, context, password)
 
     with context.progress_status(f"Getting value of key {key_address}..."):
-        staketo = client.get_staketo(key_address, netuid=netuid)
-        stake_sum = sum(staketo.values())
-        balance = client.get_balance(key_address)
-        result = balance + stake_sum
+        staked_balance = sum(client.get_staketo(key=key_address).values())
+        free_balance = client.get_balance(key_address)
+        balance_sum = free_balance + staked_balance
 
-    context.output(format_balance(result, unit))
+    print_table_from_plain_dict(
+        {"Free": format_balance(free_balance, unit), "Staked": format_balance(staked_balance, unit), "Total": format_balance(balance_sum, unit)}, [
+            "Result", "Amount"], context.console
+    )
 
 
 @balance_app.command()
 def get_staked(
     ctx: Context,
     key: str,
-    netuid: int = 0,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -140,7 +99,7 @@ def get_staked(
     key_address = resolve_key_ss58_encrypted(key, context, password)
 
     with context.progress_status(f"Getting stake of {key_address}..."):
-        result = client.get_stake(key=key_address, netuid=netuid)
+        result = sum(client.get_staketo(key=key_address).values())
 
     context.output(format_balance(result, unit))
 
@@ -175,7 +134,7 @@ def transfer(ctx: Context, key: str, amount: float, dest: str):
 
 @balance_app.command()
 def transfer_stake(
-    ctx: Context, key: str, amount: float, from_key: str, dest: str, netuid: int = 0
+    ctx: Context, key: str, amount: float, from_key: str, dest: str
 ):
     """
     Transfers stake of key from point A to point B
@@ -189,14 +148,13 @@ def transfer_stake(
     nano_amount = to_nano(amount)
 
     with context.progress_status(
-        f"Transferring {amount} tokens from {from_key} to {dest} on a subnet with netuid '{netuid}' ..."
+        f"Transferring {amount} tokens from {from_key} to {dest}' ..."
     ):
         response = client.transfer_stake(
             key=resolved_key,
             amount=nano_amount,
             from_module_key=resolved_from,
             dest_module_address=resolved_dest,
-            netuid=netuid,
         )
 
     if response.is_success:
@@ -211,7 +169,6 @@ def stake(
     key: str,
     amount: float,
     dest: str,
-    netuid: int = 0,
 ):
     """
     Stake amount to destination using key
@@ -223,18 +180,18 @@ def stake(
     resolved_key = try_classic_load_key(key, context)
     resolved_dest = resolve_key_ss58_encrypted(dest, context)
     delegating_message = (
-        "By default you delegate DAO " 
+        "By default you delegate DAO "
         "voting power to the validator you stake to. "
         "In case you want to change this, call: "
         "`comx key power-delegation <key> --disable`."
     )
-    context.info("INFO: ", style="bold green", end="") # type: ignore
-    context.info(delegating_message) # type: ignore
+    context.info("INFO: ", style="bold green", end="")  # type: ignore
+    context.info(delegating_message)  # type: ignore
     with context.progress_status(
-        f"Staking {amount} tokens to {dest} on a subnet with netuid '{netuid}'..."
+        f"Staking {amount} tokens to {dest}..."
     ):
         response = client.stake(
-            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid
+            key=resolved_key, amount=nano_amount, dest=resolved_dest
         )
 
     if response.is_success:
@@ -244,7 +201,7 @@ def stake(
 
 
 @balance_app.command()
-def unstake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
+def unstake(ctx: Context, key: str, amount: float, dest: str):
     """
     Unstake amount from destination using key
     """
@@ -256,10 +213,10 @@ def unstake(ctx: Context, key: str, amount: float, dest: str, netuid: int = 0):
     resolved_dest = resolve_key_ss58_encrypted(dest, context)
 
     with context.progress_status(
-        f"Unstaking {amount} tokens from {dest} on a subnet with netuid '{netuid}'..."
+        f"Unstaking {amount} tokens from {dest}'..."
     ):
         response = client.unstake(
-            key=resolved_key, amount=nano_amount, dest=resolved_dest, netuid=netuid
+            key=resolved_key, amount=nano_amount, dest=resolved_dest
         )  # TODO: is it right?
 
     if response.is_success:
@@ -297,7 +254,8 @@ def run_faucet(
                 "work": solution.seal,
                 "key": resolved_key.ss58_address,
             }
-            client.compose_call("faucet", params=params, unsigned=True, module="FaucetModule", key=resolved_key.ss58_address)  # type: ignore
+            client.compose_call("faucet", params=params, unsigned=True,
+                                module="FaucetModule", key=resolved_key.ss58_address)  # type: ignore
 
 
 @balance_app.command()

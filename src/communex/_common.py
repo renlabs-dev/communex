@@ -1,6 +1,7 @@
 import random
-from enum import Enum
 import re
+from collections import defaultdict
+from enum import Enum
 from typing import Mapping, TypeVar
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -8,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from communex.balance import from_nano
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
+
 
 class ComxSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="COMX_")
@@ -46,7 +48,7 @@ class ComxSettings(BaseSettings):
         "wss://commune-api-node-30.communeai.net",
         "wss://commune-api-node-31.communeai.net",
     ]
-    TESTNET_NODE_URLS: list[str] = ["wss://testnet-commune-api-node-0.communeai.net"]
+    TESTNET_NODE_URLS: list[str] = ["ws://127.0.0.1:9951"]
 
 
 def get_node_url(
@@ -107,3 +109,12 @@ def intersection_update(base: dict[K, V], update: dict[K, Z]) -> Mapping[K, V | 
     updated = {k: update[k] for k in base if k in update}
     return updated
 
+
+def transform_stake_dmap(stake_storage: dict[tuple[str, str], int]) -> dict[str, list[tuple[str, int]]]:
+    """
+    Transforms either the StakeTo or StakeFrom storage into the stake legacy data type.
+    """
+    transformed: dict[str, list[tuple[str, int]]] = defaultdict(list)
+    [transformed[k1].append((k2, v)) for (k1, k2), v in stake_storage.items()]
+
+    return dict(transformed)

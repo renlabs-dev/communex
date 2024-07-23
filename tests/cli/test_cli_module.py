@@ -1,11 +1,11 @@
 import re
 
 import pytest
+from tests.conftest import InvokeCli
+from tests.str_utils import clean
 from typer.testing import CliRunner
 
 from communex.cli.root import app
-from tests.conftest import InvokeCli
-from tests.str_utils import clean
 
 
 @pytest.fixture(scope="module")

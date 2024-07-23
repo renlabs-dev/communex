@@ -11,15 +11,13 @@ from communex.cli._common import (make_custom_context, print_module_info,
                                   print_table_from_plain_dict)
 from communex.compat.key import try_classic_load_key
 from communex.errors import ChainTransactionError
+from communex.key import check_ss58_address
 from communex.misc import get_map_modules
 from communex.module._rate_limiters.limiters import (IpLimiterParams,
                                                      StakeLimiterParams)
 from communex.module.server import ModuleServer
-from communex.util import is_ip_valid
-
-from communex.key import check_ss58_address
 from communex.types import Ss58Address
-
+from communex.util import is_ip_valid
 
 module_app = typer.Typer(no_args_is_help=True)
 
@@ -47,7 +45,6 @@ def register(
     ip: Optional[str] = None,
     port: Optional[int] = None,
     netuid: Optional[int] = None,
-    stake: Optional[float] = None,
     metadata: Optional[str] = None,
     new_subnet_name: Optional[str] = None,
 ):
@@ -86,14 +83,6 @@ def register(
         raise typer.Abort()
 
     with context.progress_status(f"Registering Module {name}..."):
-        if stake is not None:
-            stake_nano = c_balance.to_nano(stake)
-        else:
-            min_stake = client.get_min_stake(netuid) if netuid is not None else 0
-            stake_nano = (
-                min_stake + burn + c_balance.to_nano(0.1)
-            )  # 0.1 extra needed for the call to succeed
-
         resolved_key = try_classic_load_key(key, context)
 
         address = f"{ip}:{port}"
@@ -103,7 +92,6 @@ def register(
             name=name,
             address=address,
             subnet=subnet_name,
-            min_stake=stake_nano,
             metadata=metadata,
         )
 
