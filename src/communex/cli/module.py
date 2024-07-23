@@ -68,7 +68,7 @@ def register(
             burn = client.get_burn(netuid)
         case (None, new_subnet_name):
             subnet_name = new_subnet_name
-            burn = client.get_min_burn()
+            burn = client.get_subnet_burn()
         case (_, _):
             raise ValueError(
                 "`--netuid` and `--new_subnet_name` cannot be provided at the same time"

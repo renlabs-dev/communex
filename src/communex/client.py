@@ -1358,9 +1358,9 @@ class CommuneClient:
         return response
 
     def add_subnet_proposal(
-        self, key: Keypair, 
+        self, key: Keypair,
         params: dict[str, Any],
-        ipfs: str, 
+        ipfs: str,
         netuid: int = 0
     ) -> ExtrinsicReceipt:
         """
@@ -1626,7 +1626,7 @@ class CommuneClient:
         params = {"application_key": application_key, "data": data}
 
         response = self.compose_call(
-            "add_dao_application", module="GovernanceModule", key=key, 
+            "add_dao_application", module="GovernanceModule", key=key,
             params=params
         )
 
@@ -1634,7 +1634,7 @@ class CommuneClient:
 
     def query_map_curator_applications(self) -> dict[str, dict[str, str]]:
         query_result = self.query_map(
-            "CuratorApplications", module="GovernanceModule", params=[], 
+            "CuratorApplications", module="GovernanceModule", params=[],
             extract_value=False
         )
         applications = query_result.get("CuratorApplications", {})
@@ -1686,7 +1686,6 @@ class CommuneClient:
             extract_value=extract_value
         ).get("Weights")
         return weights_dict
-
 
     def query_map_key(
         self,
@@ -2583,6 +2582,24 @@ class CommuneClient:
             "TxRateLimit",
         )
 
+    def get_subnet_burn(self) -> int:
+        """Queries the network for the subnet burn value.
+
+        Retrieves the subnet burn value from the network, which represents
+        the amount of tokens that are burned (permanently removed from
+        circulation) for subnet-related operations.
+
+        Returns:
+            int: The subnet burn value.
+
+        Raises:
+            QueryError: If the query to the network fails or returns invalid data.
+        """
+        
+        return self.query(
+            "SubnetBurn",
+        )
+
     def get_burn_rate(self) -> int:
         """
         Queries the network for the burn rate setting.
@@ -2622,13 +2639,6 @@ class CommuneClient:
         """
 
         return self.query("Burn", params=[netuid])
-
-    def query_map_subnet_burn(self) -> dict[str, dict[str, str]]:
-        query_result = self.query_map(
-            "SubnetBurn", params=[], extract_value=False
-        )
-        applications = query_result.get("SubnetBurn", {})
-        return applications
 
     def get_min_burn(self) -> int:
         """
@@ -2949,7 +2959,7 @@ class CommuneClient:
 
     def delegate_rootnet_control(self, key: Keypair, dest: Ss58Address):
         params = {"origin": key, "target": dest}
-        
+
         return self.compose_call(
             module="SubspaceModule",
             fn="delegate_rootnet_control",
