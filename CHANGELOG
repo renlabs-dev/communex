@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.33.1
+- Fixed burn amount message when registering a new subnet
+
 ## 0.1.33
 - Adequating codebase to the global-stake blockchain update
 
