@@ -1358,7 +1358,10 @@ class CommuneClient:
         return response
 
     def add_subnet_proposal(
-        self, key: Keypair, params: SubnetParams, ipfs: str, netuid: int = 0
+        self, key: Keypair, 
+        params: dict[str, Any],
+        ipfs: str, 
+        netuid: int = 0
     ) -> ExtrinsicReceipt:
         """
         Submits a proposal for creating or modifying a subnet within the
@@ -1622,7 +1625,10 @@ class CommuneClient:
 
         params = {"application_key": application_key, "data": data}
 
-        response = self.compose_call("add_dao_application", key=key, params=params)
+        response = self.compose_call(
+            "add_dao_application", module="GovernanceModule", key=key, 
+            params=params
+        )
 
         return response
 
