@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.33
+- Adequating codebase to the global-stake blockchain update
+
 ## 0.1.32
 - Changed how universal password is passed so it doesn't show on history
 
