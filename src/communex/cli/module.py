@@ -74,13 +74,14 @@ def register(
                 "`--netuid` and `--new_subnet_name` cannot be provided at the same time"
             )
 
-    do_burn = context.confirm(
-        f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?"
-    )
+    if netuid != 0 and netuid is not None:
+        do_burn = context.confirm(
+            f"{c_balance.from_nano(burn)} $COMAI will be permanently burned. Do you want to continue?"
+        )
 
-    if not do_burn:
-        print("Not registering")
-        raise typer.Abort()
+        if not do_burn:
+            print("Not registering")
+            raise typer.Abort()
 
     with context.progress_status(f"Registering Module {name}..."):
         resolved_key = try_classic_load_key(key, context)
