@@ -64,14 +64,7 @@ def apr(ctx: Context, fee: int = 0):
 
     with context.progress_status("Getting staking APR..."):
         unit_emission = client.get_unit_emission()
-        staked = client.query_batch_map(
-            {
-                "SubspaceModule": [("TotalStake", [])],
-            }
-        )["TotalStake"]
-
-        total_staked_tokens = from_nano(sum(staked.values()))
-
+        total_staked_tokens = client.query("TotalStake")
     # 50% of the total emission goes to stakers
     daily_token_rewards = blocks_in_a_day * from_nano(unit_emission) / 2
     _apr = (daily_token_rewards * (1 - fee_to_float)
