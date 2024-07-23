@@ -1095,7 +1095,7 @@ class CommuneClient:
         key: Keypair,
         name: str,
         address: str | None = None,
-        subnet: str = "commune",
+        subnet: str = "Rootnet",
         metadata: str | None = None,
     ) -> ExtrinsicReceipt:
         """
@@ -2595,7 +2595,7 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or returns invalid data.
         """
-        
+
         return self.query(
             "SubnetBurn",
         )
