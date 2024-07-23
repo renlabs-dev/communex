@@ -1864,7 +1864,7 @@ class CommuneClient:
 
     def query_map_stakefrom(
         self, extract_value: bool = False
-    ) -> dict[str, list[tuple[str, int]]]:
+    ) -> dict[Ss58Address, list[tuple[Ss58Address, int]]]:
         """
         Retrieves a mapping of stakes from various sources for keys on the network.
 
