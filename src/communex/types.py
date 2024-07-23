@@ -3,6 +3,7 @@ Common types for the communex module.
 """
 
 from typing import NewType, TypedDict
+from enum import Enum
 
 Ss58Address = NewType("Ss58Address", str)
 """Substrate SS58 address.
@@ -22,6 +23,10 @@ chains.
 MinBurn = NewType("MinBurn", int)
 MaxBurn = NewType("MaxBurn", int)
 BurnConfig = NewType("BurnConfig", dict[MinBurn, MaxBurn])
+
+class VoteMode (Enum):
+    authority = "0"
+    vote = "1"
 
 
 class GovernanceConfiguration(TypedDict):
