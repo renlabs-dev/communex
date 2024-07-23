@@ -270,7 +270,7 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "kappa": int(query_all["Kappa"]),
         "rho": int(query_all["Rho"]),
         "subnet_immunity_period": int(query_all["SubnetImmunityPeriod"]),
-        "governance_config": query_all["GlobalGovernanceConfig"] # type: ignore
+        "governance_config": query_all["GlobalGovernanceConfig"]  # type: ignore
     }
     return global_params
 
@@ -320,6 +320,21 @@ def local_keys_to_stakedbalance(
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
+    return key2stake
+
+
+def local_keys_to_stakedfrom_balance(
+    c_client: CommuneClient,
+    local_keys: dict[str, Ss58Address],
+) -> dict[str, int]:
+    stakefrom_map = c_client.query_map_stakefrom()
+
+    format_stake: dict[str, int] = {
+        key: sum(stake for _, stake in value) for key, value in stakefrom_map.items()
+    }
+
+    key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
+    key2stake = {key: stake for key, stake in key2stake.items() if stake > THRESHOLD}
     return key2stake
 
 
