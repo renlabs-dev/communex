@@ -1679,12 +1679,14 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
+
         weights_dict = self.query_map(
             "Weights",
             [netuid],
             extract_value=extract_value
         ).get("Weights")
         return weights_dict
+
 
     def query_map_key(
         self,
