@@ -10,11 +10,10 @@ from communex.cli._common import (make_custom_context,
 from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import IPFS_REGEX, get_map_subnets_params
-from communex.types import SubnetParams
+from communex.types import SubnetParams, VoteMode
 
 
 subnet_app = typer.Typer(no_args_is_help=True)
-
 
 @subnet_app.command()
 def list(ctx: Context):
@@ -140,10 +139,9 @@ def update(
 
     proposal_cost: int = typer.Option(None),
     proposal_expiration: int = typer.Option(None),
-    vote_mode: int = typer.Option(None),
-    proposal_reward_treasury_allocation: float = typer.Option(None),
-    max_proposal_reward_treasury_allocation: int = typer.Option(None),
-    proposal_reward_interval: int = typer.Option(None),
+    vote_mode: VoteMode = typer.Option(
+        None, help="0 for Authority, 1 for Vote"
+    ),
 ):
     """
     Updates a subnet.
@@ -153,29 +151,19 @@ def update(
     provided_params.pop("key")
     provided_params.pop("netuid")
 
-    new_governance_configuration =  {
-        "proposal_cost": provided_params.pop("proposal_cost"),
-        "proposal_expiration": provided_params.pop("proposal_expiration"),
-        "vote_mode": provided_params.pop("vote_mode"),
-        "proposal_reward_treasury_allocation": provided_params.pop("proposal_reward_treasury_allocation"),
-        "max_proposal_reward_treasury_allocation": provided_params.pop("max_proposal_reward_treasury_allocation"),
-        "proposal_reward_interval": provided_params.pop("proposal_reward_interval"),
-
-    }
-    new_governance_configuration = {
-        key: value for key, value in new_governance_configuration.items() if value is not None
-    }
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
-    provided_params["governance_config"] = new_governance_configuration
 
     context = make_custom_context(ctx)
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
+    subnet_vote_mode = subnet_params["governance_config"]["vote_mode"] # type: ignore
     subnet_params = dict(subnet_params)
     subnet_params.pop("emission")
+    subnet_params.pop("governance_config")
+    subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)
@@ -199,10 +187,6 @@ def update(
     else:
         raise ChainTransactionError(response.error_message)  # type: ignore
 
-from enum import Enum
-class teste (Enum):
-    authority = "0"
-    vote = "1"
 
 @subnet_app.command()
 def propose_on_subnet(
@@ -229,9 +213,7 @@ def propose_on_subnet(
     adjustment_alpha: int = typer.Option(None),
     min_immunity_stake: int = typer.Option(None),
 
-    proposal_cost: int = typer.Option(None),
-    proposal_expiration: int = typer.Option(None),
-    vote_mode: teste = typer.Option(
+    vote_mode: VoteMode = typer.Option(
         None, help="0 for Authority, 1 for Vote"
     ),
     proposal_reward_treasury_allocation: float = typer.Option(None),
@@ -290,7 +272,7 @@ def propose_on_subnet(
             cid,
             netuid=netuid
         )
-
+    context.info("Proposal added.")
 
 @subnet_app.command()
 def submit_general_subnet_application(
