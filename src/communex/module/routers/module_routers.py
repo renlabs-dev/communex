@@ -139,7 +139,10 @@ class IpLimiterVerifier(AbstractVerifier):
         # fallback to default limiter
         if not params:
             params = IpLimiterParams()
-        self._limiter = TokenBucketLimiter(bucket_size=params.bucket_size, refill_rate=params.refill_rate)
+        self._limiter = TokenBucketLimiter(
+            bucket_size=params.bucket_size, 
+            refill_rate=params.refill_rate
+        )
 
     async def verify(self, request: Request):
         assert request.client is not None, "request is invalid"
