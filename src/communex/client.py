@@ -60,6 +60,7 @@ class CommuneClient:
         url: str,
         num_connections: int = 1,
         wait_for_finalization: bool = False,
+        timeout: int | None = None,
     ):
         """
         Args:
@@ -71,10 +72,14 @@ class CommuneClient:
         self.wait_for_finalization = wait_for_finalization
         self._connection_queue = queue.Queue(num_connections)
         self.url = url
+        ws_options = {}
+        if timeout is not None:
+            ws_options["timeout"] = timeout
+
 
         for _ in range(num_connections):
             self._connection_queue.put(
-                SubstrateInterface(url, ws_options={"timeout": 20})
+                SubstrateInterface(url, ws_options=ws_options)
             )
 
     @property
