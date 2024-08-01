@@ -73,7 +73,9 @@ class CommuneClient:
         self.url = url
 
         for _ in range(num_connections):
-            self._connection_queue.put(SubstrateInterface(url))
+            self._connection_queue.put(
+                SubstrateInterface(url, ws_options={"timeout": 20})
+            )
 
     @property
     def connections(self) -> int:
