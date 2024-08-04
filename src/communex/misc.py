@@ -53,7 +53,7 @@ def get_map_modules(
         uid_to_dividend,
         uid_to_lastupdate,
         ss58_to_balances,
-        uid_to_metadata,
+        ss58_to_metadata,
     ) = (
         bulk_query.get("StakeFrom", {}),
         bulk_query.get("Keys", {}),
@@ -68,7 +68,6 @@ def get_map_modules(
         bulk_query.get("Account", {}),
         bulk_query.get("Metadata", {}),
     )
-
     result_modules: dict[str, ModuleInfoWithOptionalBalance] = {}
     ss58_to_stakefrom = transform_stake_dmap(ss58_to_stakefrom)
     for uid, key in uid_to_key.items():
@@ -84,7 +83,7 @@ def get_map_modules(
         delegation_fee = ss58_to_delegationfee.get(
             key, 20
         )  # 20% default delegation fee
-        metadata = uid_to_metadata.get(uid, None)
+        metadata = ss58_to_metadata.get(key, None)
 
         balance = None
         if include_balances and ss58_to_balances is not None:  # type: ignore
