@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.33.2
+- Fixed a bug where module info was not showing metadata correctly
+- `CommuneClient` now supports a timeout argument
+
 ## 0.1.33.1
 - Fixed burn amount message when registering a new subnet
 
