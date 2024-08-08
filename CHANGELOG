@@ -1,5 +1,11 @@
 # Changelog
 
+
+## 0.1.33.3
+- `query_map` of `CommuneClient` now accepts block_hash to be specified
+- Uses the current block hash on `query_map_balances` and `get_total_stake`
+
+
 ## 0.1.33.2
 - Fixed a bug where module info was not showing metadata correctly
 - `CommuneClient` now supports a timeout argument
