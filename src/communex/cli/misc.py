@@ -19,8 +19,11 @@ def circulating_tokens(c_client: CommuneClient) -> int:
     Gets total circulating supply
     """
 
-    balances = c_client.query_map_balances()
-    total_stake = c_client.get_total_stake()
+    with c_client.get_conn(init=True) as substrate:
+        block_hash = substrate.get_block_hash()
+
+    balances = c_client.query_map_balances(block_hash=block_hash)
+    total_stake = c_client.get_total_stake(block_hash=block_hash)
     format_balances: dict[Any, Any] = {
         key: value["data"]["free"] for key, value in balances.items() if "data" in value and "free" in value["data"] # type: ignore
     }
