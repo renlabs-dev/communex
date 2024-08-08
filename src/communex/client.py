@@ -76,7 +76,6 @@ class CommuneClient:
         if timeout is not None:
             ws_options["timeout"] = timeout
 
-
         for _ in range(num_connections):
             self._connection_queue.put(
                 SubstrateInterface(url, ws_options=ws_options)
@@ -721,6 +720,7 @@ class CommuneClient:
         params: list[Any] = [],
         module: str = "SubspaceModule",
         extract_value: bool = True,
+        block_hash: str | None = None,
     ) -> dict[Any, Any]:
         """
         Queries a storage map from a network node.
@@ -738,7 +738,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        result = self.query_batch_map({module: [(name, params)]})
+        result = self.query_batch_map({module: [(name, params)]}, block_hash)
 
         if extract_value:
             return {k.value: v.value for k, v in result}  # type: ignore
@@ -2206,7 +2206,7 @@ class CommuneClient:
         return self.query_map("SubnetNames", extract_value=extract_value)["SubnetNames"]
 
     def query_map_balances(
-        self, extract_value: bool = False
+        self, extract_value: bool = False, block_hash: str | None = None
     ) -> dict[str, dict[str, int | dict[str, int | float]]]:
         """
         Retrieves a mapping of account balances within the network.
@@ -2222,7 +2222,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Account", module="System", extract_value=extract_value)[
+        return self.query_map("Account", module="System", extract_value=extract_value, block_hash=block_hash)[
             "Account"
         ]
 
@@ -2435,7 +2435,7 @@ class CommuneClient:
 
         return self.query("Tempo", params=[netuid])
 
-    def get_total_stake(self) -> int:
+    def get_total_stake(self, block_hash: str | None = None) -> int:
         """
         Retrieves a mapping of total stakes for keys on the network.
 
@@ -2448,7 +2448,7 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query("TotalStake")
+        return self.query("TotalStake", block_hash=block_hash)
 
     def get_registrations_per_block(self):
         """
