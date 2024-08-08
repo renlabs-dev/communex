@@ -88,6 +88,8 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_min_immunity_stake: dict[int, int]
     netuid_to_immunity_period: dict[int, int]
     netuid_to_governance_configuration: dict[int, GovernanceConfiguration]
+    netuid_to_min_validator_stake: dict[int, int]
+    netuid_to_max_allowed_validators: dict[int, int]
 
 
 class SubnetParams(TypedDict):
@@ -110,6 +112,8 @@ class SubnetParams(TypedDict):
     min_immunity_stake: int
     immunity_period: int
     governance_config: GovernanceConfiguration
+    min_validator_stake: int | None
+    max_allowed_validators: int | None
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.
