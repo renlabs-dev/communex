@@ -7,7 +7,6 @@ from communex.key import check_ss58_address
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsMaps,
                             SubnetParamsWithEmission)
-from communex.balance import to_nano
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
@@ -153,8 +152,7 @@ def get_map_subnets_params(
                 ("BondsMovingAverage", []),
                 ("MaximumSetWeightCallsPerEpoch", []),
                 ("AdjustmentAlpha", []),
-                ("MinValidatorStake", []),
-                ("MaxAllowedValidators", []),
+                ("MinImmunityStake", []),
             ],
             "GovernanceModule": [
                 ("SubnetGovernanceConfig", []),
@@ -166,6 +164,7 @@ def get_map_subnets_params(
         },
         block_hash,
     )
+
     subnet_maps: SubnetParamsMaps = {
         "netuid_to_emission": bulk_query["SubnetEmission"],
         "netuid_to_tempo": bulk_query["Tempo"],
@@ -187,8 +186,6 @@ def get_map_subnets_params(
         "netuid_to_min_immunity_stake": bulk_query.get("MinImmunityStake", {}),
         "netuid_to_governance_configuration": bulk_query["SubnetGovernanceConfig"],
         "netuid_to_immunity_period": bulk_query["ImmunityPeriod"],
-        "netuid_to_min_validator_stake": bulk_query.get("MinValidatorStake", {}),
-        "netuid_to_max_allowed_validators": bulk_query.get("MaxAllowedValidators", {}),
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
@@ -219,8 +216,6 @@ def get_map_subnets_params(
             "min_immunity_stake": subnet_maps["netuid_to_min_immunity_stake"].get(netuid, 0),
             "governance_config": subnet_maps["netuid_to_governance_configuration"][netuid],
             "immunity_period": subnet_maps["netuid_to_immunity_period"][netuid],
-            "min_validator_stake": subnet_maps["netuid_to_min_validator_stake"].get(netuid, to_nano(50_000)),
-            "max_allowed_validators": subnet_maps["netuid_to_max_allowed_validators"].get(netuid, 50),
         }
 
         result_subnets[netuid] = subnet

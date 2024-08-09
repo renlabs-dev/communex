@@ -1104,7 +1104,6 @@ class CommuneClient:
         address: str | None = None,
         subnet: str = "Rootnet",
         metadata: str | None = None,
-        network_metadata: str | None = None,
     ) -> ExtrinsicReceipt:
         """
         Registers a new module in the network.
@@ -1130,12 +1129,11 @@ class CommuneClient:
         key_addr = key.ss58_address
 
         params = {
-            "network_name": subnet,
+            "network": subnet,
             "address": address,
             "name": name,
             "module_key": key_addr,
             "metadata": metadata,
-            "network_metadata": network_metadata,
         }
 
         response = self.compose_call("register", params=params, key=key)

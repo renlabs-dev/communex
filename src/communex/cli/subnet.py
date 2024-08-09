@@ -136,8 +136,6 @@ def update(
     max_registrations_per_interval: int = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
     min_immunity_stake: int = typer.Option(None),
-    min_validator_stake: int = typer.Option(None),
-    max_allowed_validators: int = typer.Option(None),
 
     proposal_cost: int = typer.Option(None),
     proposal_expiration: int = typer.Option(None),
@@ -214,8 +212,6 @@ def propose_on_subnet(
     max_registrations_per_interval: int = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
     min_immunity_stake: int = typer.Option(None),
-    min_validator_stake: int = typer.Option(None),
-    max_allowed_validators: int = typer.Option(None),
 
     vote_mode: VoteMode = typer.Option(
         None, help="0 for Authority, 1 for Vote"
