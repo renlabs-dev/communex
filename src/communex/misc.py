@@ -1,12 +1,12 @@
 import re
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from communex._common import transform_stake_dmap
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
                             Ss58Address, SubnetParamsMaps,
-                            SubnetParamsWithEmission)
+                            SubnetParamsWithEmission, BurnConfiguration)
 from communex.balance import to_nano
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
@@ -141,9 +141,6 @@ def get_map_subnets_params(
                 ("MaxAllowedWeights", []),
                 ("Tempo", []),
                 ("MaxAllowedUids", []),
-                ("TargetRegistrationsInterval", []),
-                ("TargetRegistrationsPerInterval", []),
-                ("MaxRegistrationsPerInterval", []),
                 ("Founder", []),
                 ("FounderShare", []),
                 ("IncentiveRatio", []),
@@ -152,9 +149,10 @@ def get_map_subnets_params(
                 ("MaxWeightAge", []),
                 ("BondsMovingAverage", []),
                 ("MaximumSetWeightCallsPerEpoch", []),
-                ("AdjustmentAlpha", []),
                 ("MinValidatorStake", []),
                 ("MaxAllowedValidators", []),
+                ("ModuleBurnConfig", []),   
+                ("SubnetMetadata", []),
             ],
             "GovernanceModule": [
                 ("SubnetGovernanceConfig", []),
@@ -178,23 +176,17 @@ def get_map_subnets_params(
         "netuid_to_trust_ratio": bulk_query["TrustRatio"],
         "netuid_to_name": bulk_query["SubnetNames"],
         "netuid_to_max_weight_age": bulk_query["MaxWeightAge"],
-        "netuid_to_adjustment_alpha": bulk_query["AdjustmentAlpha"],
         "netuid_to_bonds_ma": bulk_query.get("BondsMovingAverage", {}),
         "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
-        "netuid_to_target_registrations_per_interval": bulk_query.get("TargetRegistrationsPerInterval", {}),
-        "netuid_to_target_registrations_interval": bulk_query.get("TargetRegistrationsInterval", {}),
-        "netuid_to_max_registrations_per_interval": bulk_query.get("MaxRegistrationsPerInterval", {}),
-        "netuid_to_min_immunity_stake": bulk_query.get("MinImmunityStake", {}),
         "netuid_to_governance_configuration": bulk_query["SubnetGovernanceConfig"],
         "netuid_to_immunity_period": bulk_query["ImmunityPeriod"],
         "netuid_to_min_validator_stake": bulk_query.get("MinValidatorStake", {}),
         "netuid_to_max_allowed_validators": bulk_query.get("MaxAllowedValidators", {}),
+        "netuid_to_module_burn_config": bulk_query.get("ModuleBurnConfig", {}),
+        "netuid_to_subnet_metadata": bulk_query.get("SubnetMetadata", {}),
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
-    default_target_registrations_interval = 200
-    default_target_registrations_per_interval = int(default_target_registrations_interval / 2)
-    default_max_registrations_per_interval = 42
 
     for netuid, name in subnet_maps["netuid_to_name"].items():
 
@@ -210,17 +202,14 @@ def get_map_subnets_params(
             "trust_ratio": subnet_maps["netuid_to_trust_ratio"][netuid],
             "emission": subnet_maps["netuid_to_emission"][netuid],
             "max_weight_age": subnet_maps["netuid_to_max_weight_age"][netuid],
-            "adjustment_alpha": subnet_maps["netuid_to_adjustment_alpha"][netuid],
             "bonds_ma": subnet_maps["netuid_to_bonds_ma"].get(netuid, None),
             "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"].get(netuid, 30),
-            "target_registrations_per_interval": subnet_maps["netuid_to_target_registrations_per_interval"].get(netuid, default_target_registrations_per_interval),
-            "target_registrations_interval": subnet_maps["netuid_to_target_registrations_interval"].get(netuid, default_target_registrations_interval),
-            "max_registrations_per_interval": subnet_maps["netuid_to_max_registrations_per_interval"].get(netuid, default_max_registrations_per_interval),
-            "min_immunity_stake": subnet_maps["netuid_to_min_immunity_stake"].get(netuid, 0),
             "governance_config": subnet_maps["netuid_to_governance_configuration"][netuid],
             "immunity_period": subnet_maps["netuid_to_immunity_period"][netuid],
             "min_validator_stake": subnet_maps["netuid_to_min_validator_stake"].get(netuid, to_nano(50_000)),
             "max_allowed_validators": subnet_maps["netuid_to_max_allowed_validators"].get(netuid, 50),
+            "module_burn_config": cast(BurnConfiguration, subnet_maps["netuid_to_module_burn_config"].get(netuid, None)),
+            "subnet_metadata": subnet_maps["netuid_to_subnet_metadata"].get(netuid, None),
         }
 
         result_subnets[netuid] = subnet
@@ -229,6 +218,7 @@ def get_map_subnets_params(
 
 
 def get_global_params(c_client: CommuneClient) -> NetworkParams:
+
     """
     Returns global parameters of the whole commune ecosystem
     """

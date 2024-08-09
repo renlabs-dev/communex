@@ -37,7 +37,13 @@ class GovernanceConfiguration(TypedDict):
     max_proposal_reward_treasury_allocation: int
     proposal_reward_interval: int
 
-
+class BurnConfiguration(TypedDict):
+    min_burn: int
+    max_burn: int
+    adjustment_alpha: int
+    target_registrations_interval: int
+    target_registrations_per_interval: int
+    max_registrations_per_interval: int
 
 class NetworkParams(TypedDict):
     # max
@@ -59,8 +65,6 @@ class NetworkParams(TypedDict):
 
     # Other
     subnet_immunity_period: int
-    min_burn: int
-    max_burn: int
     governance_config: GovernanceConfiguration
 
     kappa: int
@@ -80,16 +84,14 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_trust_ratio: dict[int, int]
     netuid_to_bonds_ma: dict[int, int]
     netuid_to_maximum_set_weight_calls_per_epoch: dict[int, int]
-    netuid_to_target_registrations_per_interval: dict[int, int]
-    netuid_to_target_registrations_interval: dict[int, int]
     netuid_to_emission: dict[int, int]
-    netuid_to_max_registrations_per_interval: dict[int, int]
-    netuid_to_adjustment_alpha: dict[int, int]
-    netuid_to_min_immunity_stake: dict[int, int]
     netuid_to_immunity_period: dict[int, int]
     netuid_to_governance_configuration: dict[int, GovernanceConfiguration]
     netuid_to_min_validator_stake: dict[int, int]
     netuid_to_max_allowed_validators: dict[int, int]
+    netuid_to_module_burn_config: dict[int, BurnConfiguration]
+    netuid_to_subnet_metadata: dict[int, str]
+    
 
 
 class SubnetParams(TypedDict):
@@ -105,15 +107,12 @@ class SubnetParams(TypedDict):
     founder: Ss58Address
     maximum_set_weight_calls_per_epoch: int | None
     bonds_ma: int | None
-    target_registrations_interval: int
-    target_registrations_per_interval: int
-    max_registrations_per_interval: int
-    adjustment_alpha: int
-    min_immunity_stake: int
     immunity_period: int
     governance_config: GovernanceConfiguration
     min_validator_stake: int | None
     max_allowed_validators: int | None
+    module_burn_config: BurnConfiguration
+    subnet_metadata: str | None
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.
@@ -139,7 +138,7 @@ class ModuleInfo(TypedDict):
     last_update: int  # block number
     stake: int
     delegation_fee: int
-    metadata: str
+    metadata: str | None
 
 
 class ModuleInfoWithBalance(ModuleInfo):

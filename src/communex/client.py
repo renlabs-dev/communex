@@ -1104,7 +1104,6 @@ class CommuneClient:
         address: str | None = None,
         subnet: str = "Rootnet",
         metadata: str | None = None,
-        network_metadata: str | None = None,
     ) -> ExtrinsicReceipt:
         """
         Registers a new module in the network.
@@ -1135,10 +1134,34 @@ class CommuneClient:
             "name": name,
             "module_key": key_addr,
             "metadata": metadata,
-            "network_metadata": network_metadata,
         }
 
         response = self.compose_call("register", params=params, key=key)
+        return response
+
+    def register_subnet(self, key: Keypair, name: str,  metadata: str | None = None) -> ExtrinsicReceipt:
+        """
+        Registers a new subnet in the network.
+
+        Args:
+            key (Keypair): The keypair used for registering the subnet.
+            name (str): The name of the subnet to be registered.
+            metadata (str | None, optional): Additional metadata for the subnet. Defaults to None.
+
+        Returns:
+            ExtrinsicReceipt: A receipt of the subnet registration transaction.
+
+        Raises:
+            ChainTransactionError: If the transaction fails.
+        """
+
+        params = {
+            "name": name,
+            "metadata": metadata,
+        }
+
+        response = self.compose_call("register_subnet", params=params, key=key)
+
         return response
 
     def vote(
@@ -1895,7 +1918,7 @@ class CommuneClient:
             "StakeFrom"
         ]
 
-        return transform_stake_dmap(result)
+        return transform_stake_dmap(result) 
 
     def query_map_staketo(
         self, extract_value: bool = False

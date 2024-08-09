@@ -111,13 +111,29 @@ def info(ctx: Context, netuid: int):
     print_table_from_plain_dict(
         general_subnet, ["Params", "Values"], context.console)
 
+@subnet_app.command()
+def register(ctx: Context, key: str, name: str, metadata: str = typer.Option(None)):
+    """
+    Registers a new subnet.
+    """
+    context = make_custom_context(ctx)
+    resolved_key = try_classic_load_key(key)
+    client = context.com_client()
+
+    with context.progress_status("Registering subnet ..."):
+        response = client.register_subnet(resolved_key, name, metadata)
+
+    if response.is_success:
+        context.info(f"Successfully registered subnet {name}")
+    else:
+        raise ChainTransactionError(response.error_message) # type: ignore
 
 # TODO refactor (user does not need to specify all params)
 @subnet_app.command()
 def update(
     ctx: Context,
-    netuid: int,
     key: str,
+    netuid: int,
     founder: str = typer.Option(None),
     founder_share: int = typer.Option(None),
     immunity_period: int = typer.Option(None),
@@ -125,25 +141,21 @@ def update(
     max_allowed_uids: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
-    max_weight_age: int = typer.Option(None),
+    max_weight_age: float = typer.Option(None),
     name: str = typer.Option(None),
+    metadata: str = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
-    bonds_ma: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
-    target_registrations_per_interval: int = typer.Option(None),
+    vote_mode: VoteMode = typer.Option(None, help="0 for Authority, 1 for Vote"),
+    bonds_ma: int = typer.Option(None),
+    min_burn: int = typer.Option(None),
+    max_burn: int = typer.Option(None),
     target_registrations_interval: int = typer.Option(None),
+    target_registrations_per_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
-    min_immunity_stake: int = typer.Option(None),
     min_validator_stake: int = typer.Option(None),
-    max_allowed_validators: int = typer.Option(None),
-
-    proposal_cost: int = typer.Option(None),
-    proposal_expiration: int = typer.Option(None),
-    vote_mode: VoteMode = typer.Option(
-        None, help="0 for Authority, 1 for Vote"
-    ),
 ):
     """
     Updates a subnet.
@@ -162,10 +174,20 @@ def update(
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
     subnet_vote_mode = subnet_params["governance_config"]["vote_mode"] # type: ignore
+    subnet_adjustement_alpha = subnet_params["module_burn_config"]["adjustment_alpha"] # type: ignore
+    subnet_min_burn = subnet_params["module_burn_config"]["min_burn"] # type: ignore
+    subnet_target_registrations_interval = subnet_params["module_burn_config"]["target_registrations_interval"] # type: ignore
+    subnet_target_registrations_per_interval = subnet_params["module_burn_config"]["target_registrations_per_interval"]
+    subnet_max_registrations_per_interval = subnet_params["module_burn_config"]["max_registrations_per_interval"]
     subnet_params = dict(subnet_params)
     subnet_params.pop("emission")
     subnet_params.pop("governance_config")
     subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
+    subnet_params["subnet_adjustement_alpha"] = subnet_adjustement_alpha # type: ignore
+    subnet_params["subnet_min_burn"] = subnet_min_burn
+    subnet_params["subnet_target_registrations_interval"] = subnet_target_registrations_interval
+    subnet_params["subnet_target_registrations_per_interval"] = subnet_target_registrations_per_interval
+    subnet_params["subnet_max_registrations_per_interval"] = subnet_max_registrations_per_interval
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)

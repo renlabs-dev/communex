@@ -42,37 +42,19 @@ def register(
     ctx: Context,
     name: str,
     key: str,
+    netuid: int,
     ip: Optional[str] = None,
     port: Optional[int] = None,
-    netuid: Optional[int] = None,
     metadata: Optional[str] = None,
-    new_subnet_name: Optional[str] = None,
 ):
     """
-    Registers a module on the Commune network.
+    Registers a module on a subnet.
     """
     context = make_custom_context(ctx)
     client = context.com_client()
     if metadata and len(metadata) > 59:
         raise ValueError("Metadata must be less than 60 characters")
-
-    match (netuid, new_subnet_name):
-        case (None, None):
-            raise ValueError(
-                "`--netuid` or `--new_subnet_name` argument must be passed into the CLI command \n"
-                "f.e comx module register <name> <ip> <port> <key> --netuid <netuid>"
-            )
-        case (netuid, None):
-            assert netuid is not None
-            subnet_name = client.get_subnet_name(netuid)
-            burn = client.get_burn(netuid)
-        case (None, new_subnet_name):
-            subnet_name = new_subnet_name
-            burn = client.get_subnet_burn()
-        case (_, _):
-            raise ValueError(
-                "`--netuid` and `--new_subnet_name` cannot be provided at the same time"
-            )
+    burn = client.get_subnet_burn()
 
     if netuid != 0:
         do_burn = context.confirm(
@@ -85,14 +67,14 @@ def register(
 
     with context.progress_status(f"Registering Module {name}..."):
         resolved_key = try_classic_load_key(key, context)
-
+        subnet_name = client.get_subnet_name(netuid)
         address = f"{ip}:{port}"
 
         response = client.register_module(
             resolved_key,
             name=name,
-            address=address,
             subnet=subnet_name,
+            address=address,
             metadata=metadata,
         )
 
