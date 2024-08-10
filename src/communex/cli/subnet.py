@@ -112,7 +112,12 @@ def info(ctx: Context, netuid: int):
         general_subnet, ["Params", "Values"], context.console)
 
 @subnet_app.command()
-def register(ctx: Context, key: str, name: str, metadata: str = typer.Option(None)):
+def register(
+    ctx: Context,
+    key: str,
+    name: str,
+    metadata: str = typer.Option(None)
+):
     """
     Registers a new subnet.
     """
@@ -128,7 +133,7 @@ def register(ctx: Context, key: str, name: str, metadata: str = typer.Option(Non
     else:
         raise ChainTransactionError(response.error_message) # type: ignore
 
-# TODO refactor (user does not need to specify all params)
+
 @subnet_app.command()
 def update(
     ctx: Context,
@@ -266,7 +271,7 @@ def propose_on_subnet(
     if provided_params["founder"] is not None:
         resolve_founder = resolve_key_ss58(founder)
         provided_params["founder"] = resolve_founder
-    
+
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
@@ -279,7 +284,7 @@ def propose_on_subnet(
     subnet_params.pop("emission")
     subnet_params.pop("governance_config")
     subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
-    
+
     subnet_params.update(provided_params)
     # because bonds_ma and maximum_set_weights dont have a default value
     if subnet_params.get("bonds_ma", None) is None:
