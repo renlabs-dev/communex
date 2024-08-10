@@ -25,8 +25,8 @@ MaxBurn = NewType("MaxBurn", int)
 BurnConfig = NewType("BurnConfig", dict[MinBurn, MaxBurn])
 
 class VoteMode (Enum):
-    authority = "0"
-    vote = "1"
+    authority = "Authority"
+    vote = "Vote"
 
 
 class GovernanceConfiguration(TypedDict):
@@ -113,10 +113,6 @@ class SubnetParams(TypedDict):
     max_allowed_validators: int | None
     module_burn_config: BurnConfiguration
     subnet_metadata: str | None
-
-
-    def update_from_dict(x: dict[str, str]):
-        pass
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.
