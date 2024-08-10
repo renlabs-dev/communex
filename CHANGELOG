@@ -1,6 +1,13 @@
 # Changelog
 
 
+## 0.1.34
+- Adequating code [to spec version 120](https://github.com/agicommies/subspace-network/blob/main/CHANGELOG.md)
+- Command `module register` now only works for registering modules
+- Subnet paremeter is required on `module register`
+- New command: `subnet register` to register subnets
+
+
 ## 0.1.33.3
 - `query_map` of `CommuneClient` now accepts block_hash to be specified
 - Uses the current block hash on `query_map_balances` and `get_total_stake`
@@ -55,7 +62,7 @@ are delegating voting power away
 
 ## 0.1.29
 - The parameters `target_registrations_per_interval` and `target_registrations_interval` are now SubnetParams (instead of GlobalParams).
-- Added the paremeter `max_registrations_per_interval` to SubnetParams 
+- Added the paremeter `max_registrations_per_interval` to SubnetParams
 
 ## 0.1.28.2
 - Increased base value on stake limiter to 89
