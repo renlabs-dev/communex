@@ -1417,8 +1417,12 @@ class CommuneClient:
         """
 
         general_params = dict(params)
+        general_params["netuid"] = netuid
         general_params["data"] = ipfs
+        if "metadata" not in general_params:
+            general_params["metadata"] = None
 
+        # general_params["burn_config"] = json.dumps(general_params["burn_config"])
         response = self.compose_call(
             fn="add_subnet_params_proposal",
             params=general_params,
@@ -1916,7 +1920,7 @@ class CommuneClient:
             "StakeFrom"
         ]
 
-        return transform_stake_dmap(result) 
+        return transform_stake_dmap(result)
 
     def query_map_staketo(
         self, extract_value: bool = False

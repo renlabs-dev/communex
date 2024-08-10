@@ -91,7 +91,7 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_max_allowed_validators: dict[int, int]
     netuid_to_module_burn_config: dict[int, BurnConfiguration]
     netuid_to_subnet_metadata: dict[int, str]
-    
+
 
 
 class SubnetParams(TypedDict):
@@ -113,6 +113,10 @@ class SubnetParams(TypedDict):
     max_allowed_validators: int | None
     module_burn_config: BurnConfiguration
     subnet_metadata: str | None
+
+
+    def update_from_dict(x: dict[str, str]):
+        pass
 
 
 # redundant "TypedDict" inheritance because of pdoc warns.
