@@ -30,7 +30,7 @@ def get_map_modules(
             ("Name", [netuid]),
             ("Address", [netuid]),
             ("RegistrationBlock", [netuid]),
-            ("DelegationFee", [netuid]),
+            ("DelegationFee", []),
             ("Emission", []),
             ("Incentive", []),
             ("Dividends", []),
@@ -82,8 +82,8 @@ def get_map_modules(
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
         delegation_fee = ss58_to_delegationfee.get(
-            key, 20
-        )  # 20% default delegation fee
+            key, 5
+        )  # 5% default delegation fee
         metadata = ss58_to_metadata.get(key, None)
 
         balance = None
@@ -151,7 +151,7 @@ def get_map_subnets_params(
                 ("MaximumSetWeightCallsPerEpoch", []),
                 ("MinValidatorStake", []),
                 ("MaxAllowedValidators", []),
-                ("ModuleBurnConfig", []),   
+                ("ModuleBurnConfig", []),
                 ("SubnetMetadata", []),
             ],
             "GovernanceModule": [
