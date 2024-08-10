@@ -152,14 +152,20 @@ def update(
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
+
+    # GovernanceConfiguration
     vote_mode: VoteMode = typer.Option(None),
+
     bonds_ma: int = typer.Option(None),
+
+    # BurnConfiguration
     min_burn: int = typer.Option(None),
     max_burn: int = typer.Option(None),
+    adjustment_alpha: int = typer.Option(None),
     target_registrations_interval: int = typer.Option(None),
     target_registrations_per_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
-    adjustment_alpha: int = typer.Option(None),
+
     min_validator_stake: int = typer.Option(None),
     max_allowed_validators: int = typer.Option(None),
 ):
@@ -181,23 +187,18 @@ def update(
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
     subnet_vote_mode = subnet_params["governance_config"]["vote_mode"] # type: ignore
-    subnet_adjustement_alpha = subnet_params["module_burn_config"]["adjustment_alpha"] # type: ignore
-    subnet_min_burn = subnet_params["module_burn_config"]["min_burn"] # type: ignore
-    subnet_target_registrations_interval = subnet_params["module_burn_config"]["target_registrations_interval"] # type: ignore
-    subnet_target_registrations_per_interval = subnet_params["module_burn_config"]["target_registrations_per_interval"]
-    subnet_max_registrations_per_interval = subnet_params["module_burn_config"]["max_registrations_per_interval"]
+    subnet_burn_config = subnet_params["module_burn_config"] # type: ignore
+    # intersection update
+    for param, value in provided_params.items():
+        if param in subnet_burn_config and value is not None:
+            subnet_burn_config[param] = value
+
+
     subnet_params = dict(subnet_params)
     subnet_params.pop("emission")
     subnet_params.pop("governance_config")
     subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
-    subnet_params["subnet_adjustement_alpha"] = subnet_adjustement_alpha # type: ignore
-    subnet_params["subnet_min_burn"] = subnet_min_burn
-    subnet_params["subnet_target_registrations_interval"] = subnet_target_registrations_interval
-    subnet_params["subnet_target_registrations_per_interval"] = subnet_target_registrations_per_interval
-    subnet_params["subnet_max_registrations_per_interval"] = subnet_max_registrations_per_interval
-    burn_config: dict[str, str] = subnet_params.pop("module_burn_config") # type: ignore
-    for k, v in burn_config.items():
-        subnet_params[k] = v
+
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)
@@ -241,14 +242,18 @@ def propose_on_subnet(
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
-    vote_mode: VoteMode = typer.Option(None, help="0 for Authority, 1 for Vote"),
     bonds_ma: int = typer.Option(None),
+
+    vote_mode: VoteMode = typer.Option(None, help="0 for Authority, 1 for Vote"),
+
+    # BurnConfiguration
     min_burn: int = typer.Option(None),
     max_burn: int = typer.Option(None),
+    adjustment_alpha: int = typer.Option(None),
     target_registrations_interval: int = typer.Option(None),
     target_registrations_per_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
-    adjustment_alpha: int = typer.Option(None),
+
     min_validator_stake: int = typer.Option(None),
     max_allowed_validators: int = typer.Option(None),
 ):
@@ -280,14 +285,16 @@ def propose_on_subnet(
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
     subnet_vote_mode = subnet_params["governance_config"]["vote_mode"] # type: ignore
+    subnet_burn_config = subnet_params["module_burn_config"] # type: ignore
+    # intersection update
+    for param, value in provided_params.items():
+        if param in subnet_burn_config and value is not None:
+            subnet_burn_config[param] = value
+    subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
+
     subnet_params = dict(subnet_params)
     subnet_params.pop("emission")
     subnet_params.pop("governance_config")
-    subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
-    burn_config: dict[str, str] = subnet_params.pop("module_burn_config") # type: ignore
-    for k, v in burn_config.items():
-        subnet_params[k] = v
-
 
     subnet_params.update(provided_params)
     # because bonds_ma and maximum_set_weights dont have a default value
