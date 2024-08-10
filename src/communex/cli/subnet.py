@@ -141,14 +141,14 @@ def update(
     netuid: int,
     founder: str = typer.Option(None),
     founder_share: int = typer.Option(None),
+    name: str = typer.Option(None),
+    metadata: str = typer.Option(None),
     immunity_period: int = typer.Option(None),
     incentive_ratio: int = typer.Option(None),
     max_allowed_uids: int = typer.Option(None),
     max_allowed_weights: int = typer.Option(None),
     min_allowed_weights: int = typer.Option(None),
     max_weight_age: float = typer.Option(None),
-    name: str = typer.Option(None),
-    metadata: str = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
@@ -161,6 +161,7 @@ def update(
     max_registrations_per_interval: int = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
     min_validator_stake: int = typer.Option(None),
+    max_allowed_validators: int = typer.Option(None),
 ):
     """
     Updates a subnet.
@@ -224,8 +225,9 @@ def propose_on_subnet(
     netuid: int,
     cid: str,
     founder: str = typer.Option(None),
-    name: str = typer.Option(None),
     founder_share: int = typer.Option(None),
+    metadata: str = typer.Option(None),
+    name: str = typer.Option(None),
     immunity_period: int = typer.Option(None),
     incentive_ratio: int = typer.Option(None),
     max_allowed_uids: int = typer.Option(None),
@@ -234,22 +236,17 @@ def propose_on_subnet(
     max_weight_age: int = typer.Option(None),
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
-    bonds_ma: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
+    vote_mode: VoteMode = typer.Option(None, help="0 for Authority, 1 for Vote"),
+    bonds_ma: int = typer.Option(None),
+    min_burn: int = typer.Option(None),
+    max_burn: int = typer.Option(None),
     target_registrations_interval: int = typer.Option(None),
     target_registrations_per_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
     adjustment_alpha: int = typer.Option(None),
-    min_immunity_stake: int = typer.Option(None),
     min_validator_stake: int = typer.Option(None),
     max_allowed_validators: int = typer.Option(None),
-
-    vote_mode: VoteMode = typer.Option(
-        None, help="0 for Authority, 1 for Vote"
-    ),
-    proposal_reward_treasury_allocation: float = typer.Option(None),
-    max_proposal_reward_treasury_allocation: int = typer.Option(None),
-    proposal_reward_interval: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.
@@ -266,7 +263,6 @@ def propose_on_subnet(
     provided_params.pop("ctx")
     provided_params.pop("context")
     provided_params.pop("key")
-    provided_params.pop("netuid")
     provided_params.pop("ipfs_prefix")
     if provided_params["founder"] is not None:
         resolve_founder = resolve_key_ss58(founder)
