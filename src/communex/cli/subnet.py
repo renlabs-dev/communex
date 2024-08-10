@@ -152,7 +152,7 @@ def update(
     tempo: int = typer.Option(None),
     trust_ratio: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
-    vote_mode: VoteMode = typer.Option(None, help="0 for Authority, 1 for Vote"),
+    vote_mode: VoteMode = typer.Option(None),
     bonds_ma: int = typer.Option(None),
     min_burn: int = typer.Option(None),
     max_burn: int = typer.Option(None),
@@ -174,7 +174,8 @@ def update(
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
-
+    if vote_mode is not None: # type: ignore
+        provided_params["vote_mode"] = vote_mode.value
     context = make_custom_context(ctx)
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
@@ -194,6 +195,9 @@ def update(
     subnet_params["subnet_target_registrations_interval"] = subnet_target_registrations_interval
     subnet_params["subnet_target_registrations_per_interval"] = subnet_target_registrations_per_interval
     subnet_params["subnet_max_registrations_per_interval"] = subnet_max_registrations_per_interval
+    burn_config: dict[str, str] = subnet_params.pop("module_burn_config") # type: ignore
+    for k, v in burn_config.items():
+        subnet_params[k] = v
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
     subnet_params.update(provided_params)
@@ -280,6 +284,10 @@ def propose_on_subnet(
     subnet_params.pop("emission")
     subnet_params.pop("governance_config")
     subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
+    burn_config: dict[str, str] = subnet_params.pop("module_burn_config") # type: ignore
+    for k, v in burn_config.items():
+        subnet_params[k] = v
+
 
     subnet_params.update(provided_params)
     # because bonds_ma and maximum_set_weights dont have a default value
@@ -291,7 +299,6 @@ def propose_on_subnet(
         )
 
     resolved_key = try_classic_load_key(key)
-
     with context.progress_status("Adding a proposal..."):
         client.add_subnet_proposal(
             resolved_key,
