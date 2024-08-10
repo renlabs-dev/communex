@@ -24,7 +24,7 @@ module_app = typer.Typer(no_args_is_help=True)
 
 def list_to_ss58(str_list: list[str] | None) -> list[Ss58Address] | None:
     """Raises AssertionError if some input is not a valid Ss58Address."""
-    
+
     if str_list is None:
         return None
     new_list: list[Ss58Address] = []
@@ -62,7 +62,7 @@ def register(
         )
 
         if not do_burn:
-            print("Not registering")
+            context.info("Not registering")
             raise typer.Abort()
 
     with context.progress_status(f"Registering Module {name}..."):
@@ -88,11 +88,11 @@ def register(
 def update(
     ctx: Context,
     key: str,
+    netuid: int,
     name: Optional[str] = None,
     ip: Optional[str] = None,
     port: Optional[int] = None,
     delegation_fee: int = 20,
-    netuid: int = 0,
     metadata: Optional[str] = None,
 ):
     """
@@ -239,11 +239,11 @@ def serve(
         )
         exit(1)
     cast(list[Ss58Address] | None, whitelist)
-    
+
     server = ModuleServer(
-        class_obj(), keypair, 
-        whitelist=whitelist_ss58, blacklist=blacklist_ss58, 
-        subnets_whitelist=subnets_whitelist, 
+        class_obj(), keypair,
+        whitelist=whitelist_ss58, blacklist=blacklist_ss58,
+        subnets_whitelist=subnets_whitelist,
         max_request_staleness=request_staleness,
         limiter=limiter_params,
         ip_blacklist=ip_blacklist,
