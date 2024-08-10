@@ -1230,6 +1230,8 @@ class CommuneClient:
 
         general_params = dict(params)
         general_params["netuid"] = netuid
+        if "metadata" not in general_params:
+            general_params["metadata"] = None
 
         response = self.compose_call(
             fn="update_subnet",
