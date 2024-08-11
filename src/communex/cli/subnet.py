@@ -6,14 +6,15 @@ from typer import Context
 
 from communex.balance import from_nano
 from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict, print_table_standardize)
+                                  print_table_from_plain_dict,
+                                  print_table_standardize)
 from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import IPFS_REGEX, get_map_subnets_params
 from communex.types import SubnetParams, VoteMode
 
-
 subnet_app = typer.Typer(no_args_is_help=True)
+
 
 @subnet_app.command()
 def list(ctx: Context):
@@ -111,6 +112,7 @@ def info(ctx: Context, netuid: int):
     print_table_from_plain_dict(
         general_subnet, ["Params", "Values"], context.console)
 
+
 @subnet_app.command()
 def register(
     ctx: Context,
@@ -131,7 +133,7 @@ def register(
     if response.is_success:
         context.info(f"Successfully registered subnet {name}")
     else:
-        raise ChainTransactionError(response.error_message) # type: ignore
+        raise ChainTransactionError(response.error_message)  # type: ignore
 
 
 @subnet_app.command()
@@ -180,24 +182,23 @@ def update(
     provided_params = {
         key: value for key, value in provided_params.items() if value is not None
     }
-    if vote_mode is not None: # type: ignore
+    if vote_mode is not None:  # type: ignore
         provided_params["vote_mode"] = vote_mode.value
     context = make_custom_context(ctx)
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
-    subnet_vote_mode = subnet_params["governance_config"]["vote_mode"] # type: ignore
-    subnet_burn_config = subnet_params["module_burn_config"] # type: ignore
+    subnet_vote_mode = subnet_params["governance_config"]["vote_mode"]  # type: ignore
+    subnet_burn_config = subnet_params["module_burn_config"]  # type: ignore
     # intersection update
     for param, value in provided_params.items():
         if param in subnet_burn_config and value is not None:
             subnet_burn_config[param] = value
 
-
     subnet_params = dict(subnet_params)
     subnet_params.pop("emission")
     subnet_params.pop("governance_config")
-    subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
+    subnet_params["vote_mode"] = subnet_vote_mode  # type: ignore
 
     subnet_params = cast(SubnetParams, subnet_params)
     provided_params = cast(SubnetParams, provided_params)
@@ -284,13 +285,13 @@ def propose_on_subnet(
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
     subnet_params = subnets_info[netuid]
-    subnet_vote_mode = subnet_params["governance_config"]["vote_mode"] # type: ignore
-    subnet_burn_config = subnet_params["module_burn_config"] # type: ignore
+    subnet_vote_mode = subnet_params["governance_config"]["vote_mode"]  # type: ignore
+    subnet_burn_config = subnet_params["module_burn_config"]  # type: ignore
     # intersection update
     for param, value in provided_params.items():
         if param in subnet_burn_config and value is not None:
             subnet_burn_config[param] = value
-    subnet_params["vote_mode"] = subnet_vote_mode # type: ignore
+    subnet_params["vote_mode"] = subnet_vote_mode  # type: ignore
 
     subnet_params = dict(subnet_params)
     subnet_params.pop("emission")
@@ -314,6 +315,7 @@ def propose_on_subnet(
             netuid=netuid
         )
     context.info("Proposal added.")
+
 
 @subnet_app.command()
 def submit_general_subnet_application(

@@ -7,7 +7,9 @@ from communex._common import BalanceUnit, format_balance
 from communex.balance import from_nano
 from communex.cli._common import make_custom_context, print_module_info
 from communex.client import CommuneClient
-from communex.compat.key import local_key_addresses, try_classic_load_key, resolve_key_ss58_encrypted
+from communex.compat.key import (local_key_addresses,
+                                 resolve_key_ss58_encrypted,
+                                 try_classic_load_key)
 from communex.misc import get_map_modules
 from communex.types import ModuleInfoWithOptionalBalance
 
@@ -25,7 +27,7 @@ def circulating_tokens(c_client: CommuneClient) -> int:
     balances = c_client.query_map_balances(block_hash=block_hash)
     total_stake = c_client.get_total_stake(block_hash=block_hash)
     format_balances: dict[Any, Any] = {
-        key: value["data"]["free"] for key, value in balances.items() if "data" in value and "free" in value["data"] # type: ignore
+        key: value["data"]["free"] for key, value in balances.items() if "data" in value and "free" in value["data"]  # type: ignore
     }
 
     total_balance = sum(format_balances.values())
@@ -110,7 +112,7 @@ def stats(ctx: Context, balances: bool = False, netuid: int = 0):
 def get_treasury_address(ctx: Context):
     context = make_custom_context(ctx)
     client = context.com_client()
- 
+
     with context.progress_status("Getting DAO treasury address..."):
         dao_address = client.get_dao_treasury_address()
     context.output(dao_address)

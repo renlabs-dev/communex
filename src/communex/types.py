@@ -2,8 +2,8 @@
 Common types for the communex module.
 """
 
-from typing import NewType, TypedDict
 from enum import Enum
+from typing import NewType, TypedDict
 
 Ss58Address = NewType("Ss58Address", str)
 """Substrate SS58 address.
@@ -24,6 +24,7 @@ MinBurn = NewType("MinBurn", int)
 MaxBurn = NewType("MaxBurn", int)
 BurnConfig = NewType("BurnConfig", dict[MinBurn, MaxBurn])
 
+
 class VoteMode (Enum):
     authority = "Authority"
     vote = "Vote"
@@ -32,10 +33,11 @@ class VoteMode (Enum):
 class GovernanceConfiguration(TypedDict):
     proposal_cost: int
     proposal_expiration: int
-    vote_mode: int # 0: Authority, 1: Vote
+    vote_mode: int  # 0: Authority, 1: Vote
     proposal_reward_treasury_allocation: float
     max_proposal_reward_treasury_allocation: int
     proposal_reward_interval: int
+
 
 class BurnConfiguration(TypedDict):
     min_burn: int
@@ -45,10 +47,11 @@ class BurnConfiguration(TypedDict):
     target_registrations_per_interval: int
     max_registrations_per_interval: int
 
+
 class NetworkParams(TypedDict):
     # max
     max_name_length: int
-    min_name_length: int # dont change the position
+    min_name_length: int  # dont change the position
     max_allowed_subnets: int
     max_allowed_modules: int
     max_registrations_per_block: int
@@ -93,7 +96,6 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_subnet_metadata: dict[int, str]
 
 
-
 class SubnetParams(TypedDict):
     name: str
     tempo: int
@@ -133,7 +135,7 @@ class ModuleInfo(TypedDict):
     emission: int
     incentive: int
     dividends: int
-    stake_from: list[tuple[str, int]]  # TODO: type key with Ss58Address
+    stake_from: list[tuple[Ss58Address, int]]
     regblock: int  # block number
     last_update: int  # block number
     stake: int

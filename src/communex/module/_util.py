@@ -18,8 +18,6 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
-
-
 def iso_timestamp_now() -> str:
     now = datetime.datetime.now(tz=datetime.timezone.utc)
     iso_now = now.isoformat()
@@ -28,13 +26,13 @@ def iso_timestamp_now() -> str:
 
 def log(
 
-        msg: str,
-        *values: object,
-        sep: str | None = " ",
-        end: str | None = "\n",
-        file: Any | None = None,
-        flush: Literal[False] = False
-    ):
+    msg: str,
+    *values: object,
+    sep: str | None = " ",
+    end: str | None = "\n",
+    file: Any | None = None,
+    flush: Literal[False] = False
+):
     print(f"[{iso_timestamp_now()}] " + msg, *values, sep=sep, end=end, file=file, flush=flush)
 
 

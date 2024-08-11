@@ -1160,7 +1160,7 @@ class CommuneClient:
 
         return response
 
-    def register_subnet(self, key: Keypair, name: str,  metadata: str | None = None) -> ExtrinsicReceipt:
+    def register_subnet(self, key: Keypair, name: str, metadata: str | None = None) -> ExtrinsicReceipt:
         """
         Registers a new subnet in the network.
 
@@ -1947,7 +1947,7 @@ class CommuneClient:
 
     def query_map_staketo(
         self, extract_value: bool = False
-    ) -> dict[str, list[tuple[str, int]]]:
+    ) -> dict[Ss58Address, list[tuple[Ss58Address, int]]]:
         """
         Retrieves a mapping of stakes to destinations for keys on the network.
 

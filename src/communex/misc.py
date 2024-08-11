@@ -2,12 +2,12 @@ import re
 from typing import Any, TypeVar, cast
 
 from communex._common import transform_stake_dmap
+from communex.balance import to_nano
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
-from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
-                            Ss58Address, SubnetParamsMaps,
-                            SubnetParamsWithEmission, BurnConfiguration)
-from communex.balance import to_nano
+from communex.types import (BurnConfiguration, ModuleInfoWithOptionalBalance,
+                            NetworkParams, Ss58Address, SubnetParamsMaps,
+                            SubnetParamsWithEmission)
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
@@ -187,7 +187,6 @@ def get_map_subnets_params(
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
-
     for netuid, name in subnet_maps["netuid_to_name"].items():
 
         subnet: SubnetParamsWithEmission = {
@@ -218,7 +217,6 @@ def get_map_subnets_params(
 
 
 def get_global_params(c_client: CommuneClient) -> NetworkParams:
-
     """
     Returns global parameters of the whole commune ecosystem
     """

@@ -48,5 +48,3 @@ def generate_keypair() -> Keypair:
     mnemonic = Keypair.generate_mnemonic()
     keypair = Keypair.create_from_mnemonic(mnemonic)
     return keypair
-
-

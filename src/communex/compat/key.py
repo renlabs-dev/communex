@@ -167,10 +167,10 @@ def try_classic_load_key(
 
 
 def try_load_key(
-        name: str, 
-        context: GenericCtx | None = None, 
-        password: str | None = None
-    ):
+    name: str,
+    context: GenericCtx | None = None,
+    password: str | None = None
+):
     try:
         key_dict = classic_load(name, password=password)
     except json.JSONDecodeError:
