@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.34.1
+- Added a `module deregister <key> <netuid>` command
+- Fixed a burn display bug
 
 ## 0.1.34
 - Adequating code [to spec version 120](https://github.com/agicommies/subspace-network/blob/main/CHANGELOG.md)
