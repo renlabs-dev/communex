@@ -1139,6 +1139,27 @@ class CommuneClient:
         response = self.compose_call("register", params=params, key=key)
         return response
 
+    def deregister_module(self, key: Keypair, netuid: int) -> ExtrinsicReceipt:
+        """
+        Deregisters a module from the network.
+
+        Args:
+            key: The keypair associated with the module's account.
+            netuid: The network identifier.
+
+        Returns:
+            A receipt of the module deregistration transaction.
+
+        Raises:
+            ChainTransactionError: If the transaction fails.
+        """
+
+        params = {"netuid": netuid}
+
+        response = self.compose_call("deregister", params=params, key=key)
+
+        return response
+
     def register_subnet(self, key: Keypair, name: str,  metadata: str | None = None) -> ExtrinsicReceipt:
         """
         Registers a new subnet in the network.

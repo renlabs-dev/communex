@@ -54,7 +54,8 @@ def register(
     client = context.com_client()
     if metadata and len(metadata) > 59:
         raise ValueError("Metadata must be less than 60 characters")
-    burn = client.get_subnet_burn()
+ 
+    burn = client.get_burn(netuid=netuid)
 
     if netuid != 0:
         do_burn = context.confirm(
@@ -83,6 +84,23 @@ def register(
         else:
             raise ChainTransactionError(response.error_message)  # type: ignore
 
+@module_app.command()
+def deregister(ctx: Context, key: str, netuid: int):
+    """
+    Deregisters a module from a subnet.
+    """
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    with context.progress_status(f"Deregistering your module on subnet {netuid}..."):
+        resolved_key = try_classic_load_key(key, context)
+
+        response = client.deregister_module(key=resolved_key, netuid=netuid)
+
+        if response.is_success:
+            context.info(f"Module deregistered")
+        else:
+            raise ChainTransactionError(response.error_message)  # type: ignore
 
 @module_app.command()
 def update(
