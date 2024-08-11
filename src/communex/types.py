@@ -87,6 +87,7 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_emission: dict[int, int]
     netuid_to_immunity_period: dict[int, int]
     netuid_to_governance_configuration: dict[int, GovernanceConfiguration]
+
     netuid_to_min_validator_stake: dict[int, int]
     netuid_to_max_allowed_validators: dict[int, int]
     netuid_to_module_burn_config: dict[int, BurnConfiguration]
@@ -109,6 +110,7 @@ class SubnetParams(TypedDict):
     bonds_ma: int | None
     immunity_period: int
     governance_config: GovernanceConfiguration
+
     min_validator_stake: int | None
     max_allowed_validators: int | None
     module_burn_config: BurnConfiguration

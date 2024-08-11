@@ -166,8 +166,19 @@ def update(
     target_registrations_per_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
 
+
     min_validator_stake: int = typer.Option(None),
     max_allowed_validators: int = typer.Option(None),
+
+    adjustment_alpha: int = typer.Option(None),
+    min_immunity_stake: int = typer.Option(None),
+
+    proposal_cost: int = typer.Option(None),
+    proposal_expiration: int = typer.Option(None),
+    vote_mode: VoteMode = typer.Option(
+        None, help="0 for Authority, 1 for Vote"
+    ),
+
 ):
     """
     Updates a subnet.
@@ -254,8 +265,19 @@ def propose_on_subnet(
     target_registrations_per_interval: int = typer.Option(None),
     max_registrations_per_interval: int = typer.Option(None),
 
+
     min_validator_stake: int = typer.Option(None),
     max_allowed_validators: int = typer.Option(None),
+
+    adjustment_alpha: int = typer.Option(None),
+    min_immunity_stake: int = typer.Option(None),
+
+    vote_mode: VoteMode = typer.Option(
+        None, help="0 for Authority, 1 for Vote"
+    ),
+    proposal_reward_treasury_allocation: float = typer.Option(None),
+    max_proposal_reward_treasury_allocation: int = typer.Option(None),
+    proposal_reward_interval: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.

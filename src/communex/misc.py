@@ -4,9 +4,11 @@ from typing import Any, TypeVar, cast
 from communex._common import transform_stake_dmap
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
-from communex.types import (ModuleInfoWithOptionalBalance, NetworkParams,
-                            Ss58Address, SubnetParamsMaps,
-                            SubnetParamsWithEmission, BurnConfiguration)
+from communex.types import (
+  ModuleInfoWithOptionalBalance, NetworkParams,
+  Ss58Address, SubnetParamsMaps,
+  SubnetParamsWithEmission, BurnConfiguration
+)
 from communex.balance import to_nano
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
@@ -149,10 +151,14 @@ def get_map_subnets_params(
                 ("MaxWeightAge", []),
                 ("BondsMovingAverage", []),
                 ("MaximumSetWeightCallsPerEpoch", []),
+
                 ("MinValidatorStake", []),
                 ("MaxAllowedValidators", []),
                 ("ModuleBurnConfig", []),
                 ("SubnetMetadata", []),
+              
+                ("AdjustmentAlpha", []),
+                ("MinImmunityStake", []),
             ],
             "GovernanceModule": [
                 ("SubnetGovernanceConfig", []),
@@ -164,6 +170,7 @@ def get_map_subnets_params(
         },
         block_hash,
     )
+
     subnet_maps: SubnetParamsMaps = {
         "netuid_to_emission": bulk_query["SubnetEmission"],
         "netuid_to_tempo": bulk_query["Tempo"],
@@ -180,6 +187,7 @@ def get_map_subnets_params(
         "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
         "netuid_to_governance_configuration": bulk_query["SubnetGovernanceConfig"],
         "netuid_to_immunity_period": bulk_query["ImmunityPeriod"],
+
         "netuid_to_min_validator_stake": bulk_query.get("MinValidatorStake", {}),
         "netuid_to_max_allowed_validators": bulk_query.get("MaxAllowedValidators", {}),
         "netuid_to_module_burn_config": bulk_query.get("ModuleBurnConfig", {}),
@@ -206,6 +214,7 @@ def get_map_subnets_params(
             "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"].get(netuid, 30),
             "governance_config": subnet_maps["netuid_to_governance_configuration"][netuid],
             "immunity_period": subnet_maps["netuid_to_immunity_period"][netuid],
+
             "min_validator_stake": subnet_maps["netuid_to_min_validator_stake"].get(netuid, to_nano(50_000)),
             "max_allowed_validators": subnet_maps["netuid_to_max_allowed_validators"].get(netuid, 50),
             "module_burn_config": cast(BurnConfiguration, subnet_maps["netuid_to_module_burn_config"].get(netuid, None)),

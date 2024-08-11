@@ -1129,7 +1129,7 @@ class CommuneClient:
         key_addr = key.ss58_address
 
         params = {
-            "network_name": subnet,
+            "network": subnet,
             "address": address,
             "name": name,
             "module_key": key_addr,
