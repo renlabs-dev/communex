@@ -62,18 +62,18 @@ class ModuleServer:
     def _build_routers(
             self, use_testnet: bool,
             limiter: StakeLimiterParams | IpLimiterParams
-            ):
+    ):
         input_handler = InputHandlerVerifier(
-                self._subnets_whitelist,
-                check_ss58_address(self.key.ss58_address),
-                self.max_request_staleness,
-                self._blockchain_cache,
-                self.key,
-                use_testnet
-            )
+            self._subnets_whitelist,
+            check_ss58_address(self.key.ss58_address),
+            self.max_request_staleness,
+            self._blockchain_cache,
+            self.key,
+            use_testnet
+        )
         check_lists = ListVerifier(
-            self._blacklist, 
-            self._whitelist, 
+            self._blacklist,
+            self._whitelist,
             self._ip_blacklist
         )
         if isinstance(limiter, StakeLimiterParams):
@@ -82,7 +82,7 @@ class ModuleServer:
             )
         else:
             limiter_verifier = IpLimiterVerifier(limiter)
-        
+
         # order of verifiers is extremely important
         verifiers = [check_lists, input_handler, limiter_verifier]
         route_class = build_route_class(verifiers)
@@ -99,7 +99,7 @@ class ModuleServer:
 
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
-            
+
             async def async_handler(end_def: EndpointDefinition[Any, ...], body: Body):
                 return await end_def.fn(self._module, **body.params.model_dump())  # type: ignore
 
@@ -114,7 +114,6 @@ class ModuleServer:
 
     def add_to_blacklist(self, ss58_address: Ss58Address):
         self._blacklist.append(ss58_address)
-
 
     def add_to_whitelist(self, ss58_address: Ss58Address):
         self._whitelist.append(ss58_address)
@@ -133,8 +132,8 @@ def main():
     a_mod = Amod()
     keypair = Keypair.create_from_mnemonic(signer.TESTING_MNEMONIC)
     server = ModuleServer(
-        a_mod, 
-        keypair, 
+        a_mod,
+        keypair,
         subnets_whitelist=[0],
         blacklist=None,
     )

@@ -6,7 +6,8 @@ from typer import Context
 
 from communex._common import IPFS_REGEX, BalanceUnit, format_balance
 from communex.balance import to_nano
-from communex.cli._common import (make_custom_context, print_table_from_plain_dict)
+from communex.cli._common import (make_custom_context,
+                                  print_table_from_plain_dict)
 from communex.compat.key import (resolve_key_ss58_encrypted,
                                  try_classic_load_key)
 from communex.errors import ChainTransactionError

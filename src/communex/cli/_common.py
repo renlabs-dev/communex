@@ -56,21 +56,21 @@ class CustomCtx:
         return self.ctx.obj.use_testnet
 
     def output(
-            self, 
-            message: str, 
-            *args: tuple[Any, ...], 
-            **kwargs: dict[str, Any],
-        ) -> None:
-        self.console.print(message, *args, **kwargs) # type: ignore
+        self,
+        message: str,
+        *args: tuple[Any, ...],
+        **kwargs: dict[str, Any],
+    ) -> None:
+        self.console.print(message, *args, **kwargs)  # type: ignore
 
     def info(
-            self, 
-            message: str,
-            *args: tuple[Any, ...], 
-            **kwargs: dict[str, Any],
-        ) -> None:
-        
-        self.console_err.print(message, *args, **kwargs) # type: ignore
+        self,
+        message: str,
+        *args: tuple[Any, ...],
+        **kwargs: dict[str, Any],
+    ) -> None:
+
+        self.console_err.print(message, *args, **kwargs)  # type: ignore
 
     def error(self, message: str) -> None:
         message = f"ERROR: {message}"
@@ -143,10 +143,10 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
 
 
 def transform_module_into(
-        to_exclude: list[str], last_block: int, 
-        immunity_period: int, modules: list[ModuleInfoWithOptionalBalance],
-        tempo: int
-    ):
+    to_exclude: list[str], last_block: int,
+    immunity_period: int, modules: list[ModuleInfoWithOptionalBalance],
+    tempo: int
+):
     mods = cast(list[dict[str, Any]], modules)
     transformed_modules: list[dict[str, Any]] = []
     for mod in mods:
@@ -159,8 +159,8 @@ def transform_module_into(
         module["stake"] = round(from_nano(module["stake"]), 2)  # type: ignore
         module["emission"] = round(
             from_horus(
-            module["emission"], tempo
-            ), 
+                module["emission"], tempo
+            ),
             4
         )  # type: ignore
         if module.get("balance") is not None:
@@ -174,10 +174,10 @@ def transform_module_into(
 
 
 def print_module_info(
-        client: CommuneClient, 
-        modules: list[ModuleInfoWithOptionalBalance], 
+        client: CommuneClient,
+        modules: list[ModuleInfoWithOptionalBalance],
         console: Console,
-        netuid: int, 
+        netuid: int,
         title: str | None = None,
 ) -> None:
     """
@@ -209,7 +209,7 @@ def print_module_info(
     to_exclude = ["stake_from", "metadata", "last_update", "regblock"]
     tranformed_modules = transform_module_into(
         to_exclude, last_block, immunity_period, modules, tempo
-        )
+    )
 
     sample_mod = tranformed_modules[0]
     for key in sample_mod.keys():
@@ -233,6 +233,7 @@ def print_module_info(
     console.print(table)
     for _ in range(3):
         console.print()
+
 
 def get_universal_password(ctx: CustomCtx) -> str:
     ctx.info("Please provide the universal password for all keys")

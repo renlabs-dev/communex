@@ -54,7 +54,7 @@ def register(
     client = context.com_client()
     if metadata and len(metadata) > 59:
         raise ValueError("Metadata must be less than 60 characters")
- 
+
     burn = client.get_burn(netuid=netuid)
 
     if netuid != 0:
@@ -84,6 +84,7 @@ def register(
         else:
             raise ChainTransactionError(response.error_message)  # type: ignore
 
+
 @module_app.command()
 def deregister(ctx: Context, key: str, netuid: int):
     """
@@ -98,9 +99,10 @@ def deregister(ctx: Context, key: str, netuid: int):
         response = client.deregister_module(key=resolved_key, netuid=netuid)
 
         if response.is_success:
-            context.info(f"Module deregistered")
+            context.info("Module deregistered")
         else:
             raise ChainTransactionError(response.error_message)  # type: ignore
+
 
 @module_app.command()
 def update(
@@ -239,8 +241,6 @@ def serve(
         context.info(
             "WARNING: No whitelist provided, will accept calls from any key"
         )
-
-
 
     try:
         whitelist_ss58 = list_to_ss58(whitelist)

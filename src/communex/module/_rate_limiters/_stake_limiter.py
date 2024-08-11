@@ -141,7 +141,7 @@ class StakeLimiter():
             return ceil(1 / key_rate)
         else:
             return self.max_cache_age
-        
+
     async def _refill(self, key: str) -> None:
         bucket = self.buckets.get(key)
         if bucket is None:  # type: ignore

@@ -7,6 +7,7 @@ from typing import Mapping, TypeVar
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from communex.balance import from_nano
+from communex.types import Ss58Address
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
@@ -110,11 +111,11 @@ def intersection_update(base: dict[K, V], update: dict[K, Z]) -> Mapping[K, V | 
     return updated
 
 
-def transform_stake_dmap(stake_storage: dict[tuple[str, str], int]) -> dict[str, list[tuple[str, int]]]:
+def transform_stake_dmap(stake_storage: dict[tuple[Ss58Address, Ss58Address], int]) -> dict[Ss58Address, list[tuple[Ss58Address, int]]]:
     """
     Transforms either the StakeTo or StakeFrom storage into the stake legacy data type.
     """
-    transformed: dict[str, list[tuple[str, int]]] = defaultdict(list)
+    transformed: dict[Ss58Address, list[tuple[Ss58Address, int]]] = defaultdict(list)
     [transformed[k1].append((k2, v)) for (k1, k2), v in stake_storage.items()]
 
     return dict(transformed)
