@@ -95,7 +95,7 @@ def format_balance(balance: int, unit: BalanceUnit = BalanceUnit.nano) -> str:
         case BalanceUnit.joule | BalanceUnit.j:
             in_joules = from_nano(balance)
             round_joules = round(in_joules, 4)
-            return f"{round_joules:,} J"
+            return f"{round_joules:,} COMAI"
 
 
 K = TypeVar("K")
