@@ -233,7 +233,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
                 ("FloorDelegationFee", []),
                 ("FloorFounderShare", []),
                 ("MinWeightStake", []),
-                ("BurnConfig", []),
                 ("Kappa", []),
                 ("Rho", []),
                 ("SubnetImmunityPeriod", []),
@@ -250,8 +249,6 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
         "max_name_length": int(query_all["MaxNameLength"]),
-        "min_burn": int(query_all["BurnConfig"]["min_burn"]),  # type: ignore
-        "max_burn": int(query_all["BurnConfig"]["max_burn"]),  # type: ignore
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
         "max_allowed_weights": int(query_all["MaxAllowedWeightsGlobal"]),
