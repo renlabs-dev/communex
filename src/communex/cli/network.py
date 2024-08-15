@@ -216,10 +216,6 @@ def add_custom_proposal(ctx: Context, key: str, cid: str):
     with context.progress_status("Adding a proposal..."):
         client.add_custom_proposal(resolved_key, cid)
 
-# TODO
-# refactor this
-
-
 @network_app.command()
 def set_root_weights(ctx: Context, key: str):
     """

@@ -2485,6 +2485,21 @@ class CommuneClient:
 
         return self.query("Tempo", params=[netuid])
 
+    def get_total_free_issuance(self, block_hash: str | None = None) -> int:
+        """
+        Queries the network for the total free issuance.
+
+        Fetches the total amount of free issuance tokens available
+
+        Returns:
+            The total free issuance amount.
+
+        Raises:
+            QueryError: If the query to the network fails or is invalid.
+        """
+
+        return self.query("TotalIssuance", module="Balances", block_hash=block_hash)
+
     def get_total_stake(self, block_hash: str | None = None) -> int:
         """
         Retrieves a mapping of total stakes for keys on the network.
