@@ -1,6 +1,6 @@
 # Changelog
 
-[unreleased]
+## 0.1.34.2
 
 - fix status bar loading before asking for password in registration and deregistraiton
 - fix network params query
