@@ -66,8 +66,8 @@ def register(
             context.info("Not registering")
             raise typer.Abort()
 
+    resolved_key = try_classic_load_key(key, context)
     with context.progress_status(f"Registering Module {name}..."):
-        resolved_key = try_classic_load_key(key, context)
         subnet_name = client.get_subnet_name(netuid)
         address = f"{ip}:{port}"
 
@@ -93,8 +93,8 @@ def deregister(ctx: Context, key: str, netuid: int):
     context = make_custom_context(ctx)
     client = context.com_client()
 
+    resolved_key = try_classic_load_key(key, context)
     with context.progress_status(f"Deregistering your module on subnet {netuid}..."):
-        resolved_key = try_classic_load_key(key, context)
 
         response = client.deregister_module(key=resolved_key, netuid=netuid)
 
