@@ -72,10 +72,10 @@ class CommuneClient:
         self.wait_for_finalization = wait_for_finalization
         self._connection_queue = queue.Queue(num_connections)
         self.url = url
-        ws_options = {}
+        ws_options: dict[str, int] = {}
         if timeout is not None:
             ws_options["timeout"] = timeout
-
+        self.ws_options = ws_options
         for _ in range(num_connections):
             self._connection_queue.put(
                 SubstrateInterface(url, ws_options=ws_options)
@@ -112,7 +112,11 @@ class CommuneClient:
         if init:
             conn.init_runtime()  # type: ignore
         try:
-            yield conn
+            if conn.websocket and conn.websocket.connected: # type: ignore
+                yield conn
+            else:
+                conn = SubstrateInterface(self.url, ws_options=self.ws_options)
+                yield conn
         finally:
             self._connection_queue.put(conn)
 
