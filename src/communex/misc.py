@@ -5,9 +5,11 @@ from communex._common import transform_stake_dmap
 from communex.balance import from_nano, to_nano
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
-from communex.types import (BurnConfiguration, ModuleInfoWithOptionalBalance,
-                            NetworkParams, Ss58Address, SubnetParamsMaps,
-                            SubnetParamsWithEmission)
+from communex.types import (
+    BurnConfiguration, ModuleInfoWithOptionalBalance,
+    NetworkParams, Ss58Address, SubnetParamsMaps,
+    SubnetParamsWithEmission, GovernanceConfiguration
+    )
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
@@ -244,29 +246,32 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             ]
         }
     )
-
+    global_config = cast(
+        GovernanceConfiguration,
+        query_all["GlobalGovernanceConfig"]
+    )
     global_params: NetworkParams = {
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
         "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
         "max_name_length": int(query_all["MaxNameLength"]),
-        "min_weight_stake": from_nano(int(query_all["MinWeightStake"])),
+        "min_weight_stake": int(query_all["MinWeightStake"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
         "max_allowed_weights": int(query_all["MaxAllowedWeightsGlobal"]),
         "curator": Ss58Address(query_all["Curator"]),
         "min_name_length": int(query_all["MinNameLength"]),
         "floor_founder_share": int(query_all["FloorFounderShare"]),
-        "general_subnet_application_cost": from_nano(int(query_all["GeneralSubnetApplicationCost"])),
+        "general_subnet_application_cost": int(query_all["GeneralSubnetApplicationCost"]),
         "kappa": int(query_all["Kappa"]),
         "rho": int(query_all["Rho"]),
         "subnet_immunity_period": int(query_all["SubnetImmunityPeriod"]),
         "governance_config": {
-            "proposal_cost": from_nano(int(query_all["GlobalGovernanceConfig"]["proposal_cost"])),
-            "proposal_expiration": int(query_all["GlobalGovernanceConfig"]["proposal_expiration"]),
-            "vote_mode": query_all["GlobalGovernanceConfig"]["vote_mode"],
-            "proposal_reward_treasury_allocation": int(query_all["GlobalGovernanceConfig"]["proposal_reward_treasury_allocation"]),
-            "max_proposal_reward_treasury_allocation": from_nano(int(query_all["GlobalGovernanceConfig"]["max_proposal_reward_treasury_allocation"])),
-            "proposal_reward_interval": int(query_all["GlobalGovernanceConfig"]["proposal_reward_interval"])
+            "proposal_cost": int(global_config["proposal_cost"]),
+            "proposal_expiration": int(global_config["proposal_expiration"]),
+            "vote_mode": global_config["vote_mode"],
+            "proposal_reward_treasury_allocation": int(global_config["proposal_reward_treasury_allocation"]),
+            "max_proposal_reward_treasury_allocation": int(global_config["max_proposal_reward_treasury_allocation"]),
+            "proposal_reward_interval": int(global_config["proposal_reward_interval"])
         }
     }
     return global_params
