@@ -112,7 +112,7 @@ class CommuneClient:
         if init:
             conn.init_runtime()  # type: ignore
         try:
-            if conn.websocket and conn.websocket.connected: # type: ignore
+            if conn.websocket and conn.websocket.connected:  # type: ignore
                 yield conn
             else:
                 conn = SubstrateInterface(self.url, ws_options=self.ws_options)
