@@ -68,7 +68,10 @@ def classic_key_path(name: str) -> str:
     return str(root_path / name)
 
 
-def from_classic_dict(data: dict[Any, Any]) -> Keypair:
+def from_classic_dict(
+        data: dict[Any, Any],
+        from_mnemonic: bool = False
+) -> Keypair:
     """
     Creates a `Key` from a dict conforming to the classic `commune` format.
 
@@ -87,11 +90,17 @@ def from_classic_dict(data: dict[Any, Any]) -> Keypair:
 
     ss58_address = data_["ss58_address"]
     private_key = data_["private_key"]
+    mnemonic_key = data_["mnemonic"]
     public_key = data_["public_key"]
     ss58_format = data_["ss58_format"]
-
-    key = Keypair.create_from_private_key(
-        private_key, public_key, ss58_address, ss58_format)
+    if from_mnemonic:
+        key = Keypair.create_from_mnemonic(
+            mnemonic_key, ss58_format
+        )
+    else:
+        key = Keypair.create_from_private_key(
+            private_key, public_key, ss58_address, ss58_format
+        )
 
     return key
 
@@ -118,14 +127,18 @@ def to_classic_dict(keypair: Keypair, path: str) -> CommuneKeyDict:
     }
 
 
-def classic_load_key(name: str, password: str | None = None) -> Keypair:
+def classic_load_key(
+    name: str,
+    password: str | None = None,
+    from_mnemonic: bool = False,
+) -> Keypair:
     """
     Loads the keypair with the given name from a disk.
     """
     path = classic_key_path(name)
     key_dict_json = classic_load(path, password=password)
     key_dict = json.loads(key_dict_json)
-    return from_classic_dict(key_dict)
+    return from_classic_dict(key_dict, from_mnemonic=from_mnemonic)
 
 
 def is_encrypted(name: str) -> bool:
@@ -151,10 +164,15 @@ def classic_store_key(keypair: Keypair, name: str, password: str | None = None) 
 
 def try_classic_load_key(
     name: str, context: GenericCtx | None = None,
-    password: str | None = None
+    password: str | None = None,
+    from_mnemonic: bool = False,
 ) -> Keypair:
     try:
-        keypair = classic_load_key(name, password=password)
+        keypair = classic_load_key(
+            name,
+            password=password,
+            from_mnemonic=from_mnemonic
+        )
     except json.JSONDecodeError:
         prompt = f"Please provide the password for the key {name}"
         if context is not None:
@@ -162,7 +180,11 @@ def try_classic_load_key(
         else:
             print(prompt)
         password = getpass()
-        keypair = classic_load_key(name, password=password)
+        keypair = classic_load_key(
+            name,
+            password=password,
+            from_mnemonic=from_mnemonic
+        )
     return keypair
 
 
