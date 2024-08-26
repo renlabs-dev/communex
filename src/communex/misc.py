@@ -2,7 +2,7 @@ import re
 from typing import Any, TypeVar, cast
 
 from communex._common import transform_stake_dmap
-from communex.balance import from_nano, to_nano
+from communex.balance import to_nano
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.types import (
