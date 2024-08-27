@@ -19,7 +19,6 @@ def keys_to_stakedbalance() -> dict[str, int]:
         key_stake = sum(stake for _, stake in value)
         total_stake.setdefault(key, 0)
         total_stake[key] += key_stake
-
     return total_stake
 
 
@@ -34,15 +33,12 @@ def calls_per_epoch(stake: int, multiplier: int = 1) -> float:
 
     def mult_2(x: int) -> int:
         return x * 2
-
-    # 10x engineer switch case
-    match stake:
-        case _ if stake < to_nano(10_000):
-            return 0
-        case _ if stake < to_nano(500_000):
-            return base_ratio * multiplier
-        case _:
-            return mult_2(base_ratio) * multiplier
+    if stake < to_nano(10_000):
+        return 0
+    elif stake < to_nano(500_000):
+        return base_ratio * multiplier
+    else:
+        return mult_2(base_ratio) * multiplier
 
 
 def build_keys_refill_rate(
