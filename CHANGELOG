@@ -1,5 +1,8 @@
 # Changelog
 
+[unreleased]
+- chore: `from_nano` on subnet parameter values
+
 ## 0.1.34.2
 
 - fix status bar loading before asking for password in registration and deregistraiton

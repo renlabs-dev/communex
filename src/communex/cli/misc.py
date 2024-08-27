@@ -1,5 +1,3 @@
-from typing import Any
-
 import typer
 from typer import Context
 
@@ -23,7 +21,7 @@ def circulating_tokens(c_client: CommuneClient) -> int:
 
     with c_client.get_conn(init=True) as substrate:
         block_hash = substrate.get_block_hash()
-  
+
     total_balance = c_client.get_total_free_issuance(block_hash=block_hash)
     total_stake = c_client.get_total_stake(block_hash=block_hash)
     return total_stake + total_balance

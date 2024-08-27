@@ -51,18 +51,18 @@ class StakeLimiterVerifier(AbstractVerifier):
     ):
         self.subnets_whitelist = subnets_whitelist
         self.params_ = params_
-
-    async def verify(self, request: Request):
         if not self.params_:
             params = StakeLimiterParams()
         else:
             params = self.params_
-        limiter = StakeLimiter(
+        self.limiter = StakeLimiter(
             self.subnets_whitelist,
             epoch=params.epoch,
             max_cache_age=params.cache_age,
             get_refill_rate=params.get_refill_per_epoch,
         )
+
+    async def verify(self, request: Request):
 
         if request.client is None:
             response = JSONResponse(
@@ -81,12 +81,12 @@ class StakeLimiterVerifier(AbstractVerifier):
             )
             return response
 
-        is_allowed = await limiter.allow(key)
+        is_allowed = await self.limiter.allow(key)
 
         if not is_allowed:
             response = JSONResponse(
                 status_code=429,
-                headers={"X-RateLimit-TryAfter": f"{str(await limiter.retry_after(key))} seconds"},
+                headers={"X-RateLimit-TryAfter": f"{str(await self.limiter.retry_after(key))} seconds"},
                 content={"error": "Rate limit exceeded"}
             )
             return response
@@ -376,7 +376,6 @@ class InputHandlerVerifier(AbstractVerifier):
                     log(f"WARNING: {reason}")
                 else:
                     got_keys = True
-
                 if host_key.ss58_address not in keys_on_subnet:
                     log(
                         f"WARNING: This miner is deregistered on subnet {subnet}"
