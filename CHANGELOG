@@ -1,7 +1,9 @@
 # Changelog
 
-[unreleased]
+## 0.1.34.3
 - chore: `from_nano` on subnet parameter values
+- Fixed bug that made subnet metadata be erased when updating other parameters
+- Displaying module metadata when listing modules
 
 ## 0.1.34.2
 
