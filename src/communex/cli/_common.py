@@ -206,7 +206,7 @@ def print_module_info(
 
     )
 
-    to_exclude = ["stake_from", "metadata", "last_update", "regblock"]
+    to_exclude = ["stake_from", "last_update", "regblock"]
     tranformed_modules = transform_module_into(
         to_exclude, last_block, immunity_period, modules, tempo
     )
