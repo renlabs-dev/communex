@@ -1088,7 +1088,6 @@ class CommuneClient:
         """
 
         assert isinstance(delegation_fee, int)
-
         params = {
             "netuid": netuid,
             "name": name,
@@ -1255,8 +1254,10 @@ class CommuneClient:
 
         general_params = dict(params)
         general_params["netuid"] = netuid
-        if "metadata" not in general_params:
+        if general_params.get("subnet_metadata") is None:
             general_params["metadata"] = None
+        else:
+            general_params["metadata"] = general_params["subnet_metadata"]
 
         response = self.compose_call(
             fn="update_subnet",
