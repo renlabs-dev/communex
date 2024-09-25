@@ -12,7 +12,7 @@ Callback = Callable[[Request], Awaitable[Response]]
 
 class IpLimiterParams(BaseSettings):
     bucket_size: int = 15
-    refill_rate: int = 1
+    refill_rate: float = 1
 
     class config:
         env_prefix = "CONFIG_IP_LIMITER_"
