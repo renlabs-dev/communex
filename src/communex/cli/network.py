@@ -6,8 +6,10 @@ from rich.progress import track
 from typer import Context
 
 import communex.balance as c_balance
-from communex.cli._common import (CustomCtx, make_custom_context,
-                                  print_table_from_plain_dict)
+from communex.cli._common import (
+    CustomCtx, make_custom_context,
+    print_table_from_plain_dict, tranform_network_params
+)
 from communex.client import CommuneClient
 from communex.compat.key import local_key_addresses, try_classic_load_key
 from communex.misc import (IPFS_REGEX, get_global_params,
@@ -46,10 +48,9 @@ def params(ctx: Context):
 
     with context.progress_status("Getting global network params ..."):
         global_params = get_global_params(client)
-
-    general_params: dict[str, Any] = cast(dict[str, Any], global_params)
+    printable_params = tranform_network_params(global_params)
     print_table_from_plain_dict(
-        general_params, ["Global params", "Value"], context.console
+        printable_params, ["Global params", "Value"], context.console
     )
 
 
