@@ -1,5 +1,5 @@
 import re
-from typing import Any, Optional, cast
+from typing import Optional, cast
 
 import typer
 from rich.progress import track
