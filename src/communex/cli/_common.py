@@ -10,9 +10,9 @@ from rich.table import Table
 from typer import Context
 
 from communex._common import get_node_url
-from communex.balance import from_horus, from_nano
+from communex.balance import from_horus, from_nano, dict_from_nano
 from communex.client import CommuneClient
-from communex.types import ModuleInfoWithOptionalBalance
+from communex.types import ModuleInfoWithOptionalBalance, NetworkParams
 
 
 @dataclass
@@ -108,7 +108,7 @@ def eprint(e: Any) -> None:
 
 
 def print_table_from_plain_dict(
-    result: Mapping[str, str | int | float], column_names: list[str], console: Console
+    result: Mapping[str, str | int | float | dict[Any, Any]], column_names: list[str], console: Console
 ) -> None:
     """
     Creates a table for a plain dictionary.
@@ -117,13 +117,21 @@ def print_table_from_plain_dict(
     table = Table(show_header=True, header_style="bold magenta")
 
     for name in column_names:
-        table.add_column(name, style="white")
+        table.add_column(name, style="white", vertical="middle")
 
     # Add rows to the table
     for key, value in result.items():
-        table.add_row(key, str(value))
+        if isinstance(value, dict):
+            # Create a subtable for the nested dictionary
+            subtable = Table(show_header=False, padding=(0, 0, 0, 0), border_style="bright_black")
+            for subkey, subvalue in value.items():
+                subtable.add_row(f"{subkey}: {subvalue}")
+            table.add_row(key, subtable)
+        else:
+            table.add_row(key, str(value))
 
     console.print(table)
+
 
 
 def print_table_standardize(result: dict[str, list[Any]], console: Console) -> None:
@@ -239,3 +247,24 @@ def get_universal_password(ctx: CustomCtx) -> str:
     ctx.info("Please provide the universal password for all keys")
     universal_password = getpass()
     return universal_password
+
+
+def tranform_network_params(params: NetworkParams):
+    """Transform network params to be human readable."""
+    governance_config = params["governance_config"]
+    allocation = governance_config["proposal_reward_treasury_allocation"]
+    governance_config = cast(dict[str, Any], governance_config)
+    governance_config["proposal_reward_treasury_allocation"] = f"{allocation}%"
+    display_g_config = dict_from_nano(governance_config, [
+        "proposal_cost",
+        "max_proposal_reward_treasury_allocation",
+    ])
+    params_ = cast(dict[str, Any], params)
+    general_params = dict_from_nano(params_, [
+        "min_weight_stake",
+        "general_subnet_application_cost",
+        "subnet_registration_cost",
+    ])
+    general_params["governance_config"] = display_g_config
+
+    return general_params
