@@ -238,12 +238,13 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
                 ("Kappa", []),
                 ("Rho", []),
                 ("SubnetImmunityPeriod", []),
+                ("SubnetBurn", []),
             ],
             "GovernanceModule": [
                 ("GlobalGovernanceConfig", []),
                 ("GeneralSubnetApplicationCost", []),
                 ("Curator", []),
-            ]
+            ],
         }
     )
     global_config = cast(
@@ -265,14 +266,15 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "kappa": int(query_all["Kappa"]),
         "rho": int(query_all["Rho"]),
         "subnet_immunity_period": int(query_all["SubnetImmunityPeriod"]),
+        "subnet_registration_cost": int(query_all["SubnetBurn"]),
         "governance_config": {
             "proposal_cost": int(global_config["proposal_cost"]),
             "proposal_expiration": int(global_config["proposal_expiration"]),
             "vote_mode": global_config["vote_mode"],
             "proposal_reward_treasury_allocation": int(global_config["proposal_reward_treasury_allocation"]),
             "max_proposal_reward_treasury_allocation": int(global_config["max_proposal_reward_treasury_allocation"]),
-            "proposal_reward_interval": int(global_config["proposal_reward_interval"])
-        }
+            "proposal_reward_interval": int(global_config["proposal_reward_interval"]),
+        },
     }
     return global_params
 

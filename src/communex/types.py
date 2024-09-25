@@ -91,6 +91,8 @@ class NetworkParams(TypedDict):
     kappa: int
     rho: int
 
+    subnet_registration_cost: int
+
 
 class SubnetParamsMaps(TypedDict):
     netuid_to_founder: dict[int, Ss58Address]
@@ -112,7 +114,6 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_max_allowed_validators: dict[int, int]
     netuid_to_module_burn_config: dict[int, BurnConfiguration]
     netuid_to_subnet_metadata: dict[int, str]
-
 
 class SubnetParams(TypedDict):
     name: str
