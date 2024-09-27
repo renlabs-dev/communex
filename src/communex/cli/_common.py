@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from getpass import getpass
-from typing import Any, Mapping, cast
+from typing import Any, Mapping, cast, TypeVar
 
 import rich
 import typer
@@ -12,7 +12,11 @@ from typer import Context
 from communex._common import get_node_url
 from communex.balance import from_horus, from_nano, dict_from_nano
 from communex.client import CommuneClient
-from communex.types import ModuleInfoWithOptionalBalance, NetworkParams
+from communex.types import (
+    ModuleInfoWithOptionalBalance,
+    NetworkParams,
+    SubnetParamsWithEmission,
+    )
 
 
 @dataclass
@@ -119,16 +123,18 @@ def print_table_from_plain_dict(
     for name in column_names:
         table.add_column(name, style="white", vertical="middle")
 
-    # Add rows to the table
+    # Add non-dictionary values to the table first
+    for key, value in result.items():
+        if not isinstance(value, dict):
+            table.add_row(key, str(value))
+    # Add subtables for nested dictionaries.
+    # Important to add after so that the display of the table is nicer.
     for key, value in result.items():
         if isinstance(value, dict):
-            # Create a subtable for the nested dictionary
             subtable = Table(show_header=False, padding=(0, 0, 0, 0), border_style="bright_black")
             for subkey, subvalue in value.items():
                 subtable.add_row(f"{subkey}: {subvalue}")
             table.add_row(key, subtable)
-        else:
-            table.add_row(key, str(value))
 
     console.print(table)
 
@@ -255,16 +261,50 @@ def tranform_network_params(params: NetworkParams):
     allocation = governance_config["proposal_reward_treasury_allocation"]
     governance_config = cast(dict[str, Any], governance_config)
     governance_config["proposal_reward_treasury_allocation"] = f"{allocation}%"
-    display_g_config = dict_from_nano(governance_config, [
-        "proposal_cost",
-        "max_proposal_reward_treasury_allocation",
-    ])
     params_ = cast(dict[str, Any], params)
+    params_["governance_config"] = governance_config
     general_params = dict_from_nano(params_, [
         "min_weight_stake",
         "general_subnet_application_cost",
         "subnet_registration_cost",
+        "proposal_cost",
+        "max_proposal_reward_treasury_allocation",
     ])
-    general_params["governance_config"] = display_g_config
 
     return general_params
+
+
+T = TypeVar("T")
+V = TypeVar("V")
+def remove_none_values(data: dict[T, V | None]) -> dict[T, V]:
+    """
+    Removes key-value pairs from a dictionary where the value is None.
+    Works recursively for nested dictionaries.
+    """
+    cleaned_data: dict[T, V] = {}
+    for key, value in data.items():
+        if isinstance(value, dict):
+            cleaned_value = remove_none_values(value) # type: ignore
+            if cleaned_value is not None: # type: ignore
+                cleaned_data[key] = cleaned_value
+        elif value is not None:
+            cleaned_data[key] = value
+    return cleaned_data
+
+
+
+def transform_subnet_params(params: SubnetParamsWithEmission):
+    """Transform subnet params to be human readable."""
+    params_ = cast(dict[str, Any], params)
+    display_params = remove_none_values(params_)
+    display_params = dict_from_nano(
+        display_params, [
+            "bonds_ma",
+            "min_burn",
+            "max_burn",
+            "min_weight_stake",
+            "proposal_cost",
+            "max_proposal_reward_treasury_allocation",
+        ]
+    )
+    return display_params
