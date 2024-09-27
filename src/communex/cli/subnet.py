@@ -5,9 +5,12 @@ import typer
 from typer import Context
 
 from communex.balance import from_nano
-from communex.cli._common import (make_custom_context,
-                                  print_table_from_plain_dict,
-                                  print_table_standardize)
+from communex.cli._common import (
+    make_custom_context,
+    print_table_from_plain_dict,
+    print_table_standardize,
+    transform_subnet_params
+    )
 from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.misc import IPFS_REGEX, get_map_subnets_params
@@ -28,15 +31,10 @@ def list(ctx: Context):
         subnets = get_map_subnets_params(client)
 
     keys, values = subnets.keys(), subnets.values()
+    display_values = map(transform_subnet_params, values)
     subnets_with_netuids = [
-        {"netuid": key, **value} for key, value in zip(keys, values)
+        {"netuid": key, **value} for key, value in zip(keys, display_values)
     ]
-
-    for subnet_dict in subnets_with_netuids:  # type: ignore
-        bonds = subnet_dict["bonds_ma"]  # type: ignore
-        if bonds:
-            subnet_dict["bonds_ma"] = str(
-                from_nano(subnet_dict["bonds_ma"])) + " J"  # type: ignore
 
     for dict in subnets_with_netuids:  # type: ignore
         print_table_from_plain_dict(
