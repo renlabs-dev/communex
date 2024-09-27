@@ -42,19 +42,21 @@ T = TypeVar("T")
 def dict_from_nano(dict_data: dict[T, Any], fields_to_convert: list[T]):
     """
     Converts specified fields in a dictionary from nano to J. Only works for
-    fields that are integers.
+    fields that are integers. Fields not found are silently ignored.
+    Recursively searches nested dictionaries.
     """
     transformed_dict: dict[T, Any] = {}
-    for key in dict_data.keys():
-        if key in fields_to_convert:
-            value = dict_data.get(key)
-            if not isinstance(value, int):
+    for key, value in dict_data.items():
+        if isinstance(value, dict):
+            transformed_dict[key] = dict_from_nano(value, fields_to_convert) # type: ignore
+        elif key in fields_to_convert:
+            if not (isinstance(value, int) or value is None):
                 raise ValueError(
                     f"Field {key} is not an integer in the dictionary."
                 )
-            transformed_dict[key] = repr_j(dict_data[key])
+            transformed_dict[key] = repr_j(value)
         else:
-            transformed_dict[key] = dict_data[key]
+            transformed_dict[key] = value
 
     return transformed_dict
 
