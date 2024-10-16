@@ -112,7 +112,7 @@ def update(
     name: Optional[str] = None,
     ip: Optional[str] = None,
     port: Optional[int] = None,
-    delegation_fee: int = 20,
+    delegation_fee: Optional[int] = None,
     metadata: Optional[str] = None,
 ):
     """
