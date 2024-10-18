@@ -149,10 +149,19 @@ def update(
     to_update = {
         key: value for key, value in module_params.items() if value is not None
     }
-    current_ip, current_port = module["address"].split(":")
+    current_address = module["address"]
+    if ":" in current_address:
+        current_ip, current_port = current_address.split(":")
+    else:
+        current_ip, current_port = current_address, None
+
     new_ip = to_update.get("ip", current_ip)
     new_port = to_update.get("port", current_port)
-    address = f"{new_ip}:{new_port}"
+
+    if new_port is not None:
+        address = f"{new_ip}:{new_port}"
+    else:
+        address = new_ip
     to_update["address"] = address
     updated_module = intersection_update(dict(module), to_update)
     module.update(updated_module)  # type: ignore
