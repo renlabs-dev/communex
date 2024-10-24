@@ -1,15 +1,22 @@
 # Changelog
 
+## 0.1.34.6
+
+- Add `py.typed` so type-checkers will know to use our type annotations.
+
 ## 0.1.34.5
+
 - Displaying monetary values on `comx subnet list` as COMAI
 
 ## 0.1.34.4
+
 - Displaying monetary values on `comx network params` as COMAI
 - Better display of subtables on `comx network params`
 - Added subnet_registration_cost to `comx network params` display
 - Using load balancer as the default url for connections
 
 ## 0.1.34.3
+
 - chore: `from_nano` on subnet parameter values
 - Fixed bug that made subnet metadata be erased when updating other parameters
 - Displaying module metadata when listing modules
