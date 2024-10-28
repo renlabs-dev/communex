@@ -15,7 +15,7 @@ from substrateinterface.storage import StorageKey
 
 from communex._common import transform_stake_dmap
 from communex.errors import ChainTransactionError, NetworkQueryError
-from communex.types import NetworkParams, Ss58Address, SubnetParams
+from communex.types import NetworkParams, Ss58Address, SubnetParamsWithVoteMode
 
 # TODO: InsufficientBalanceError, MismatchedLengthError etc
 
@@ -1269,7 +1269,7 @@ class CommuneClient:
     def update_subnet(
         self,
         key: Keypair,
-        params: SubnetParams,
+        params: SubnetParamsWithVoteMode,
         netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
