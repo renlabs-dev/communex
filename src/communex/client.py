@@ -13,7 +13,7 @@ from substrateinterface.storage import StorageKey  # type: ignore
 
 from communex._common import transform_stake_dmap
 from communex.errors import ChainTransactionError, NetworkQueryError
-from communex.types import NetworkParams, Ss58Address, SubnetParams
+from communex.types import NetworkParams, Ss58Address, SubnetParamsWithVoteMode
 
 # TODO: InsufficientBalanceError, MismatchedLengthError etc
 
@@ -494,7 +494,7 @@ class CommuneClient:
 
         def get_item_key_value(item_key: tuple[Any, ...] | Any) -> tuple[Any, ...] | Any:
             if isinstance(item_key, tuple):
-                return tuple(k.value for k in item_key)
+                return tuple(k.value for k in item_key) # type: ignore
             return item_key.value
 
         def concat_hash_len(key_hasher: str) -> int:
@@ -1231,7 +1231,7 @@ class CommuneClient:
     def update_subnet(
         self,
         key: Keypair,
-        params: SubnetParams,
+        params: SubnetParamsWithVoteMode,
         netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """

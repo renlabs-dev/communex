@@ -47,7 +47,6 @@ class GovernanceConfiguration(TypedDict):
     max_proposal_reward_treasury_allocation: int
     proposal_reward_interval: int
 
-
 class DisplayBurnConfiguration(TypedDict):
     min_burn: float
     max_burn: float
@@ -93,6 +92,11 @@ class NetworkParams(TypedDict):
 
     subnet_registration_cost: int
 
+class NetworkParamsProposalParameters(NetworkParams, TypedDict):
+    proposal_cost: int
+    proposal_expiration: int
+    max_burn: int
+    min_burn: int
 
 class SubnetParamsMaps(TypedDict):
     netuid_to_founder: dict[int, Ss58Address]
@@ -129,33 +133,11 @@ class SubnetParams(TypedDict):
     maximum_set_weight_calls_per_epoch: int | None
     bonds_ma: int | None
     immunity_period: int
-    governance_config: GovernanceConfiguration
+    governance_config: GovernanceConfiguration | None
     min_validator_stake: int | None
     max_allowed_validators: int | None
     module_burn_config: BurnConfiguration
     subnet_metadata: str | None
-
-
-class DisplaySubnetParams(TypedDict):
-    name: str
-    tempo: int
-    min_allowed_weights: int
-    max_allowed_weights: int
-    max_allowed_uids: int
-    max_weight_age: int
-    trust_ratio: int
-    founder_share: int
-    incentive_ratio: int
-    founder: Ss58Address
-    maximum_set_weight_calls_per_epoch: int | None
-    bonds_ma: int
-    immunity_period: int
-    governance_config: DisplayGovernanceConfiguration
-    min_validator_stake: float
-    max_allowed_validators: int | None
-    module_burn_config: DisplayBurnConfiguration
-    subnet_metadata: str | None
-    emission: float
 
 # redundant "TypedDict" inheritance because of pdoc warns.
 # see https://github.com/mitmproxy/pdoc/blob/26d40827ddbe1658e8ac46cd092f17a44cf0287b/pdoc/doc.py#L691-L692
@@ -166,6 +148,11 @@ class SubnetParamsWithEmission(SubnetParams, TypedDict):
     """Subnet emission percentage (0-100).
     """
 
+class SubnetParamsWithVoteMode(SubnetParams, TypedDict):
+    """SubnetParams with vote_mode field only (governance_config is None always)"""
+
+    vote_mode: VoteMode | None
+    """The vote mode for this subnet"""
 
 class ModuleInfo(TypedDict):
     uid: int

@@ -11,10 +11,10 @@ from communex.cli._common import (
     print_table_from_plain_dict, tranform_network_params
 )
 from communex.client import CommuneClient
-from communex.compat.key import local_key_addresses, try_classic_load_key
+from communex.compat.key import local_key_addresses, try_classic_load_key, resolve_key_ss58
 from communex.misc import (IPFS_REGEX, get_global_params,
                            local_keys_to_stakedbalance)
-from communex.types import NetworkParams
+from communex.types import NetworkParamsProposalParameters
 from communex.util import convert_cid_on_proposal
 
 network_app = typer.Typer(no_args_is_help=True)
@@ -105,33 +105,46 @@ def propose_globally(
     rho: int = typer.Option(None),
     subnet_immunity_period: int = typer.Option(None),
 ):
-    provided_params = locals().copy()
-    provided_params.pop("ctx")
-    provided_params.pop("key")
-
-    provided_params = {
-        key: value for key, value in provided_params.items() if value is not None
-    }
     """
     Adds a global proposal to the network.
     """
     context = make_custom_context(ctx)
-    resolved_key = try_classic_load_key(key, context)
     client = context.com_client()
-
-    provided_params = cast(NetworkParams, provided_params)
-    global_params = get_global_params(client)
-    global_params_config = global_params["governance_config"]
-    global_params["proposal_cost"] = global_params_config["proposal_cost"]  # type: ignore
-    global_params["proposal_expiration"] = global_params_config["proposal_expiration"]  # type: ignore
-    global_params.pop("governance_config")  # type: ignore
-    global_params.update(provided_params)
+    resolved_key = try_classic_load_key(key, context)
 
     if not re.match(IPFS_REGEX, cid):
         context.error(f"CID provided is invalid: {cid}")
         exit(1)
+
+    global_params = cast(NetworkParamsProposalParameters, get_global_params(client))
+    governance_configuration = global_params["governance_config"]
+
+    global_params.update(
+        max_name_length = max_name_length,
+        min_name_length = min_name_length,
+        max_allowed_subnets = max_allowed_subnets,
+        max_allowed_modules = max_allowed_modules,
+        max_registrations_per_block = max_registrations_per_block,
+        max_allowed_weights = max_allowed_weights,
+        floor_delegation_fee = floor_delegation_fee,
+        floor_founder_share = floor_founder_share,
+        min_weight_stake = min_weight_stake,
+        curator = resolve_key_ss58(curator),
+        general_subnet_application_cost = general_subnet_application_cost,
+        subnet_immunity_period = subnet_immunity_period,
+        kappa = kappa,
+        rho = rho,
+        proposal_cost = governance_configuration.get('proposal_cost', proposal_cost),
+        proposal_expiration = governance_configuration.get('proposal_expiration', proposal_expiration),
+        max_burn = max_burn,
+        min_burn = min_burn
+    )
+
+    global_params.pop("governance_config")  # type: ignore
+
     with context.progress_status("Adding a proposal..."):
         client.add_global_proposal(resolved_key, global_params, cid)
+
     context.info("Proposal added.")
 
 
