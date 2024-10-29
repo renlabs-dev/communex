@@ -3,13 +3,17 @@ from typing import Any, TypeVar, cast
 
 from communex._common import transform_stake_dmap
 from communex.balance import to_nano
+from communex.cli._common import transform_subnet_params
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
-from communex.cli._common import transform_subnet_params
 from communex.types import (
-    BurnConfiguration, ModuleInfoWithOptionalBalance,
-    NetworkParams, Ss58Address, SubnetParamsMaps,
-    SubnetParamsWithEmission, GovernanceConfiguration
+    BurnConfiguration,
+    GovernanceConfiguration,
+    ModuleInfoWithOptionalBalance,
+    NetworkParams,
+    Ss58Address,
+    SubnetParamsMaps,
+    SubnetParamsWithEmission,
 )
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")

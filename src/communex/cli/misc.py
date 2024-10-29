@@ -5,9 +5,11 @@ from communex._common import BalanceUnit, format_balance
 from communex.balance import from_nano
 from communex.cli._common import make_custom_context, print_module_info
 from communex.client import CommuneClient
-from communex.compat.key import (local_key_addresses,
-                                 resolve_key_ss58_encrypted,
-                                 try_classic_load_key)
+from communex.compat.key import (
+    local_key_addresses,
+    resolve_key_ss58_encrypted,
+    try_classic_load_key,
+)
 from communex.misc import get_map_modules
 from communex.types import ModuleInfoWithOptionalBalance
 

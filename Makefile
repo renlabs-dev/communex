@@ -11,17 +11,17 @@ clean:
 check: lint type_check
 
 lint:
-	ruff check ./src ./tests
+	ruff check ./src
+
+fix:
+	ruff check --fix ./src
 
 type_check:
 	pyright ./src
 
-fix:
-	ruff check --fix ./src ./tests
-
-fmt:
-	isort ./src
-	autopep8 --in-place --recursive ./src
+# fmt:
+# 	isort ./src
+# 	autopep8 --in-place --recursive ./src
 
 test_all: test test_slow
 

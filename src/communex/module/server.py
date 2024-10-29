@@ -14,14 +14,15 @@ from substrateinterface import Keypair
 
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
-from communex.module._rate_limiters.limiters import (IpLimiterParams,
-                                                     StakeLimiterParams)
+from communex.module._rate_limiters.limiters import IpLimiterParams, StakeLimiterParams
 from communex.module.module import EndpointDefinition, Module, endpoint
-from communex.module.routers.module_routers import (InputHandlerVerifier,
-                                                    IpLimiterVerifier,
-                                                    ListVerifier,
-                                                    StakeLimiterVerifier,
-                                                    build_route_class)
+from communex.module.routers.module_routers import (
+    InputHandlerVerifier,
+    IpLimiterVerifier,
+    ListVerifier,
+    StakeLimiterVerifier,
+    build_route_class,
+)
 from communex.types import Ss58Address
 from communex.util.memo import TTLDict
 

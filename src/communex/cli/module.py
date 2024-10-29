@@ -7,14 +7,12 @@ from typer import Context
 
 import communex.balance as c_balance
 from communex._common import intersection_update
-from communex.cli._common import (make_custom_context, print_module_info,
-                                  print_table_from_plain_dict)
+from communex.cli._common import make_custom_context, print_module_info, print_table_from_plain_dict
 from communex.compat.key import try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.key import check_ss58_address
 from communex.misc import get_map_modules
-from communex.module._rate_limiters.limiters import (IpLimiterParams,
-                                                     StakeLimiterParams)
+from communex.module._rate_limiters.limiters import IpLimiterParams, StakeLimiterParams
 from communex.module.server import ModuleServer
 from communex.types import Ss58Address
 from communex.util import is_ip_valid

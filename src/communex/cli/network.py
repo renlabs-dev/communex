@@ -7,13 +7,14 @@ from typer import Context
 
 import communex.balance as c_balance
 from communex.cli._common import (
-    CustomCtx, make_custom_context,
-    print_table_from_plain_dict, tranform_network_params
+    CustomCtx,
+    make_custom_context,
+    print_table_from_plain_dict,
+    tranform_network_params,
 )
 from communex.client import CommuneClient
 from communex.compat.key import local_key_addresses, try_classic_load_key
-from communex.misc import (IPFS_REGEX, get_global_params,
-                           local_keys_to_stakedbalance)
+from communex.misc import IPFS_REGEX, get_global_params, local_keys_to_stakedbalance
 from communex.types import NetworkParams
 from communex.util import convert_cid_on_proposal
 

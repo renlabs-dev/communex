@@ -3,11 +3,10 @@ from math import ceil, floor
 from time import monotonic
 from typing import Callable
 
-from substrateinterface.utils.ss58 import ss58_decode
-
 from communex._common import get_node_url
 from communex.balance import to_nano
 from communex.client import CommuneClient
+from substrateinterface.utils.ss58 import ss58_decode
 
 
 def keys_to_stakedbalance() -> dict[str, int]:

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from getpass import getpass
-from typing import Any, Mapping, cast, TypeVar
+from typing import Any, Mapping, TypeVar, cast
 
 import rich
 import typer
@@ -10,7 +10,7 @@ from rich.table import Table
 from typer import Context
 
 from communex._common import get_node_url
-from communex.balance import from_horus, from_nano, dict_from_nano
+from communex.balance import dict_from_nano, from_horus, from_nano
 from communex.client import CommuneClient
 from communex.types import (
     ModuleInfoWithOptionalBalance,
