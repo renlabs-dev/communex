@@ -9,11 +9,14 @@ from communex.cli._common import (
     make_custom_context,
     print_table_from_plain_dict,
     print_table_standardize,
-    transform_subnet_params
-    )
+)
 from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
-from communex.misc import IPFS_REGEX, get_map_subnets_params
+from communex.misc import (
+    IPFS_REGEX,
+    get_map_subnets_params,
+    get_map_displayable_subnets
+)
 from communex.types import SubnetParams, VoteMode
 
 subnet_app = typer.Typer(no_args_is_help=True)
@@ -28,14 +31,10 @@ def list(ctx: Context):
     client = context.com_client()
 
     with context.progress_status("Getting subnets ..."):
-        subnets = get_map_subnets_params(client)
-
-    keys, values = subnets.keys(), subnets.values()
-    display_values = map(transform_subnet_params, values)
+        subnets = get_map_displayable_subnets(client)
     subnets_with_netuids = [
-        {"netuid": key, **value} for key, value in zip(keys, display_values)
+        {"netuid": key, **value} for key, value in subnets.items()
     ]
-
     for dict in subnets_with_netuids:  # type: ignore
         print_table_from_plain_dict(
             dict, ["Params", "Values"], context.console)  # type: ignore
@@ -100,7 +99,7 @@ def info(ctx: Context, netuid: int):
 
     with context.progress_status(f"Getting subnet with netuid '{netuid}'..."):
 
-        subnets = get_map_subnets_params(client)
+        subnets = get_map_displayable_subnets(client)
         subnet = subnets.get(netuid, None)
 
     if subnet is None:

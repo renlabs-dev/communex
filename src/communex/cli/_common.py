@@ -16,7 +16,7 @@ from communex.types import (
     ModuleInfoWithOptionalBalance,
     NetworkParams,
     SubnetParamsWithEmission,
-    )
+)
 
 
 @dataclass
@@ -137,7 +137,6 @@ def print_table_from_plain_dict(
             table.add_row(key, subtable)
 
     console.print(table)
-
 
 
 def print_table_standardize(result: dict[str, list[Any]], console: Console) -> None:
@@ -276,6 +275,8 @@ def tranform_network_params(params: NetworkParams):
 
 T = TypeVar("T")
 V = TypeVar("V")
+
+
 def remove_none_values(data: dict[T, V | None]) -> dict[T, V]:
     """
     Removes key-value pairs from a dictionary where the value is None.
@@ -284,18 +285,17 @@ def remove_none_values(data: dict[T, V | None]) -> dict[T, V]:
     cleaned_data: dict[T, V] = {}
     for key, value in data.items():
         if isinstance(value, dict):
-            cleaned_value = remove_none_values(value) # type: ignore
-            if cleaned_value is not None: # type: ignore
+            cleaned_value = remove_none_values(value)  # type: ignore
+            if cleaned_value is not None:  # type: ignore
                 cleaned_data[key] = cleaned_value
         elif value is not None:
             cleaned_data[key] = value
     return cleaned_data
 
 
-
-def transform_subnet_params(params: SubnetParamsWithEmission):
+def transform_subnet_params(params: dict[int, SubnetParamsWithEmission]):
     """Transform subnet params to be human readable."""
-    params_ = cast(dict[str, Any], params)
+    params_ = cast(dict[int, Any], params)
     display_params = remove_none_values(params_)
     display_params = dict_from_nano(
         display_params, [
@@ -305,6 +305,7 @@ def transform_subnet_params(params: SubnetParamsWithEmission):
             "min_weight_stake",
             "proposal_cost",
             "max_proposal_reward_treasury_allocation",
+            "min_validator_stake",
         ]
     )
     return display_params

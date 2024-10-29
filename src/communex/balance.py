@@ -39,7 +39,9 @@ def repr_j(amount: int):
 
 
 T = TypeVar("T")
-def dict_from_nano(dict_data: dict[T, Any], fields_to_convert: list[T]):
+
+
+def dict_from_nano(dict_data: dict[T, Any], fields_to_convert: list[str | int]):
     """
     Converts specified fields in a dictionary from nano to J. Only works for
     fields that are integers. Fields not found are silently ignored.
@@ -48,7 +50,7 @@ def dict_from_nano(dict_data: dict[T, Any], fields_to_convert: list[T]):
     transformed_dict: dict[T, Any] = {}
     for key, value in dict_data.items():
         if isinstance(value, dict):
-            transformed_dict[key] = dict_from_nano(value, fields_to_convert) # type: ignore
+            transformed_dict[key] = dict_from_nano(value, fields_to_convert)  # type: ignore
         elif key in fields_to_convert:
             if not (isinstance(value, int) or value is None):
                 raise ValueError(
@@ -59,5 +61,3 @@ def dict_from_nano(dict_data: dict[T, Any], fields_to_convert: list[T]):
             transformed_dict[key] = value
 
     return transformed_dict
-
-

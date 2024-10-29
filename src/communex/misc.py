@@ -5,11 +5,12 @@ from communex._common import transform_stake_dmap
 from communex.balance import to_nano
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
+from communex.cli._common import transform_subnet_params
 from communex.types import (
     BurnConfiguration, ModuleInfoWithOptionalBalance,
     NetworkParams, Ss58Address, SubnetParamsMaps,
     SubnetParamsWithEmission, GovernanceConfiguration
-    )
+)
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
 
@@ -38,11 +39,11 @@ def get_map_modules(
             ("Dividends", []),
             ("LastUpdate", []),
             ("Metadata", [netuid]),
+            ("StakeTo", []),
         ],
     }
     if include_balances:
         request_dict["System"] = [("Account", [])]
-
     bulk_query = client.query_batch_map(request_dict)
     (
         ss58_to_stakefrom,
@@ -127,6 +128,14 @@ def to_snake_case(d: dict[str, T]) -> dict[str, T]:
         return re.sub(r'(?<!^)(?=[A-Z])', '_', camel).lower()
     snaked: dict[str, T] = {snakerize(k): v for k, v in d.items()}
     return snaked
+
+
+def get_map_displayable_subnets(
+        client: CommuneClient
+):
+    subnets = get_map_subnets_params(client)
+    display_values = transform_subnet_params(subnets)
+    return display_values
 
 
 def get_map_subnets_params(
