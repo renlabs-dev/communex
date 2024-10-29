@@ -4,7 +4,6 @@ from typing import Any, cast
 import typer
 from typer import Context
 
-from communex.balance import from_nano
 from communex.cli._common import (
     make_custom_context,
     print_table_from_plain_dict,
