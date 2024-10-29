@@ -10,7 +10,7 @@ from getpass import getpass
 from pathlib import Path
 from typing import Any, Protocol, cast
 
-from substrateinterface import Keypair  # type: ignore
+from substrateinterface import Keypair
 
 from communex.compat.storage import COMMUNE_HOME, classic_load, classic_put
 from communex.compat.types import CommuneKeyDict

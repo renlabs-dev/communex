@@ -15,7 +15,7 @@ from time import sleep
 from typing import Generic, Optional, TypeVar, cast
 
 from Crypto.Hash import keccak
-from substrateinterface import Keypair  # type: ignore
+from substrateinterface import Keypair
 
 from communex.client import CommuneClient
 from communex.util.mutex import MutexBox

@@ -1,7 +1,7 @@
 from typing import TypeGuard
 
-from substrateinterface import Keypair  # type: ignore
-from substrateinterface.utils import ss58  # type: ignore
+from substrateinterface import Keypair
+from substrateinterface.utils import ss58
 
 from communex.types import Ss58Address
 

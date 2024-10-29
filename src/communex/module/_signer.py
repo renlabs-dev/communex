@@ -1,8 +1,8 @@
 from typing import TypedDict
 
-import sr25519  # type: ignore
-from substrateinterface import Keypair, KeypairType  # type: ignore
-from substrateinterface.exceptions import ConfigurationError  # type: ignore
+import sr25519
+from substrateinterface import Keypair, KeypairType
+from substrateinterface.exceptions import ConfigurationError
 
 # Random key mnemonic for testing
 TESTING_MNEMONIC = "electric suffer nephew rough gentle decline fun body tray account vital clinic"

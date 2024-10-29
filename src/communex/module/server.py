@@ -10,7 +10,7 @@ from typing import Any
 import fastapi
 from fastapi import APIRouter
 from pydantic import BaseModel
-from substrateinterface import Keypair  # type: ignore
+from substrateinterface import Keypair
 
 from communex.key import check_ss58_address
 from communex.module import _signer as signer

@@ -9,7 +9,7 @@ from typing import Any
 import aiohttp
 import aiohttp.client_exceptions
 import aiohttp.web_exceptions
-from substrateinterface import Keypair  # type: ignore
+from substrateinterface import Keypair
 
 from communex.errors import NetworkTimeoutError
 from communex.key import check_ss58_address

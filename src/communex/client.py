@@ -6,10 +6,12 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Mapping, TypeVar, cast
 
-from substrateinterface import ExtrinsicReceipt  # type: ignore
-from substrateinterface import Keypair  # type: ignore
-from substrateinterface import SubstrateInterface  # type: ignore
-from substrateinterface.storage import StorageKey  # type: ignore
+from substrateinterface import (
+    ExtrinsicReceipt,
+    Keypair,
+    SubstrateInterface,
+)
+from substrateinterface.storage import StorageKey
 
 from communex._common import transform_stake_dmap
 from communex.errors import ChainTransactionError, NetworkQueryError

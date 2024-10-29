@@ -5,7 +5,7 @@ from time import sleep
 from typing import Any, Callable, Literal, ParamSpec, TypeVar
 
 from fastapi.responses import JSONResponse
-from scalecodec.utils.ss58 import ss58_encode  # type: ignore
+from scalecodec.utils.ss58 import ss58_encode
 
 from communex.client import CommuneClient
 from communex.key import check_ss58_address

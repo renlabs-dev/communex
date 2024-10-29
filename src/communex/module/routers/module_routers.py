@@ -10,7 +10,7 @@ from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
 from keylimiter import TokenBucketLimiter
-from substrateinterface import Keypair  # type: ignore
+from substrateinterface import Keypair
 
 from communex._common import get_node_url
 from communex.module import _signer as signer

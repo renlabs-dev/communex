@@ -38,7 +38,7 @@ def repr_j(amount: int):
     return f"{from_nano(amount)} {UNIT_NAME}"
 
 
-T = TypeVar("T")
+T = TypeVar("T", str, int)
 
 
 def dict_from_nano(dict_data: dict[T, Any], fields_to_convert: list[str | int]):

@@ -2,7 +2,7 @@ import datetime
 import json
 from typing import Any
 
-from substrateinterface import Keypair  # type: ignore
+from substrateinterface import Keypair
 
 from communex.types import Ss58Address
 

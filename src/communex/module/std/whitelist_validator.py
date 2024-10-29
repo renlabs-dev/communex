@@ -1,6 +1,6 @@
 import time
 
-from substrateinterface import Keypair  # type: ignore
+from substrateinterface import Keypair
 
 from communex._common import get_node_url
 from communex.client import CommuneClient

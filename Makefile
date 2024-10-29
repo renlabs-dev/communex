@@ -14,7 +14,10 @@ lint:
 	ruff check ./src ./tests
 
 type_check:
-	pyright ./src ./tests
+	pyright ./src
+
+fix:
+	ruff check --fix ./src ./tests
 
 fmt:
 	isort ./src
@@ -30,7 +33,7 @@ test_slow:
 
 docs_run:
 	@echo "URL: http://localhost:8080/communex"
-	pdoc -n --docformat google ./src/communex 
+	pdoc -n --docformat google ./src/communex
 
 docs_generate:
 	pdoc communex \

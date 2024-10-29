@@ -4,7 +4,7 @@ from enum import Enum
 from typing import Any, Optional, cast
 
 import typer
-from substrateinterface import Keypair  # type: ignore
+from substrateinterface import Keypair
 from typer import Context
 
 from communex._common import BalanceUnit, format_balance
