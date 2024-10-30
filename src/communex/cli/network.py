@@ -14,7 +14,11 @@ from communex.cli._common import (
 )
 from communex.client import CommuneClient
 from communex.compat.key import local_key_addresses, try_classic_load_key
-from communex.misc import IPFS_REGEX, get_global_params, local_keys_to_stakedbalance
+from communex.misc import (
+    IPFS_REGEX,
+    get_global_params,
+    local_keys_to_stakedbalance,
+)
 from communex.types import NetworkParams
 from communex.util import convert_cid_on_proposal
 
@@ -77,8 +81,9 @@ def list_proposals(ctx: Context, query_cid: bool = typer.Option(True)):
         if isinstance(status, dict):
             batch_proposal["status"] = [*status.keys()][0]
         print_table_from_plain_dict(
-            batch_proposal, [
-                f"Proposal id: {proposal_id}", "Params"], context.console
+            batch_proposal,
+            [f"Proposal id: {proposal_id}", "Params"],
+            context.console,
         )
 
 
@@ -111,7 +116,9 @@ def propose_globally(
     provided_params.pop("key")
 
     provided_params = {
-        key: value for key, value in provided_params.items() if value is not None
+        key: value
+        for key, value in provided_params.items()
+        if value is not None
     }
     """
     Adds a global proposal to the network.
@@ -124,7 +131,9 @@ def propose_globally(
     global_params = get_global_params(client)
     global_params_config = global_params["governance_config"]
     global_params["proposal_cost"] = global_params_config["proposal_cost"]  # type: ignore
-    global_params["proposal_expiration"] = global_params_config["proposal_expiration"]  # type: ignore
+    global_params["proposal_expiration"] = global_params_config[  # type: ignore
+        "proposal_expiration"
+    ]
     global_params.pop("governance_config")  # type: ignore
     global_params.update(provided_params)
 
@@ -143,8 +152,9 @@ def get_valid_voting_keys(
 ) -> dict[str, int]:
     local_keys = local_key_addresses(ctx=ctx, universal_password=None)
     keys_stake = local_keys_to_stakedbalance(client, local_keys)
-    keys_stake = {key: stake for key,
-                  stake in keys_stake.items() if stake >= threshold}
+    keys_stake = {
+        key: stake for key, stake in keys_stake.items() if stake >= threshold
+    }
     return keys_stake
 
 
@@ -166,14 +176,14 @@ def vote_proposal(
         delegators = client.get_voting_power_delegators()
         keys_stake = get_valid_voting_keys(context, client)
         keys_stake = {
-            key: stake for key,
-            stake in keys_stake.items() if key not in delegators
+            key: stake
+            for key, stake in keys_stake.items()
+            if key not in delegators
         }
     else:
         keys_stake = {key: None}
 
     for voting_key in track(keys_stake.keys(), description="Voting..."):
-
         resolved_key = try_classic_load_key(voting_key, context)
         try:
             client.vote_on_proposal(resolved_key, proposal_id, agree)
@@ -239,7 +249,7 @@ def set_root_weights(ctx: Context, key: str):
     # Prompt user to select subnets
     selected_subnets = typer.prompt(
         "Select subnets to set weights for (space-separated list of UIDs)",
-        prompt_suffix="\n" + "\n".join(choices) + "\nEnter UIDs: "
+        prompt_suffix="\n" + "\n".join(choices) + "\nEnter UIDs: ",
     )
 
     # Parse the input string into a list of integers
@@ -248,8 +258,7 @@ def set_root_weights(ctx: Context, key: str):
     weights: list[int] = []
     for uid in uids:
         weight = typer.prompt(
-            f"Enter weight for subnet {uid} ({subnet_names[uid]})",
-            type=float
+            f"Enter weight for subnet {uid} ({subnet_names[uid]})", type=float
         )
         weights.append(weight)
 

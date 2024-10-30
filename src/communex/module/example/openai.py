@@ -16,5 +16,5 @@ from communex.module import Module, endpoint
 
 class OpenAI(Module):
     @endpoint
-    def generate(self, prompt: str, model: str = 'gpt-3.5-turbo'):
+    def generate(self, prompt: str, model: str = "gpt-3.5-turbo"):
         print(f"Answering: `{prompt}` with model `{model}`")

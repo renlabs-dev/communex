@@ -26,8 +26,10 @@ class OpenAIModule(Module):
             model=model,
             response_format={"type": "json_object"},
             messages=[
-                {"role": "system",
-                    "content": "You are a helpful assistant designed to output JSON."},
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant designed to output JSON.",
+                },
                 {"role": "user", "content": text},
             ],
         )

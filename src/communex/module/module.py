@@ -9,8 +9,8 @@ from typing import Any, Callable, Generic, ParamSpec, TypeVar, cast
 import pydantic
 from pydantic import BaseModel
 
-T = TypeVar('T')
-P = ParamSpec('P')
+T = TypeVar("T")
+P = ParamSpec("P")
 
 
 class EndpointParams(BaseModel):
@@ -36,7 +36,9 @@ def endpoint(fn: Callable[P, T]) -> Callable[P, T]:
     return fn
 
 
-def function_params_to_model(signature: inspect.Signature) -> type[EndpointParams]:
+def function_params_to_model(
+    signature: inspect.Signature,
+) -> type[EndpointParams]:
     fields: dict[str, tuple[type] | tuple[type, Any]] = {}
     for i, param in enumerate(signature.parameters.values()):
         name = param.name
@@ -46,7 +48,8 @@ def function_params_to_model(signature: inspect.Signature) -> type[EndpointParam
         annotation = param.annotation
         if annotation == param.empty:
             raise Exception(
-                f"Error: annotation for parameter `{name}` not found")
+                f"Error: annotation for parameter `{name}` not found"
+            )
 
         if param.default == param.empty:
             fields[name] = (annotation, ...)
@@ -54,9 +57,12 @@ def function_params_to_model(signature: inspect.Signature) -> type[EndpointParam
             fields[name] = (annotation, param.default)
 
     model: type[EndpointParams] = cast(
-
-        type[EndpointParams], pydantic.create_model(  #  type: ignore
-            'Params', **fields, __base__=EndpointParams)  #  type: ignore
+        type[EndpointParams],
+        pydantic.create_model(  #  type: ignore
+            "Params",
+            **fields,  #  type: ignore
+            __base__=EndpointParams,  #  type: ignore
+        ),
     )
 
     return model
@@ -72,8 +78,10 @@ class Module:
 
     def extract_endpoints(self):
         endpoints: dict[str, EndpointDefinition[Any, Any]] = {}
-        for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
-            if hasattr(method, '_endpoint_def'):
+        for name, method in inspect.getmembers(
+            self, predicate=inspect.ismethod
+        ):
+            if hasattr(method, "_endpoint_def"):
                 endpoint_def: EndpointDefinition = method._endpoint_def  # type: ignore
                 endpoints[name] = endpoint_def  # type: ignore
         return endpoints

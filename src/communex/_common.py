@@ -72,7 +72,9 @@ V = TypeVar("V")
 Z = TypeVar("Z")
 
 
-def intersection_update(base: dict[K, V], update: dict[K, Z]) -> Mapping[K, V | Z]:
+def intersection_update(
+    base: dict[K, V], update: dict[K, Z]
+) -> Mapping[K, V | Z]:
     """
     Update a dictionary with another dictionary, but only with keys that are already present.
     """
@@ -80,11 +82,15 @@ def intersection_update(base: dict[K, V], update: dict[K, Z]) -> Mapping[K, V | 
     return updated
 
 
-def transform_stake_dmap(stake_storage: dict[tuple[Ss58Address, Ss58Address], int]) -> dict[Ss58Address, list[tuple[Ss58Address, int]]]:
+def transform_stake_dmap(
+    stake_storage: dict[tuple[Ss58Address, Ss58Address], int],
+) -> dict[Ss58Address, list[tuple[Ss58Address, int]]]:
     """
     Transforms either the StakeTo or StakeFrom storage into the stake legacy data type.
     """
-    transformed: dict[Ss58Address, list[tuple[Ss58Address, int]]] = defaultdict(list)
+    transformed: dict[Ss58Address, list[tuple[Ss58Address, int]]] = defaultdict(
+        list
+    )
     [transformed[k1].append((k2, v)) for (k1, k2), v in stake_storage.items()]
 
     return dict(transformed)

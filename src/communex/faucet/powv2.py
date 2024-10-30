@@ -52,7 +52,9 @@ class GenericQueue(Generic[T]):
     def __init__(self):
         self._queue = multiprocessing.Queue()  # type: ignore
 
-    def put(self, item: T, block: bool = True, timeout: float | None = None) -> None:
+    def put(
+        self, item: T, block: bool = True, timeout: float | None = None
+    ) -> None:
         self._queue.put(item, block, timeout)  # type: ignore
 
     def get(self, block: bool = True, timeout: float | None = None) -> T | None:
@@ -380,7 +382,9 @@ def _hex_bytes_to_u8_list(hex_bytes: bytes):
     Returns:
         A list of unsigned 8-bit integers.
     """
-    hex_chunks = [int(hex_bytes[i: i + 2], 16) for i in range(0, len(hex_bytes), 2)]
+    hex_chunks = [
+        int(hex_bytes[i : i + 2], 16) for i in range(0, len(hex_bytes), 2)
+    ]
     return hex_chunks
 
 
@@ -398,7 +402,9 @@ def _create_seal_hash(block_and_key_hash_bytes: bytes, nonce: int) -> bytes:
 
     nonce_bytes = binascii.hexlify(nonce.to_bytes(8, "little"))
     pre_seal = nonce_bytes + binascii.hexlify(block_and_key_hash_bytes)[:64]
-    seal_sh256 = hashlib.sha256(bytearray(_hex_bytes_to_u8_list(pre_seal))).digest()
+    seal_sh256 = hashlib.sha256(
+        bytearray(_hex_bytes_to_u8_list(pre_seal))
+    ).digest()
     kec = keccak.new(digest_bits=256)
     seal = kec.update(seal_sh256).digest()
     return seal

@@ -61,8 +61,7 @@ T = TypeVar("T")
 
 
 class SetterGetterFn(Generic[T], Protocol):
-    def __call__(self, x: T = ..., /) -> T:
-        ...
+    def __call__(self, x: T = ..., /) -> T: ...
 
 
 def create_state_fn(default: Callable[..., T]) -> SetterGetterFn[T]:

@@ -9,8 +9,17 @@ import starlette.datastructures
 from communex._common import get_node_url
 from communex.module import _signer as signer
 from communex.module._rate_limiters._stake_limiter import StakeLimiter
-from communex.module._rate_limiters.limiters import IpLimiterParams, StakeLimiterParams
-from communex.module._util import json_error, log, log_reffusal, make_client, try_ss58_decode
+from communex.module._rate_limiters.limiters import (
+    IpLimiterParams,
+    StakeLimiterParams,
+)
+from communex.module._util import (
+    json_error,
+    log,
+    log_reffusal,
+    make_client,
+    try_ss58_decode,
+)
 from communex.types import Ss58Address
 from communex.util.memo import TTLDict
 from fastapi import Request, Response
@@ -60,21 +69,18 @@ class StakeLimiterVerifier(AbstractVerifier):
         )
 
     async def verify(self, request: Request):
-
         if request.client is None:
             response = JSONResponse(
                 status_code=401,
-                content={
-                    "error": "Address should be present in request"
-                }
+                content={"error": "Address should be present in request"},
             )
             return response
 
-        key = request.headers.get('x-key')
+        key = request.headers.get("x-key")
         if not key:
             response = JSONResponse(
                 status_code=401,
-                content={"error": "Valid X-Key not provided on headers"}
+                content={"error": "Valid X-Key not provided on headers"},
             )
             return response
 
@@ -83,8 +89,10 @@ class StakeLimiterVerifier(AbstractVerifier):
         if not is_allowed:
             response = JSONResponse(
                 status_code=429,
-                headers={"X-RateLimit-TryAfter": f"{str(await self.limiter.retry_after(key))} seconds"},
-                content={"error": "Rate limit exceeded"}
+                headers={
+                    "X-RateLimit-TryAfter": f"{str(await self.limiter.retry_after(key))} seconds"
+                },
+                content={"error": "Rate limit exceeded"},
             )
             return response
         return None
@@ -92,10 +100,10 @@ class StakeLimiterVerifier(AbstractVerifier):
 
 class ListVerifier(AbstractVerifier):
     def __init__(
-            self,
-            blacklist: list[Ss58Address] | None,
-            whitelist: list[Ss58Address] | None,
-            ip_blacklist: list[str] | None,
+        self,
+        blacklist: list[Ss58Address] | None,
+        whitelist: list[Ss58Address] | None,
+        ip_blacklist: list[str] | None,
     ):
         self.blacklist = blacklist
         self.whitelist = whitelist
@@ -126,22 +134,21 @@ class ListVerifier(AbstractVerifier):
 
 class IpLimiterVerifier(AbstractVerifier):
     def __init__(
-            self,
-            params: IpLimiterParams | None,
+        self,
+        params: IpLimiterParams | None,
     ):
-        '''
+        """
         :param limiter: KeyLimiter instance OR None
 
         If limiter is None, then a default TokenBucketLimiter is used with the following config:
         bucket_size=200, refill_rate=15
-        '''
+        """
 
         # fallback to default limiter
         if not params:
             params = IpLimiterParams()
         self._limiter = TokenBucketLimiter(
-            bucket_size=params.bucket_size,
-            refill_rate=params.refill_rate
+            bucket_size=params.bucket_size, refill_rate=params.refill_rate
         )
 
     async def verify(self, request: Request):
@@ -155,8 +162,10 @@ class IpLimiterVerifier(AbstractVerifier):
         if not is_allowed:
             response = JSONResponse(
                 status_code=429,
-                headers={"X-RateLimit-Remaining": str(self._limiter.remaining(ip))},
-                content={"error": "Rate limit exceeded"}
+                headers={
+                    "X-RateLimit-Remaining": str(self._limiter.remaining(ip))
+                },
+                content={"error": "Rate limit exceeded"},
             )
             return response
         return None
@@ -190,27 +199,36 @@ class InputHandlerVerifier(AbstractVerifier):
                 pass
 
         body_dict: dict[str, dict[str, Any]] = json.loads(body)
-        timestamp = body_dict['params'].get("timestamp", None)
+        timestamp = body_dict["params"].get("timestamp", None)
         legacy_timestamp = request.headers.get("X-Timestamp", None)
         try:
-            timestamp_to_use = timestamp if not legacy_timestamp else legacy_timestamp
+            timestamp_to_use = (
+                timestamp if not legacy_timestamp else legacy_timestamp
+            )
             request_time = datetime.fromisoformat(timestamp_to_use)
         except Exception:
-            return JSONResponse(status_code=400, content={"error": "Invalid ISO timestamp given"})
-        if (datetime.now(timezone.utc) - request_time).total_seconds() > self.request_staleness:
-            return JSONResponse(status_code=400, content={"error": "Request is too stale"})
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Invalid ISO timestamp given"},
+            )
+        if (
+            datetime.now(timezone.utc) - request_time
+        ).total_seconds() > self.request_staleness:
+            return JSONResponse(
+                status_code=400, content={"error": "Request is too stale"}
+            )
         return None
 
     def _check_inputs(
-        self, request: Request,
-        body: bytes,
-        module_key: Ss58Address
+        self, request: Request, body: bytes, module_key: Ss58Address
     ):
         required_headers = ["x-signature", "x-key", "x-crypto"]
         optional_headers = ["x-timestamp"]
 
         # TODO: we'll replace this by a Result ADT :)
-        match self._get_headers_dict(request.headers, required_headers, optional_headers):
+        match self._get_headers_dict(
+            request.headers, required_headers, optional_headers
+        ):
             case (False, error):
                 return (False, error)
             case (True, headers_dict):
@@ -249,7 +267,9 @@ class InputHandlerVerifier(AbstractVerifier):
             value = headers.get(required_header)
             if not value:
                 code = 400
-                return False, json_error(code, f"Missing header: {required_header}")
+                return False, json_error(
+                    code, f"Missing header: {required_header}"
+                )
             headers_dict[required_header] = value
         for optional_header in optional:
             value = headers.get(optional_header)
@@ -259,10 +279,7 @@ class InputHandlerVerifier(AbstractVerifier):
         return True, headers_dict
 
     def _check_signature(
-        self,
-        headers_dict: dict[str, str],
-        body: bytes,
-        module_key: Ss58Address
+        self, headers_dict: dict[str, str], body: bytes, module_key: Ss58Address
     ):
         key = headers_dict["x-key"]
         signature = headers_dict["x-signature"]
@@ -298,7 +315,9 @@ class InputHandlerVerifier(AbstractVerifier):
             json_body = json.loads(body)
             json_body["timestamp"] = timestamp
             stamped_body = json.dumps(json_body).encode()
-            legacy_verified = signer.verify(key, crypto, stamped_body, signature)
+            legacy_verified = signer.verify(
+                key, crypto, stamped_body, signature
+            )
 
         verified = signer.verify(key, crypto, body, signature)
         if not verified and not legacy_verified:
@@ -307,7 +326,7 @@ class InputHandlerVerifier(AbstractVerifier):
             return (False, json_error(401, "Signatures doesn't match"))
 
         body_dict: dict[str, dict[str, Any]] = json.loads(body)
-        target_key = body_dict['params'].get("target_key", None)
+        target_key = body_dict["params"].get("target_key", None)
         if not target_key or target_key != module_key:
             reason = "Wrong target_key in body"
             log_reffusal(key_ss58, reason)
@@ -343,15 +362,16 @@ class InputHandlerVerifier(AbstractVerifier):
         allowed_subnets: dict[int, bool] = {}
         caller_subnets: list[int] = []
         if subnets_whitelist is not None:
+
             def query_keys(subnet: int):
                 try:
                     node_url = get_node_url(None, use_testnet=use_testnet)
-                    client = make_client(node_url)  # TODO: get client from outer context
+                    client = make_client(
+                        node_url
+                    )  # TODO: get client from outer context
                     return [*client.query_map_key(subnet).values()]
                 except Exception:
-                    log(
-                        "WARNING: Could not connect to a blockchain node"
-                    )
+                    log("WARNING: Could not connect to a blockchain node")
                     return_list: list[Ss58Address] = []
                     return return_list
 
@@ -382,24 +402,26 @@ class InputHandlerVerifier(AbstractVerifier):
                 if ss58 in keys_on_subnet:
                     caller_subnets.append(subnet)
             if not got_keys:
-                return False, json_error(503, no_keys_reason.format(subnets_whitelist))
+                return False, json_error(
+                    503, no_keys_reason.format(subnets_whitelist)
+                )
             if not allowed_subnets:
                 log("WARNING: Miner is not registered on any subnet")
-                return False, json_error(403, "Miner is not registered on any subnet")
+                return False, json_error(
+                    403, "Miner is not registered on any subnet"
+                )
 
             # searches for a common subnet between caller and miner
             # TODO: use sets
             allowed_subnets = {
-                subnet: allowed for subnet, allowed in allowed_subnets.items() if (
-                    subnet in caller_subnets
-                )
+                subnet: allowed
+                for subnet, allowed in allowed_subnets.items()
+                if (subnet in caller_subnets)
             }
             if not allowed_subnets:
                 reason = "Caller key is not registered in any subnet that the miner is"
                 log_reffusal(ss58, reason)
-                return False, json_error(
-                    403, reason
-                )
+                return False, json_error(403, reason)
         else:
             # accepts everything
             pass
@@ -407,24 +429,27 @@ class InputHandlerVerifier(AbstractVerifier):
         return (True, None)
 
 
-def build_route_class(
-    verifiers: Sequence[AbstractVerifier]
-) -> type[APIRoute]:
-
+def build_route_class(verifiers: Sequence[AbstractVerifier]) -> type[APIRoute]:
     class CheckListsRoute(APIRoute):
         def get_route_handler(self):
             original_route_handler = super().get_route_handler()
 
-            async def custom_route_handler(request: Request) -> Response | JSONResponse:
-                if not request.url.path.startswith('/method'):
-                    unhandled_response: Response = await original_route_handler(request)
+            async def custom_route_handler(
+                request: Request,
+            ) -> Response | JSONResponse:
+                if not request.url.path.startswith("/method"):
+                    unhandled_response: Response = await original_route_handler(
+                        request
+                    )
                     return unhandled_response
                 for verifier in verifiers:
                     response = await verifier.verify(request)
                     if response is not None:
                         return response
 
-                original_response: Response = await original_route_handler(request)
+                original_response: Response = await original_route_handler(
+                    request
+                )
                 return original_response
 
             return custom_route_handler

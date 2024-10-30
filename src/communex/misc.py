@@ -128,15 +128,15 @@ def to_snake_case(d: dict[str, T]) -> dict[str, T]:
     """
     Converts a dictionary with camelCase keys to snake_case keys
     """
+
     def snakerize(camel: str) -> str:
-        return re.sub(r'(?<!^)(?=[A-Z])', '_', camel).lower()
+        return re.sub(r"(?<!^)(?=[A-Z])", "_", camel).lower()
+
     snaked: dict[str, T] = {snakerize(k): v for k, v in d.items()}
     return snaked
 
 
-def get_map_displayable_subnets(
-        client: CommuneClient
-):
+def get_map_displayable_subnets(client: CommuneClient):
     subnets = get_map_subnets_params(client)
     display_values = transform_subnet_params(subnets)
     return display_values
@@ -175,7 +175,6 @@ def get_map_subnets_params(
             "SubnetEmissionModule": [
                 ("SubnetEmission", []),
             ],
-
         },
         block_hash,
     )
@@ -192,38 +191,64 @@ def get_map_subnets_params(
         "netuid_to_name": bulk_query["SubnetNames"],
         "netuid_to_max_weight_age": bulk_query["MaxWeightAge"],
         "netuid_to_bonds_ma": bulk_query.get("BondsMovingAverage", {}),
-        "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get("MaximumSetWeightCallsPerEpoch", {}),
-        "netuid_to_governance_configuration": bulk_query["SubnetGovernanceConfig"],
+        "netuid_to_maximum_set_weight_calls_per_epoch": bulk_query.get(
+            "MaximumSetWeightCallsPerEpoch", {}
+        ),
+        "netuid_to_governance_configuration": bulk_query[
+            "SubnetGovernanceConfig"
+        ],
         "netuid_to_immunity_period": bulk_query["ImmunityPeriod"],
-        "netuid_to_min_validator_stake": bulk_query.get("MinValidatorStake", {}),
-        "netuid_to_max_allowed_validators": bulk_query.get("MaxAllowedValidators", {}),
+        "netuid_to_min_validator_stake": bulk_query.get(
+            "MinValidatorStake", {}
+        ),
+        "netuid_to_max_allowed_validators": bulk_query.get(
+            "MaxAllowedValidators", {}
+        ),
         "netuid_to_module_burn_config": bulk_query.get("ModuleBurnConfig", {}),
         "netuid_to_subnet_metadata": bulk_query.get("SubnetMetadata", {}),
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
     for netuid, name in subnet_maps["netuid_to_name"].items():
-
         subnet: SubnetParamsWithEmission = {
             "name": name,
             "founder": subnet_maps["netuid_to_founder"][netuid],
             "founder_share": subnet_maps["netuid_to_founder_share"][netuid],
             "incentive_ratio": subnet_maps["netuid_to_incentive_ratio"][netuid],
-            "max_allowed_uids": subnet_maps["netuid_to_max_allowed_uids"][netuid],
-            "max_allowed_weights": subnet_maps["netuid_to_max_allowed_weights"][netuid],
-            "min_allowed_weights": subnet_maps["netuid_to_min_allowed_weights"][netuid],
+            "max_allowed_uids": subnet_maps["netuid_to_max_allowed_uids"][
+                netuid
+            ],
+            "max_allowed_weights": subnet_maps["netuid_to_max_allowed_weights"][
+                netuid
+            ],
+            "min_allowed_weights": subnet_maps["netuid_to_min_allowed_weights"][
+                netuid
+            ],
             "tempo": subnet_maps["netuid_to_tempo"][netuid],
             "trust_ratio": subnet_maps["netuid_to_trust_ratio"][netuid],
             "emission": subnet_maps["netuid_to_emission"][netuid],
             "max_weight_age": subnet_maps["netuid_to_max_weight_age"][netuid],
             "bonds_ma": subnet_maps["netuid_to_bonds_ma"].get(netuid, None),
-            "maximum_set_weight_calls_per_epoch": subnet_maps["netuid_to_maximum_set_weight_calls_per_epoch"].get(netuid, 30),
-            "governance_config": subnet_maps["netuid_to_governance_configuration"][netuid],
+            "maximum_set_weight_calls_per_epoch": subnet_maps[
+                "netuid_to_maximum_set_weight_calls_per_epoch"
+            ].get(netuid, 30),
+            "governance_config": subnet_maps[
+                "netuid_to_governance_configuration"
+            ][netuid],
             "immunity_period": subnet_maps["netuid_to_immunity_period"][netuid],
-            "min_validator_stake": subnet_maps["netuid_to_min_validator_stake"].get(netuid, to_nano(50_000)),
-            "max_allowed_validators": subnet_maps["netuid_to_max_allowed_validators"].get(netuid, 50),
-            "module_burn_config": cast(BurnConfiguration, subnet_maps["netuid_to_module_burn_config"].get(netuid, None)),
-            "subnet_metadata": subnet_maps["netuid_to_subnet_metadata"].get(netuid, None),
+            "min_validator_stake": subnet_maps[
+                "netuid_to_min_validator_stake"
+            ].get(netuid, to_nano(50_000)),
+            "max_allowed_validators": subnet_maps[
+                "netuid_to_max_allowed_validators"
+            ].get(netuid, 50),
+            "module_burn_config": cast(
+                BurnConfiguration,
+                subnet_maps["netuid_to_module_burn_config"].get(netuid, None),
+            ),
+            "subnet_metadata": subnet_maps["netuid_to_subnet_metadata"].get(
+                netuid, None
+            ),
         }
 
         result_subnets[netuid] = subnet
@@ -261,13 +286,14 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         }
     )
     global_config = cast(
-        GovernanceConfiguration,
-        query_all["GlobalGovernanceConfig"]
+        GovernanceConfiguration, query_all["GlobalGovernanceConfig"]
     )
     global_params: NetworkParams = {
         "max_allowed_subnets": int(query_all["MaxAllowedSubnets"]),
         "max_allowed_modules": int(query_all["MaxAllowedModules"]),
-        "max_registrations_per_block": int(query_all["MaxRegistrationsPerBlock"]),
+        "max_registrations_per_block": int(
+            query_all["MaxRegistrationsPerBlock"]
+        ),
         "max_name_length": int(query_all["MaxNameLength"]),
         "min_weight_stake": int(query_all["MinWeightStake"]),
         "floor_delegation_fee": int(query_all["FloorDelegationFee"]),
@@ -275,7 +301,9 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
         "curator": Ss58Address(query_all["Curator"]),
         "min_name_length": int(query_all["MinNameLength"]),
         "floor_founder_share": int(query_all["FloorFounderShare"]),
-        "general_subnet_application_cost": int(query_all["GeneralSubnetApplicationCost"]),
+        "general_subnet_application_cost": int(
+            query_all["GeneralSubnetApplicationCost"]
+        ),
         "kappa": int(query_all["Kappa"]),
         "rho": int(query_all["Rho"]),
         "subnet_immunity_period": int(query_all["SubnetImmunityPeriod"]),
@@ -284,9 +312,15 @@ def get_global_params(c_client: CommuneClient) -> NetworkParams:
             "proposal_cost": int(global_config["proposal_cost"]),
             "proposal_expiration": int(global_config["proposal_expiration"]),
             "vote_mode": global_config["vote_mode"],
-            "proposal_reward_treasury_allocation": int(global_config["proposal_reward_treasury_allocation"]),
-            "max_proposal_reward_treasury_allocation": int(global_config["max_proposal_reward_treasury_allocation"]),
-            "proposal_reward_interval": int(global_config["proposal_reward_interval"]),
+            "proposal_reward_treasury_allocation": int(
+                global_config["proposal_reward_treasury_allocation"]
+            ),
+            "max_proposal_reward_treasury_allocation": int(
+                global_config["max_proposal_reward_treasury_allocation"]
+            ),
+            "proposal_reward_interval": int(
+                global_config["proposal_reward_interval"]
+            ),
         },
     }
     return global_params
@@ -320,7 +354,9 @@ def local_keys_to_freebalance(
         if "data" in value and "free" in value["data"]
     }
 
-    key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
+    key2balance: dict[str, int] = concat_to_local_keys(
+        format_balances, local_keys
+    )
 
     return key2balance
 
@@ -332,7 +368,8 @@ def local_keys_to_stakedbalance(
     staketo_map = c_client.query_map_staketo()
 
     format_stake: dict[str, int] = {
-        key: sum(stake for _, stake in value) for key, value in staketo_map.items()
+        key: sum(stake for _, stake in value)
+        for key, value in staketo_map.items()
     }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
@@ -347,7 +384,8 @@ def local_keys_to_stakedfrom_balance(
     stakefrom_map = c_client.query_map_stakefrom()
 
     format_stake: dict[str, int] = {
-        key: sum(stake for _, stake in value) for key, value in stakefrom_map.items()
+        key: sum(stake for _, stake in value)
+        for key, value in stakefrom_map.items()
     }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
@@ -368,28 +406,38 @@ def local_keys_allbalance(
         }
     )
 
-    balance_map, staketo_map = query_all["Account"], transform_stake_dmap(query_all["StakeTo"])
+    balance_map, staketo_map = (
+        query_all["Account"],
+        transform_stake_dmap(query_all["StakeTo"]),
+    )
 
     format_balances: dict[str, int] = {
         key: value["data"]["free"]
         for key, value in balance_map.items()
         if "data" in value and "free" in value["data"]
     }
-    key2balance: dict[str, int] = concat_to_local_keys(format_balances, local_keys)
+    key2balance: dict[str, int] = concat_to_local_keys(
+        format_balances, local_keys
+    )
     format_stake: dict[str, int] = {
-        key: sum(stake for _, stake in value) for key, value in staketo_map.items()
+        key: sum(stake for _, stake in value)
+        for key, value in staketo_map.items()
     }
 
     key2stake: dict[str, int] = concat_to_local_keys(format_stake, local_keys)
 
     key2balance = {
         k: v
-        for k, v in sorted(key2balance.items(), key=lambda item: item[1], reverse=True)
+        for k, v in sorted(
+            key2balance.items(), key=lambda item: item[1], reverse=True
+        )
     }
 
     key2stake = {
         k: v
-        for k, v in sorted(key2stake.items(), key=lambda item: item[1], reverse=True)
+        for k, v in sorted(
+            key2stake.items(), key=lambda item: item[1], reverse=True
+        )
     }
 
     return key2balance, key2stake
@@ -397,5 +445,6 @@ def local_keys_allbalance(
 
 if __name__ == "__main__":
     from communex._common import get_node_url
+
     client = CommuneClient(get_node_url(use_testnet=True))
     get_global_params(client)

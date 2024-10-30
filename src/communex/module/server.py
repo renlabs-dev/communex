@@ -14,7 +14,10 @@ from substrateinterface import Keypair
 
 from communex.key import check_ss58_address
 from communex.module import _signer as signer
-from communex.module._rate_limiters.limiters import IpLimiterParams, StakeLimiterParams
+from communex.module._rate_limiters.limiters import (
+    IpLimiterParams,
+    StakeLimiterParams,
+)
 from communex.module.module import EndpointDefinition, Module, endpoint
 from communex.module.routers.module_routers import (
     InputHandlerVerifier,
@@ -61,8 +64,7 @@ class ModuleServer:
         self._build_routers(use_testnet, limiter)
 
     def _build_routers(
-            self, use_testnet: bool,
-            limiter: StakeLimiterParams | IpLimiterParams
+        self, use_testnet: bool, limiter: StakeLimiterParams | IpLimiterParams
     ):
         input_handler = InputHandlerVerifier(
             self._subnets_whitelist,
@@ -70,12 +72,10 @@ class ModuleServer:
             self.max_request_staleness,
             self._blockchain_cache,
             self.key,
-            use_testnet
+            use_testnet,
         )
         check_lists = ListVerifier(
-            self._blacklist,
-            self._whitelist,
-            self._ip_blacklist
+            self._blacklist, self._whitelist, self._ip_blacklist
         )
         if isinstance(limiter, StakeLimiterParams):
             limiter_verifier = StakeLimiterVerifier(
@@ -101,8 +101,13 @@ class ModuleServer:
             class Body(BaseModel):
                 params: endpoint_def.params_model  # type: ignore
 
-            async def async_handler(end_def: EndpointDefinition[Any, ...], body: Body):
-                return await end_def.fn(self._module, **body.params.model_dump())  # type: ignore
+            async def async_handler(
+                end_def: EndpointDefinition[Any, ...], body: Body
+            ):
+                return await end_def.fn(
+                    self._module,
+                    **body.params.model_dump(),  # type: ignore
+                )
 
             def handler(end_def: EndpointDefinition[Any, ...], body: Body):
                 return end_def.fn(self._module, **body.params.model_dump())  # type: ignore
@@ -141,6 +146,7 @@ def main():
     app = server.get_fastapi_app()
 
     import uvicorn
+
     uvicorn.run(app, host="127.0.0.1", port=8000)  # type: ignore
 
 

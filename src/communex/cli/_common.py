@@ -45,7 +45,10 @@ class CustomCtx:
             for _ in range(5):
                 try:
                     self._com_client = CommuneClient(
-                        url=node_url, num_connections=1, wait_for_finalization=False)
+                        url=node_url,
+                        num_connections=1,
+                        wait_for_finalization=False,
+                    )
                 except Exception:
                     self.info(f"Failed to connect to node: {node_url}")
                     node_url = get_node_url(None, use_testnet=use_testnet)
@@ -73,7 +76,6 @@ class CustomCtx:
         *args: tuple[Any, ...],
         **kwargs: dict[str, Any],
     ) -> None:
-
         self.console_err.print(message, *args, **kwargs)  # type: ignore
 
     def error(self, message: str) -> None:
@@ -84,7 +86,7 @@ class CustomCtx:
         return self.console_err.status(message)
 
     def confirm(self, message: str) -> bool:
-        if (self.ctx.obj.yes_to_all):
+        if self.ctx.obj.yes_to_all:
             print(f"{message} (--yes)")
             return True
         return typer.confirm(message)
@@ -112,7 +114,9 @@ def eprint(e: Any) -> None:
 
 
 def print_table_from_plain_dict(
-    result: Mapping[str, str | int | float | dict[Any, Any]], column_names: list[str], console: Console
+    result: Mapping[str, str | int | float | dict[Any, Any]],
+    column_names: list[str],
+    console: Console,
 ) -> None:
     """
     Creates a table for a plain dictionary.
@@ -131,7 +135,11 @@ def print_table_from_plain_dict(
     # Important to add after so that the display of the table is nicer.
     for key, value in result.items():
         if isinstance(value, dict):
-            subtable = Table(show_header=False, padding=(0, 0, 0, 0), border_style="bright_black")
+            subtable = Table(
+                show_header=False,
+                padding=(0, 0, 0, 0),
+                border_style="bright_black",
+            )
             for subkey, subvalue in value.items():
                 subtable.add_row(f"{subkey}: {subvalue}")
             table.add_row(key, subtable)
@@ -139,7 +147,9 @@ def print_table_from_plain_dict(
     console.print(table)
 
 
-def print_table_standardize(result: dict[str, list[Any]], console: Console) -> None:
+def print_table_standardize(
+    result: dict[str, list[Any]], console: Console
+) -> None:
     """
     Creates a table for a standardized dictionary.
     """
@@ -156,9 +166,11 @@ def print_table_standardize(result: dict[str, list[Any]], console: Console) -> N
 
 
 def transform_module_into(
-    to_exclude: list[str], last_block: int,
-    immunity_period: int, modules: list[ModuleInfoWithOptionalBalance],
-    tempo: int
+    to_exclude: list[str],
+    last_block: int,
+    immunity_period: int,
+    modules: list[ModuleInfoWithOptionalBalance],
+    tempo: int,
 ):
     mods = cast(list[dict[str, Any]], modules)
     transformed_modules: list[dict[str, Any]] = []
@@ -170,12 +182,7 @@ def transform_module_into(
         for key in to_exclude:
             del module[key]
         module["stake"] = round(from_nano(module["stake"]), 2)  # type: ignore
-        module["emission"] = round(
-            from_horus(
-                module["emission"], tempo
-            ),
-            4
-        )  # type: ignore
+        module["emission"] = round(from_horus(module["emission"], tempo), 4)  # type: ignore
         if module.get("balance") is not None:
             module["balance"] = from_nano(module["balance"])  # type: ignore
         else:
@@ -187,11 +194,11 @@ def transform_module_into(
 
 
 def print_module_info(
-        client: CommuneClient,
-        modules: list[ModuleInfoWithOptionalBalance],
-        console: Console,
-        netuid: int,
-        title: str | None = None,
+    client: CommuneClient,
+    modules: list[ModuleInfoWithOptionalBalance],
+    console: Console,
+    netuid: int,
+    title: str | None = None,
 ) -> None:
     """
     Prints information about a module.
@@ -212,11 +219,12 @@ def print_module_info(
 
     # Transform the module dictionary to have immunity_period
     table = Table(
-        show_header=True, header_style="bold magenta",
-        box=box.DOUBLE_EDGE, title=title,
+        show_header=True,
+        header_style="bold magenta",
+        box=box.DOUBLE_EDGE,
+        title=title,
         caption_style="chartreuse3",
         title_style="bold magenta",
-
     )
 
     to_exclude = ["stake_from", "last_update", "regblock"]
@@ -262,13 +270,16 @@ def tranform_network_params(params: NetworkParams):
     governance_config["proposal_reward_treasury_allocation"] = f"{allocation}%"
     params_ = cast(dict[str, Any], params)
     params_["governance_config"] = governance_config
-    general_params = dict_from_nano(params_, [
-        "min_weight_stake",
-        "general_subnet_application_cost",
-        "subnet_registration_cost",
-        "proposal_cost",
-        "max_proposal_reward_treasury_allocation",
-    ])
+    general_params = dict_from_nano(
+        params_,
+        [
+            "min_weight_stake",
+            "general_subnet_application_cost",
+            "subnet_registration_cost",
+            "proposal_cost",
+            "max_proposal_reward_treasury_allocation",
+        ],
+    )
 
     return general_params
 
@@ -298,7 +309,8 @@ def transform_subnet_params(params: dict[int, SubnetParamsWithEmission]):
     params_ = cast(dict[int, Any], params)
     display_params = remove_none_values(params_)
     display_params = dict_from_nano(
-        display_params, [
+        display_params,
+        [
             "bonds_ma",
             "min_burn",
             "max_burn",
@@ -306,6 +318,6 @@ def transform_subnet_params(params: dict[int, SubnetParamsWithEmission]):
             "proposal_cost",
             "max_proposal_reward_treasury_allocation",
             "min_validator_stake",
-        ]
+        ],
     )
     return display_params

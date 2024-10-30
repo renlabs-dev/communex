@@ -6,7 +6,10 @@ from typer import Context
 
 from communex._common import IPFS_REGEX, BalanceUnit, format_balance
 from communex.balance import to_nano
-from communex.cli._common import make_custom_context, print_table_from_plain_dict
+from communex.cli._common import (
+    make_custom_context,
+    print_table_from_plain_dict,
+)
 from communex.compat.key import resolve_key_ss58_encrypted, try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.faucet.powv2 import solve_for_difficulty_fast
@@ -29,7 +32,9 @@ def free_balance(
 
     key_address = resolve_key_ss58_encrypted(key, context, password)
 
-    with context.progress_status(f"Getting free balance of key {key_address}..."):
+    with context.progress_status(
+        f"Getting free balance of key {key_address}..."
+    ):
         balance = client.get_balance(key_address)
 
     context.output(format_balance(balance, unit))
@@ -50,7 +55,9 @@ def staked_balance(
 
     key_address = resolve_key_ss58_encrypted(key, context, password)
 
-    with context.progress_status(f"Getting staked balance of key {key_address}..."):
+    with context.progress_status(
+        f"Getting staked balance of key {key_address}..."
+    ):
         result = sum(client.get_staketo(key=key_address).values())
 
     context.output(format_balance(result, unit))
@@ -77,8 +84,13 @@ def show(
         balance_sum = free_balance + staked_balance
 
     print_table_from_plain_dict(
-        {"Free": format_balance(free_balance, unit), "Staked": format_balance(staked_balance, unit), "Total": format_balance(balance_sum, unit)}, [
-            "Result", "Amount"], context.console
+        {
+            "Free": format_balance(free_balance, unit),
+            "Staked": format_balance(staked_balance, unit),
+            "Total": format_balance(balance_sum, unit),
+        },
+        ["Result", "Amount"],
+        context.console,
     )
 
 
@@ -186,9 +198,7 @@ def stake(
     )
     context.info("INFO: ", style="bold green", end="")  # type: ignore
     context.info(delegating_message)  # type: ignore
-    with context.progress_status(
-        f"Staking {amount} tokens to {dest}..."
-    ):
+    with context.progress_status(f"Staking {amount} tokens to {dest}..."):
         response = client.stake(
             key=resolved_key, amount=nano_amount, dest=resolved_dest
         )
@@ -211,9 +221,7 @@ def unstake(ctx: Context, key: str, amount: float, dest: str):
     resolved_key = try_classic_load_key(key, context)
     resolved_dest = resolve_key_ss58_encrypted(dest, context)
 
-    with context.progress_status(
-        f"Unstaking {amount} tokens from {dest}'..."
-    ):
+    with context.progress_status(f"Unstaking {amount} tokens from {dest}'..."):
         response = client.unstake(
             key=resolved_key, amount=nano_amount, dest=resolved_dest
         )  # TODO: is it right?
@@ -253,8 +261,13 @@ def run_faucet(
                 "work": solution.seal,
                 "key": resolved_key.ss58_address,
             }
-            client.compose_call("faucet", params=params, unsigned=True,
-                                module="FaucetModule", key=resolved_key.ss58_address)  # type: ignore
+            client.compose_call(
+                "faucet",
+                params=params,
+                unsigned=True,
+                module="FaucetModule",
+                key=resolved_key.ss58_address,  # type: ignore
+            )
 
 
 @balance_app.command()
