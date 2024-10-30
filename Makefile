@@ -19,6 +19,12 @@ fix:
 type_check:
 	pyright ./src
 
+check_format:
+	ruff format --check ./src
+
+format:
+	ruff format ./src
+
 # fmt:
 # 	isort ./src
 # 	autopep8 --in-place --recursive ./src

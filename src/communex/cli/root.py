@@ -37,25 +37,32 @@ def flag_option(
     flag_long = f"--{flag}"
     flag_short = f"-{flag[0]}" if flag_short is None else f"-{flag_short}"
     return typer.Option(
-        flag_long,
-        flag_short,
-        is_flag=True,
-        envvar=flag_envvar,
-        help=flag_help
+        flag_long, flag_short, is_flag=True, envvar=flag_envvar, help=flag_help
     )
 
 
 @app.callback()
 def main(
     ctx: typer.Context,
-    json: Annotated[bool, flag_option(
-        "json", "COMX_OUTPUT_JSON", "Output machine-readable JSON.")] = False,
-    testnet: Annotated[bool, flag_option(
-        "testnet", "COMX_USE_TESTNET", "Use testnet endpoints.")] = False,
-    yes_to_all: Annotated[bool, flag_option(
-        "yes", "COMX_YES_TO_ALL", "Say yes to all confirmation inputs.")] = False,
-    version: Annotated[Optional[bool], typer.Option(
-        callback=_version_callback)] = None,
+    json: Annotated[
+        bool,
+        flag_option(
+            "json", "COMX_OUTPUT_JSON", "Output machine-readable JSON."
+        ),
+    ] = False,
+    testnet: Annotated[
+        bool,
+        flag_option("testnet", "COMX_USE_TESTNET", "Use testnet endpoints."),
+    ] = False,
+    yes_to_all: Annotated[
+        bool,
+        flag_option(
+            "yes", "COMX_YES_TO_ALL", "Say yes to all confirmation inputs."
+        ),
+    ] = False,
+    version: Annotated[
+        Optional[bool], typer.Option(callback=_version_callback)
+    ] = None,
 ):
     """
     CommuneX CLI {version}
@@ -64,7 +71,8 @@ def main(
     """
     # Pass the extra context data to the subcommands.
     ctx.obj = ExtraCtxData(
-        output_json=json, use_testnet=testnet, yes_to_all=yes_to_all)
+        output_json=json, use_testnet=testnet, yes_to_all=yes_to_all
+    )
 
 
 if main.__doc__ is not None:

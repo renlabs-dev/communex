@@ -14,7 +14,9 @@ def bytes_from_hex(data: str) -> bytes:
 
 
 def encrypt_weights(
-    key: tuple[bytes, bytes], data: list[tuple[int, int]], validator_key: list[int]
+    key: tuple[bytes, bytes],
+    data: list[tuple[int, int]],
+    validator_key: list[int],
 ) -> bytes:
     # Create RSA public key
     public_numbers = rsa.RSAPublicNumbers(
@@ -26,7 +28,10 @@ def encrypt_weights(
     # Encode data
     encoded = (
         (len(data)).to_bytes(4, "big")
-        + b"".join(uid.to_bytes(2, "big") + weight.to_bytes(2, "big") for uid, weight in data)
+        + b"".join(
+            uid.to_bytes(2, "big") + weight.to_bytes(2, "big")
+            for uid, weight in data
+        )
         + bytes(validator_key)
     )
 
@@ -122,8 +127,10 @@ fvRuW5JF+WZtGddyU4751JNNNhmwbwGmsmphy7EOHHaC
 
     # ======================================================================== #
 
-    private_key = crypt_serialization.load_pem_private_key(rsa_key_pem, password=None)
-    assert(isinstance(private_key, rsa.RSAPrivateKey))
+    private_key = crypt_serialization.load_pem_private_key(
+        rsa_key_pem, password=None
+    )
+    assert isinstance(private_key, rsa.RSAPrivateKey)
     pub_key_n = bytes_from_hex(pub_key_n_hex)
     pub_key_e = bytes_from_hex(pub_key_e_hex)
 
@@ -137,6 +144,7 @@ fvRuW5JF+WZtGddyU4751JNNNhmwbwGmsmphy7EOHHaC
 
     assert weights_dec == weights
     assert key_dec == validator_key
+
 
 if __name__ == "__main__":
     _test()

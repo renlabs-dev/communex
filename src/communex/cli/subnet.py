@@ -11,7 +11,11 @@ from communex.cli._common import (
 )
 from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
-from communex.misc import IPFS_REGEX, get_map_displayable_subnets, get_map_subnets_params
+from communex.misc import (
+    IPFS_REGEX,
+    get_map_displayable_subnets,
+    get_map_subnets_params,
+)
 from communex.types import SubnetParams, VoteMode
 
 subnet_app = typer.Typer(no_args_is_help=True)
@@ -27,7 +31,9 @@ def list(ctx: Context):
 
     with context.progress_status("Getting subnets ..."):
         subnets = get_map_displayable_subnets(client)
-    subnets_with_netuids = [{"netuid": key, **value} for key, value in subnets.items()]
+    subnets_with_netuids = [
+        {"netuid": key, **value} for key, value in subnets.items()
+    ]
     for dict in subnets_with_netuids:  # type: ignore
         print_table_from_plain_dict(dict, ["Params", "Values"], context.console)  # type: ignore
 
@@ -43,11 +49,17 @@ def distribution(ctx: Context):
         subnet_names = client.query_map_subnet_names()
         total_emission = sum(subnets_emission.values())
         subnet_emission_percentages = {
-            key: value / total_emission * 100 for key, value in subnets_emission.items()
+            key: value / total_emission * 100
+            for key, value in subnets_emission.items()
         }
 
     # Prepare the data for the table
-    table_data: dict[str, Any] = {"Subnet": [], "Name": [], "Consensus": [], "Emission %": []}
+    table_data: dict[str, Any] = {
+        "Subnet": [],
+        "Name": [],
+        "Consensus": [],
+        "Emission %": [],
+    }
 
     for subnet, emission_percentage in subnet_emission_percentages.items():
         if emission_percentage > 0:
@@ -71,7 +83,9 @@ def legit_whitelist(ctx: Context):
     with context.progress_status("Getting legitimate whitelist ..."):
         whitelist = cast(dict[str, int], client.query_map_legit_whitelist())
 
-    print_table_from_plain_dict(whitelist, ["Module", "Recommended weight"], context.console)
+    print_table_from_plain_dict(
+        whitelist, ["Module", "Recommended weight"], context.console
+    )
 
 
 @subnet_app.command()
@@ -90,11 +104,15 @@ def info(ctx: Context, netuid: int):
         raise ValueError("Subnet not found")
 
     general_subnet: dict[str, Any] = cast(dict[str, Any], subnet)
-    print_table_from_plain_dict(general_subnet, ["Params", "Values"], context.console)
+    print_table_from_plain_dict(
+        general_subnet, ["Params", "Values"], context.console
+    )
 
 
 @subnet_app.command()
-def register(ctx: Context, key: str, name: str, metadata: str = typer.Option(None)):
+def register(
+    ctx: Context, key: str, name: str, metadata: str = typer.Option(None)
+):
     """
     Registers a new subnet.
     """
@@ -153,7 +171,11 @@ def update(
     provided_params.pop("key")
     provided_params.pop("netuid")
 
-    provided_params = {key: value for key, value in provided_params.items() if value is not None}
+    provided_params = {
+        key: value
+        for key, value in provided_params.items()
+        if value is not None
+    }
     if vote_mode is not None:  # type: ignore
         provided_params["vote_mode"] = vote_mode.value
     context = make_custom_context(ctx)
@@ -184,10 +206,14 @@ def update(
         )
     resolved_key = try_classic_load_key(key)
     with context.progress_status("Updating subnet ..."):
-        response = client.update_subnet(key=resolved_key, params=subnet_params, netuid=netuid)
+        response = client.update_subnet(
+            key=resolved_key, params=subnet_params, netuid=netuid
+        )
 
     if response.is_success:
-        context.info(f"Successfully updated subnet {subnet_params['name']} with netuid {netuid}")
+        context.info(
+            f"Successfully updated subnet {subnet_params['name']} with netuid {netuid}"
+        )
     else:
         raise ChainTransactionError(response.error_message)  # type: ignore
 
@@ -212,7 +238,9 @@ def propose_on_subnet(
     trust_ratio: int = typer.Option(None),
     maximum_set_weight_calls_per_epoch: int = typer.Option(None),
     bonds_ma: int = typer.Option(None),
-    vote_mode: VoteMode = typer.Option(None, help="0 for Authority, 1 for Vote"),
+    vote_mode: VoteMode = typer.Option(
+        None, help="0 for Authority, 1 for Vote"
+    ),
     # BurnConfiguration
     min_burn: int = typer.Option(None),
     max_burn: int = typer.Option(None),
@@ -246,7 +274,11 @@ def propose_on_subnet(
         resolve_founder = resolve_key_ss58(founder)
         provided_params["founder"] = resolve_founder
 
-    provided_params = {key: value for key, value in provided_params.items() if value is not None}
+    provided_params = {
+        key: value
+        for key, value in provided_params.items()
+        if value is not None
+    }
 
     client = context.com_client()
     subnets_info = get_map_subnets_params(client)
@@ -274,12 +306,16 @@ def propose_on_subnet(
 
     resolved_key = try_classic_load_key(key)
     with context.progress_status("Adding a proposal..."):
-        client.add_subnet_proposal(resolved_key, subnet_params, cid, netuid=netuid)
+        client.add_subnet_proposal(
+            resolved_key, subnet_params, cid, netuid=netuid
+        )
     context.info("Proposal added.")
 
 
 @subnet_app.command()
-def submit_general_subnet_application(ctx: Context, key: str, application_key: str, cid: str):
+def submit_general_subnet_application(
+    ctx: Context, key: str, application_key: str, cid: str
+):
     """
     Submits a legitimate whitelist application to the general subnet, netuid 0.
     """

@@ -37,7 +37,9 @@ def circulating_supply(ctx: Context, unit: BalanceUnit = BalanceUnit.joule):
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    with context.progress_status("Getting circulating supply, across all subnets..."):
+    with context.progress_status(
+        "Getting circulating supply, across all subnets..."
+    ):
         supply = circulating_tokens(client)
 
     context.output(format_balance(supply, unit))
@@ -66,8 +68,11 @@ def apr(ctx: Context, fee: int = 0):
         total_staked_tokens = client.query("TotalStake")
     # 50% of the total emission goes to stakers
     daily_token_rewards = blocks_in_a_day * from_nano(unit_emission) / 2
-    _apr = (daily_token_rewards * (1 - fee_to_float)
-            * 365) / total_staked_tokens * 100
+    _apr = (
+        (daily_token_rewards * (1 - fee_to_float) * 365)
+        / total_staked_tokens
+        * 100
+    )
 
     context.output(f"Fee {fee} | APR {_apr:.2f}%")
 
@@ -77,13 +82,19 @@ def stats(ctx: Context, balances: bool = False, netuid: int = 0):
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    with context.progress_status(f"Getting Modules on a subnet with netuid {netuid}..."):
+    with context.progress_status(
+        f"Getting Modules on a subnet with netuid {netuid}..."
+    ):
         modules = get_map_modules(
-            client, netuid=netuid, include_balances=balances)
+            client, netuid=netuid, include_balances=balances
+        )
     modules_to_list = [value for _, value in modules.items()]
     local_keys = local_key_addresses()
     local_modules = [
-        *filter(lambda module: module["key"] in local_keys.values(), modules_to_list)]
+        *filter(
+            lambda module: module["key"] in local_keys.values(), modules_to_list
+        )
+    ]
     local_miners: list[ModuleInfoWithOptionalBalance] = []
     local_validators: list[ModuleInfoWithOptionalBalance] = []
     local_inactive: list[ModuleInfoWithOptionalBalance] = []
@@ -95,11 +106,13 @@ def stats(ctx: Context, balances: bool = False, netuid: int = 0):
         else:
             local_validators.append(module)
 
-    print_module_info(client, local_inactive,
-                      context.console, netuid, "inactive")
+    print_module_info(
+        client, local_inactive, context.console, netuid, "inactive"
+    )
     print_module_info(client, local_miners, context.console, netuid, "miners")
-    print_module_info(client, local_validators,
-                      context.console, netuid, "validators")
+    print_module_info(
+        client, local_validators, context.console, netuid, "validators"
+    )
 
 
 @misc_app.command(name="treasury-address")
@@ -123,7 +136,5 @@ def delegate_rootnet_control(ctx: Context, key: str, target: str):
     ss58_target = resolve_key_ss58_encrypted(target, context)
 
     with context.progress_status("Delegating control of the rootnet..."):
-        client.delegate_rootnet_control(
-            resolved_key, ss58_target
-        )
+        client.delegate_rootnet_control(resolved_key, ss58_target)
     context.info("Control delegated.")

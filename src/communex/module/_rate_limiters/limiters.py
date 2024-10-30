@@ -32,23 +32,25 @@ class StakeLimiterParams(BaseSettings):
 
 class IpLimiterMiddleware(BaseHTTPMiddleware):
     def __init__(
-            self,
-            app: ASGIApp,
-            params: IpLimiterParams | None,
+        self,
+        app: ASGIApp,
+        params: IpLimiterParams | None,
     ):
-        '''
+        """
         :param app: FastAPI instance
         :param limiter: KeyLimiter instance OR None
 
         If limiter is None, then a default TokenBucketLimiter is used with the following config:
         bucket_size=200, refill_rate=15
-        '''
+        """
         super().__init__(app)
 
         # fallback to default limiter
         if not params:
             params = IpLimiterParams()
-        self._limiter = TokenBucketLimiter(bucket_size=params.bucket_size, refill_rate=params.refill_rate)
+        self._limiter = TokenBucketLimiter(
+            bucket_size=params.bucket_size, refill_rate=params.refill_rate
+        )
 
     async def dispatch(self, request: Request, call_next: Callback) -> Response:
         assert request.client is not None, "request is invalid"
@@ -61,8 +63,10 @@ class IpLimiterMiddleware(BaseHTTPMiddleware):
         if not is_allowed:
             response = JSONResponse(
                 status_code=429,
-                headers={"X-RateLimit-Remaining": str(self._limiter.remaining(ip))},
-                content={"error": "Rate limit exceeded"}
+                headers={
+                    "X-RateLimit-Remaining": str(self._limiter.remaining(ip))
+                },
+                content={"error": "Rate limit exceeded"},
             )
             return response
 

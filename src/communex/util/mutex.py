@@ -17,5 +17,10 @@ class MutexBox(Generic[T], ContextManager[T]):
         self._mutex.acquire()
         return self._value
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ):
         self._mutex.release()

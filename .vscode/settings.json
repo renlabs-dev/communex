@@ -5,10 +5,13 @@
     "dmap",
     "fastapi",
     "keypair",
+    "netuid",
     "openai",
     "PKCS",
+    "pydantic",
     "substrateinterface",
     "typer",
+    "unstake",
     "uvicorn"
   ]
 }

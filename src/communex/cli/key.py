@@ -38,10 +38,7 @@ class SortBalance(str, Enum):
 
 
 @key_app.command()
-def create(
-    ctx: Context, name: str,
-    password: str = typer.Option(None)
-):
+def create(ctx: Context, name: str, password: str = typer.Option(None)):
     """
     Generates a new key and stores it on a disk with the given name.
     """
@@ -59,14 +56,15 @@ def create(
 
 @key_app.command()
 def regen(
-        ctx: Context, name: str, key_input: str, password: Optional[str] = None):
+    ctx: Context, name: str, key_input: str, password: Optional[str] = None
+):
     """
     Stores the given key on a disk. Works with private key or mnemonic.
     """
     # TODO: secret input from env var and stdin
     context = make_custom_context(ctx)
     # Determine the input type based on the presence of spaces.
-    if re.search(r'\s', key_input):
+    if re.search(r"\s", key_input):
         # If mnemonic (contains spaces between words).
         keypair = Keypair.create_from_mnemonic(key_input)
         key_type = "mnemonic"
@@ -88,8 +86,10 @@ def regen(
 
 @key_app.command()
 def show(
-    ctx: Context, key: str, show_private: bool = False,
-    password: Optional[str] = None
+    ctx: Context,
+    key: str,
+    show_private: bool = False,
+    password: Optional[str] = None,
 ):
     """
     Show information about a key.
@@ -114,14 +114,14 @@ def balances(
     unit: BalanceUnit = BalanceUnit.joule,
     sort_balance: SortBalance = SortBalance.all,
     use_universal_password: bool = typer.Option(
-        False, help="""
+        False,
+        help="""
         If you want to use a password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
         every password.
-        """
-    )
-
+        """,
+    ),
 ):
     """
     Gets balances of all keys.
@@ -133,26 +133,44 @@ def balances(
     else:
         universal_password = None
 
-    local_keys = local_key_addresses(context, universal_password=universal_password)
-    with context.console.status("Getting balances of all keys, this might take a while..."):
+    local_keys = local_key_addresses(
+        context, universal_password=universal_password
+    )
+    with context.console.status(
+        "Getting balances of all keys, this might take a while..."
+    ):
         key2freebalance, key2stake = local_keys_allbalance(client, local_keys)
-    key_to_freebalance = {k: format_balance(
-        v, unit) for k, v in key2freebalance.items()}
+    key_to_freebalance = {
+        k: format_balance(v, unit) for k, v in key2freebalance.items()
+    }
     key_to_stake = {k: format_balance(v, unit) for k, v in key2stake.items()}
 
     key2balance = {k: v + key2stake[k] for k, v in key2freebalance.items()}
-    key_to_balance = {k: format_balance(v, unit)
-                      for k, v in key2balance.items()}
+    key_to_balance = {
+        k: format_balance(v, unit) for k, v in key2balance.items()
+    }
 
     if sort_balance == SortBalance.all:
-        sorted_bal = {k: v for k, v in sorted(
-            key2balance.items(), key=lambda item: item[1], reverse=True)}
+        sorted_bal = {
+            k: v
+            for k, v in sorted(
+                key2balance.items(), key=lambda item: item[1], reverse=True
+            )
+        }
     elif sort_balance == SortBalance.free:
-        sorted_bal = {k: v for k, v in sorted(
-            key2freebalance.items(), key=lambda item: item[1], reverse=True)}
+        sorted_bal = {
+            k: v
+            for k, v in sorted(
+                key2freebalance.items(), key=lambda item: item[1], reverse=True
+            )
+        }
     elif sort_balance == SortBalance.staked:
-        sorted_bal = {k: v for k, v in sorted(
-            key2stake.items(), key=lambda item: item[1], reverse=True)}
+        sorted_bal = {
+            k: v
+            for k, v in sorted(
+                key2stake.items(), key=lambda item: item[1], reverse=True
+            )
+        }
     else:
         raise ValueError("Invalid sort balance option")
 
@@ -174,22 +192,22 @@ def balances(
         "all": all_balance,
     }
 
-    general_dict: dict[str, list[Any]] = cast(
-        dict[str, list[Any]], pretty_dict)
+    general_dict: dict[str, list[Any]] = cast(dict[str, list[Any]], pretty_dict)
     print_table_standardize(general_dict, context.console)
 
 
-@key_app.command(name='list')
+@key_app.command(name="list")
 def inventory(
     ctx: Context,
     use_universal_password: bool = typer.Option(
-        False, help="""
+        False,
+        help="""
         Password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
         every password.
-        """
-    )
+        """,
+    ),
 ):
     """
     Lists all keys stored on disk.
@@ -201,14 +219,17 @@ def inventory(
         universal_password = None
     key_to_address = local_key_addresses(context, universal_password)
     general_key_to_address: dict[str, str] = cast(
-        dict[str, str], key_to_address)
-    print_table_from_plain_dict(general_key_to_address, [
-                                "Key", "Address"], context.console)
+        dict[str, str], key_to_address
+    )
+    print_table_from_plain_dict(
+        general_key_to_address, ["Key", "Address"], context.console
+    )
 
 
 @key_app.command()
 def stakefrom(
-    ctx: Context, key: str,
+    ctx: Context,
+    key: str,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -224,7 +245,9 @@ def stakefrom(
         keypair = try_classic_load_key(key, context, password)
         key_address = keypair.ss58_address
         key_address = check_ss58_address(key_address)
-    with context.progress_status(f"Getting stake-from map for {key_address}..."):
+    with context.progress_status(
+        f"Getting stake-from map for {key_address}..."
+    ):
         result = client.get_stakefrom(key=key_address)
 
     result = {k: format_balance(v, unit) for k, v in result.items()}
@@ -234,7 +257,8 @@ def stakefrom(
 
 @key_app.command()
 def staketo(
-    ctx: Context, key: str,
+    ctx: Context,
+    key: str,
     unit: BalanceUnit = BalanceUnit.joule,
     password: Optional[str] = None,
 ):
@@ -264,13 +288,14 @@ def total_free_balance(
     ctx: Context,
     unit: BalanceUnit = BalanceUnit.joule,
     use_universal_password: Optional[str] = typer.Option(
-        False, help="""
+        False,
+        help="""
         Password to decrypt all keys.
         This will only work if all encrypted keys uses the same password.
         If this is not the case, leave it blank and you will be prompted to give
         every password.
-        """
-    )
+        """,
+    ),
 ):
     """
     Returns total balance of all keys on a disk
@@ -284,7 +309,9 @@ def total_free_balance(
         universal_password = None
     local_keys = local_key_addresses(context, universal_password)
     with context.progress_status("Getting total free balance of all keys..."):
-        key2balance: dict[str, int] = local_keys_to_freebalance(client, local_keys)
+        key2balance: dict[str, int] = local_keys_to_freebalance(
+            client, local_keys
+        )
 
         balance_sum = sum(key2balance.values())
 
@@ -293,15 +320,17 @@ def total_free_balance(
 
 @key_app.command()
 def total_staked_balance(
-    ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
+    ctx: Context,
+    unit: BalanceUnit = BalanceUnit.joule,
     use_universal_password: bool = typer.Option(
-        False, help="""
+        False,
+        help="""
     Password to decrypt all keys.
     This will only work if all encrypted keys uses the same password.
     If this is not the case, leave it blank and you will be prompted to give
     every password.
-    """
-    )
+    """,
+    ),
 ):
     """
     Returns total stake of all keys on a disk
@@ -316,7 +345,8 @@ def total_staked_balance(
     local_keys = local_key_addresses(context, universal_password)
     with context.progress_status("Getting total staked balance of all keys..."):
         key2stake: dict[str, int] = local_keys_to_stakedbalance(
-            client, local_keys,
+            client,
+            local_keys,
         )
 
         stake_sum = sum(key2stake.values())
@@ -326,15 +356,17 @@ def total_staked_balance(
 
 @key_app.command()
 def total_balance(
-    ctx: Context, unit: BalanceUnit = BalanceUnit.joule,
+    ctx: Context,
+    unit: BalanceUnit = BalanceUnit.joule,
     use_universal_password: bool = typer.Option(
-        False, help="""
+        False,
+        help="""
     Password to decrypt all keys.
     This will only work if all encrypted keys uses the same password.
     If this is not the case, leave it blank and you will be prompted to give
     every password.
-    """
-    )
+    """,
+    ),
 ):
     """
     Returns total tokens of all keys on a disk
@@ -348,9 +380,7 @@ def total_balance(
         universal_password = None
     local_keys = local_key_addresses(context, universal_password)
     with context.progress_status("Getting total tokens of all keys..."):
-        key2balance, key2stake = local_keys_allbalance(
-            client, local_keys
-        )
+        key2balance, key2stake = local_keys_allbalance(client, local_keys)
         key2tokens = {k: v + key2stake[k] for k, v in key2balance.items()}
         tokens_sum = sum(key2tokens.values())
 
@@ -362,7 +392,7 @@ def power_delegation(
     ctx: Context,
     key: Optional[str] = None,
     enable: bool = typer.Option(True, "--disable"),
-    use_universal_password: bool = typer.Option(False)
+    use_universal_password: bool = typer.Option(False),
 ):
     """
     Gets power delegation of a key.
@@ -389,8 +419,12 @@ def power_delegation(
     for key_name in local_keys.keys():
         keypair = try_classic_load_key(key_name, context)
         if enable is True:
-            context.info(f"Enabling vote power delegation on key {key_name} ...")
+            context.info(
+                f"Enabling vote power delegation on key {key_name} ..."
+            )
             client.enable_vote_power_delegation(keypair)
         else:
-            context.info(f"Disabling vote power delegation on key {key_name} ...")
+            context.info(
+                f"Disabling vote power delegation on key {key_name} ..."
+            )
             client.disable_vote_power_delegation(keypair)

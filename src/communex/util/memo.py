@@ -21,7 +21,11 @@ class TTLDict(Generic[K, V], MutableMapping[K, V]):
     _values: OrderedDict[K, tuple[int, V]]
     _lock: Lock
 
-    def __init__(self, ttl: int, _dict_type: type[OrderedDict[K, tuple[int, V]]] = OrderedDict):
+    def __init__(
+        self,
+        ttl: int,
+        _dict_type: type[OrderedDict[K, tuple[int, V]]] = OrderedDict,
+    ):
         """
         Args:
             ttl: The timeout in seconds for the memoization.

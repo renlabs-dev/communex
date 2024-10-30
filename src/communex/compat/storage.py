@@ -50,13 +50,15 @@ def _decrypt_data(password: str, data: str) -> Any:
     key = _derive_key(password)
     box = SecretBox(key)
     encrypted = base64.b64decode(data.encode())
-    nonce = encrypted[:SecretBox.NONCE_SIZE]
-    ciphertext = encrypted[SecretBox.NONCE_SIZE:]
+    nonce = encrypted[: SecretBox.NONCE_SIZE]
+    ciphertext = encrypted[SecretBox.NONCE_SIZE :]
     raw = box.decrypt(ciphertext, nonce)
     return json.loads(raw.decode())
 
 
-def classic_load(path: str, mode: str = "json", password: str | None = None) -> Any:
+def classic_load(
+    path: str, mode: str = "json", password: str | None = None
+) -> Any:
     """
     Load data from commune data storage.
 
@@ -75,13 +77,17 @@ def classic_load(path: str, mode: str = "json", password: str | None = None) -> 
         AssertionError: Raised when the data is not in the classic format.
     """
     if mode != "json":
-        raise NotImplementedError("Our commune data storage only supports json mode")
+        raise NotImplementedError(
+            "Our commune data storage only supports json mode"
+        )
 
     full_path = os.path.expanduser(os.path.join(COMMUNE_HOME, path))
     with open(full_path, "r") as file:
         body = json.load(file)
         if body["encrypted"] and password is None:
-            raise json.JSONDecodeError("Data is encrypted but no password provided", "", 0)
+            raise json.JSONDecodeError(
+                "Data is encrypted but no password provided", "", 0
+            )
         if body["encrypted"] and password is not None:
             content = _decrypt_data(password, body["data"])
         else:
@@ -114,15 +120,21 @@ def classic_put(
         FileExistsError: Raised when the file already exists.
     """
     if mode != "json":
-        raise NotImplementedError("Our commune data storage only supports json mode")
+        raise NotImplementedError(
+            "Our commune data storage only supports json mode"
+        )
     if not isinstance(value, (dict, list, tuple, set, float, str, int)):
-        raise TypeError(f"Invalid type for commune data storage value: {type(value)}")
+        raise TypeError(
+            f"Invalid type for commune data storage value: {type(value)}"
+        )
     timestamp = int(time.time())
 
     full_path = os.path.expanduser(os.path.join(COMMUNE_HOME, path))
 
     if os.path.exists(full_path):
-        raise FileExistsError(f"Commune data storage file already exists: {full_path}")
+        raise FileExistsError(
+            f"Commune data storage file already exists: {full_path}"
+        )
 
     ensure_parent_dir_exists(full_path)
 
@@ -133,5 +145,8 @@ def classic_put(
         encrypt = False
 
     with open(full_path, "w") as file:
-        json.dump({'data': value, 'encrypted': encrypt, 'timestamp': timestamp},
-                  file, indent=4)
+        json.dump(
+            {"data": value, "encrypted": encrypt, "timestamp": timestamp},
+            file,
+            indent=4,
+        )

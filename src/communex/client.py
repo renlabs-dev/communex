@@ -128,7 +128,6 @@ class CommuneClient:
         queries: list[tuple[str, list[Any]]],
         block_hash: str | None,
     ):
-
         send: list[tuple[str, list[Any]]] = []
         prefix_list: list[Any] = []
 
@@ -136,7 +135,11 @@ class CommuneClient:
         with self.get_conn(init=True) as substrate:
             for function, params in queries:
                 storage_key = StorageKey.create_from_storage_function(  # type: ignore
-                    storage, function, params, runtime_config=substrate.runtime_config, metadata=substrate.metadata  # type: ignore
+                    storage,
+                    function,
+                    params,
+                    runtime_config=substrate.runtime_config,  # type: ignore
+                    metadata=substrate.metadata,  # type: ignore
                 )
 
                 prefix = storage_key.to_hex()
@@ -219,18 +222,19 @@ class CommuneClient:
         results: list[str | dict[Any, Any]] = []
         with self.get_conn(init=True) as substrate:
             try:
-
                 substrate.websocket.send(  #  type: ignore
                     json.dumps(batch_payload)
-                )  # type: ignore
+                )
             except NetworkQueryError:
                 pass
             while len(results) < len(request_ids):
                 received_messages = json.loads(
                     substrate.websocket.recv()  # type: ignore
-                )  # type: ignore
+                )
                 if isinstance(received_messages, dict):
-                    received_messages: list[dict[Any, Any]] = [received_messages]
+                    received_messages: list[dict[Any, Any]] = [
+                        received_messages
+                    ]
 
                 for message in received_messages:
                     if message.get("id") in request_ids:
@@ -286,7 +290,9 @@ class CommuneClient:
         chunk_list: list[Chunk] = []
 
         # Iterate through each request in the batch
-        for request, prefix, params in zip(batch_request, prefix_list, fun_params):
+        for request, prefix, params in zip(
+            batch_request, prefix_list, fun_params
+        ):
             request_size = estimate_size(request)
 
             # Check if adding this request exceeds the max size
@@ -296,7 +302,9 @@ class CommuneClient:
                 # Essentiatly checks that it's not the first iteration
                 if current_batch:
                     chunk = Chunk(
-                        current_batch, current_prefix_batch, current_params_batch
+                        current_batch,
+                        current_prefix_batch,
+                        current_params_batch,
                     )
                     chunk_list.append(chunk)
                     result.append(current_batch)
@@ -315,7 +323,9 @@ class CommuneClient:
         # Add the last batch if it's not empty
         if current_batch:
             result.append(current_batch)
-            chunk = Chunk(current_batch, current_prefix_batch, current_params_batch)
+            chunk = Chunk(
+                current_batch, current_prefix_batch, current_params_batch
+            )
             chunk_list.append(chunk)
 
         return result, chunk_list
@@ -326,7 +336,9 @@ class CommuneClient:
                 return False
 
     def _rpc_request_batch(
-        self, batch_requests: list[tuple[str, list[Any]]], extract_result: bool = True
+        self,
+        batch_requests: list[tuple[str, list[Any]]],
+        extract_result: bool = True,
     ) -> list[str]:
         """
         Sends batch requests to the substrate node using multiple threads and collects the results.
@@ -398,7 +410,9 @@ class CommuneClient:
             ['result1', 'result2', ...]
         """
 
-        def split_chunks(chunk: Chunk, chunk_info: list[Chunk], chunk_info_idx: int):
+        def split_chunks(
+            chunk: Chunk, chunk_info: list[Chunk], chunk_info_idx: int
+        ):
             manhattam_chunks: list[tuple[Any, Any]] = []
             mutaded_chunk_info = deepcopy(chunk_info)
             max_n_keys = 35000
@@ -409,7 +423,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i: i + max_n_keys]
+                        splitted_keys = result_keys[i : i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -428,7 +442,9 @@ class CommuneClient:
         with ThreadPoolExecutor() as executor:
             futures: list[Future[list[str | dict[Any, Any]]]] = []
             for idx, macro_chunk in enumerate(chunk_requests):
-                _, mutated_chunk_info = split_chunks(macro_chunk, chunk_requests, idx)
+                _, mutated_chunk_info = split_chunks(
+                    macro_chunk, chunk_requests, idx
+                )
             for chunk in mutated_chunk_info:
                 request_ids: list[int] = []
                 batch_payload: list[Any] = []
@@ -494,9 +510,11 @@ class CommuneClient:
             {'storage_function_name': {decoded_key: decoded_value, ...}, ...}
         """
 
-        def get_item_key_value(item_key: tuple[Any, ...] | Any) -> tuple[Any, ...] | Any:
+        def get_item_key_value(
+            item_key: tuple[Any, ...] | Any,
+        ) -> tuple[Any, ...] | Any:
             if isinstance(item_key, tuple):
-                return tuple(k.value for k in item_key)
+                return tuple(k.value for k in item_key)  # type: ignore
             return item_key.value
 
         def concat_hash_len(key_hasher: str) -> int:
@@ -550,7 +568,7 @@ class CommuneClient:
 
                     item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
-                        scale_bytes="0x" + item[0][len(prefix):],
+                        scale_bytes="0x" + item[0][len(prefix) :],
                         return_scale_obj=True,
                         block_hash=block_hash,
                     )
@@ -656,9 +674,13 @@ class CommuneClient:
             return d  # type: ignore
 
         def get_page():
-            send, prefix_list = self._get_storage_keys(storage, queries, block_hash)
+            send, prefix_list = self._get_storage_keys(
+                storage, queries, block_hash
+            )
             with self.get_conn(init=True) as substrate:
-                function_parameters = self._get_lists(storage, queries, substrate)
+                function_parameters = self._get_lists(
+                    storage, queries, substrate
+                )
             responses = self._rpc_request_batch(send)
             # assumption because send is just the storage_function keys
             # so it should always be really small regardless of the amount of queries
@@ -672,7 +694,9 @@ class CommuneClient:
             _, chunks_info = self._make_request_smaller(
                 built_payload, prefix_list, function_parameters
             )
-            chunks_response, chunks_info = self._rpc_request_batch_chunked(chunks_info)
+            chunks_response, chunks_info = self._rpc_request_batch_chunked(
+                chunks_info
+            )
             return chunks_response, chunks_info
 
         if not block_hash:
@@ -685,7 +709,10 @@ class CommuneClient:
             assert len(chunks) == len(chunks_info)
             for chunk_info, response in zip(chunks_info, chunks):
                 storage_result = self._decode_response(
-                    response, chunk_info.fun_params, chunk_info.prefix_list, block_hash
+                    response,
+                    chunk_info.fun_params,
+                    chunk_info.prefix_list,
+                    block_hash,
                 )
                 multi_result = recursive_update(multi_result, storage_result)
 
@@ -808,9 +835,11 @@ class CommuneClient:
                 )
 
             if not unsigned:
+                assert key is not None
                 extrinsic = substrate.create_signed_extrinsic(  # type: ignore
-                    call=call, keypair=key  # type: ignore
-                )  # type: ignore
+                    call=call,
+                    keypair=key,
+                )
             else:
                 extrinsic = substrate.create_unsigned_extrinsic(call=call)  # type: ignore
 
@@ -822,7 +851,8 @@ class CommuneClient:
         if wait_for_inclusion:
             if not response.is_success:
                 raise ChainTransactionError(
-                    response.error_message, response  # type: ignore
+                    response.error_message,  # type: ignore
+                    response,  # type: ignore
                 )
 
         return response
@@ -924,7 +954,8 @@ class CommuneClient:
         if wait_for_inclusion:
             if not response.is_success:
                 raise ChainTransactionError(
-                    response.error_message, response  # type: ignore
+                    response.error_message,  # type: ignore
+                    response,  # type: ignore
                 )
 
         return response
@@ -1000,7 +1031,10 @@ class CommuneClient:
         }
 
         return self.compose_call(
-            module="SubspaceModule", fn="transfer_multiple", params=params, key=key
+            module="SubspaceModule",
+            fn="transfer_multiple",
+            params=params,
+            key=key,
         )
 
     def stake(
@@ -1165,7 +1199,9 @@ class CommuneClient:
 
         return response
 
-    def register_subnet(self, key: Keypair, name: str, metadata: str | None = None) -> ExtrinsicReceipt:
+    def register_subnet(
+        self, key: Keypair, name: str, metadata: str | None = None
+    ) -> ExtrinsicReceipt:
         """
         Registers a new subnet in the network.
 
@@ -1340,7 +1376,9 @@ class CommuneClient:
 
         params = {"module_keys": keys, "amounts": amounts}
 
-        response = self.compose_call("remove_stake_multiple", params=params, key=key)
+        response = self.compose_call(
+            "remove_stake_multiple", params=params, key=key
+        )
 
         return response
 
@@ -1379,7 +1417,9 @@ class CommuneClient:
             "amounts": amounts,
         }
 
-        response = self.compose_call("add_stake_multiple", params=params, key=key)
+        response = self.compose_call(
+            "add_stake_multiple", params=params, key=key
+        )
 
         return response
 
@@ -1415,15 +1455,14 @@ class CommuneClient:
 
         params = {"keys": keys, "shares": shares}
 
-        response = self.compose_call("add_profit_shares", params=params, key=key)
+        response = self.compose_call(
+            "add_profit_shares", params=params, key=key
+        )
 
         return response
 
     def add_subnet_proposal(
-        self, key: Keypair,
-        params: dict[str, Any],
-        ipfs: str,
-        netuid: int = 0
+        self, key: Keypair, params: dict[str, Any], ipfs: str, netuid: int = 0
     ) -> ExtrinsicReceipt:
         """
         Submits a proposal for creating or modifying a subnet within the
@@ -1467,7 +1506,6 @@ class CommuneClient:
         key: Keypair,
         cid: str,
     ) -> ExtrinsicReceipt:
-
         params = {"data": cid}
 
         response = self.compose_call(
@@ -1690,16 +1728,20 @@ class CommuneClient:
         params = {"application_key": application_key, "data": data}
 
         response = self.compose_call(
-            "add_dao_application", module="GovernanceModule", key=key,
-            params=params
+            "add_dao_application",
+            module="GovernanceModule",
+            key=key,
+            params=params,
         )
 
         return response
 
     def query_map_curator_applications(self) -> dict[str, dict[str, str]]:
         query_result = self.query_map(
-            "CuratorApplications", module="GovernanceModule", params=[],
-            extract_value=False
+            "CuratorApplications",
+            module="GovernanceModule",
+            params=[],
+            extract_value=False,
         )
         applications = query_result.get("CuratorApplications", {})
         return applications
@@ -1745,9 +1787,7 @@ class CommuneClient:
         """
 
         weights_dict = self.query_map(
-            "Weights",
-            [netuid],
-            extract_value=extract_value
+            "Weights", [netuid], extract_value=extract_value
         ).get("Weights")
         return weights_dict
 
@@ -1772,7 +1812,9 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-        return self.query_map("Keys", [netuid], extract_value=extract_value)["Keys"]
+        return self.query_map("Keys", [netuid], extract_value=extract_value)[
+            "Keys"
+        ]
 
     def query_map_address(
         self, netuid: int = 0, extract_value: bool = False
@@ -1796,7 +1838,9 @@ class CommuneClient:
             "Address"
         ]
 
-    def query_map_emission(self, extract_value: bool = False) -> dict[int, list[int]]:
+    def query_map_emission(
+        self, extract_value: bool = False
+    ) -> dict[int, list[int]]:
         """
         Retrieves a map of emissions for keys on the network.
 
@@ -1810,7 +1854,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Emission", extract_value=extract_value)["Emission"]
+        return self.query_map("Emission", extract_value=extract_value)[
+            "Emission"
+        ]
 
     def query_map_pending_emission(self, extract_value: bool = False) -> int:
         """
@@ -1824,9 +1870,15 @@ class CommuneClient:
         Raises:
             QueryError: If the query to the network fails or is invalid.
         """
-        return self.query_map("PendingEmission", extract_value=extract_value, module="SubnetEmissionModule")["PendingEmission"]
+        return self.query_map(
+            "PendingEmission",
+            extract_value=extract_value,
+            module="SubnetEmissionModule",
+        )["PendingEmission"]
 
-    def query_map_subnet_emission(self, extract_value: bool = False) -> dict[int, int]:
+    def query_map_subnet_emission(
+        self, extract_value: bool = False
+    ) -> dict[int, int]:
         """
         Retrieves a map of subnet emissions for the network.
 
@@ -1839,9 +1891,15 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("SubnetEmission", extract_value=extract_value, module="SubnetEmissionModule")["SubnetEmission"]
+        return self.query_map(
+            "SubnetEmission",
+            extract_value=extract_value,
+            module="SubnetEmissionModule",
+        )["SubnetEmission"]
 
-    def query_map_subnet_consensus(self, extract_value: bool = False) -> dict[int, str]:
+    def query_map_subnet_consensus(
+        self, extract_value: bool = False
+    ) -> dict[int, str]:
         """
         Retrieves a map of subnet consensus types for the network.
 
@@ -1854,9 +1912,15 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("SubnetConsensusType", extract_value=extract_value, module="SubnetEmissionModule")["SubnetConsensusType"]
+        return self.query_map(
+            "SubnetConsensusType",
+            extract_value=extract_value,
+            module="SubnetEmissionModule",
+        )["SubnetConsensusType"]
 
-    def query_map_incentive(self, extract_value: bool = False) -> dict[int, list[int]]:
+    def query_map_incentive(
+        self, extract_value: bool = False
+    ) -> dict[int, list[int]]:
         """
         Retrieves a mapping of incentives for keys on the network.
 
@@ -1870,9 +1934,13 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Incentive", extract_value=extract_value)["Incentive"]
+        return self.query_map("Incentive", extract_value=extract_value)[
+            "Incentive"
+        ]
 
-    def query_map_dividend(self, extract_value: bool = False) -> dict[int, list[int]]:
+    def query_map_dividend(
+        self, extract_value: bool = False
+    ) -> dict[int, list[int]]:
         """
         Retrieves a mapping of dividends for keys on the network.
 
@@ -1886,7 +1954,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Dividends", extract_value=extract_value)["Dividends"]
+        return self.query_map("Dividends", extract_value=extract_value)[
+            "Dividends"
+        ]
 
     def query_map_regblock(
         self, netuid: int = 0, extract_value: bool = False
@@ -1911,7 +1981,9 @@ class CommuneClient:
             "RegistrationBlock", [netuid], extract_value=extract_value
         )["RegistrationBlock"]
 
-    def query_map_lastupdate(self, extract_value: bool = False) -> dict[int, list[int]]:
+    def query_map_lastupdate(
+        self, extract_value: bool = False
+    ) -> dict[int, list[int]]:
         """
         Retrieves a mapping of the last update times for keys on the network.
 
@@ -1924,7 +1996,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("LastUpdate", extract_value=extract_value)["LastUpdate"]
+        return self.query_map("LastUpdate", extract_value=extract_value)[
+            "LastUpdate"
+        ]
 
     def query_map_stakefrom(
         self, extract_value: bool = False
@@ -1996,9 +2070,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("DelegationFee", [netuid], extract_value=extract_value)[
-            "DelegationFee"
-        ]
+        return self.query_map(
+            "DelegationFee", [netuid], extract_value=extract_value
+        )["DelegationFee"]
 
     def query_map_tempo(self, extract_value: bool = False) -> dict[int, int]:
         """
@@ -2079,7 +2153,9 @@ class CommuneClient:
             "MaxAllowedWeights"
         ]
 
-    def query_map_max_allowed_uids(self, extract_value: bool = False) -> dict[int, int]:
+    def query_map_max_allowed_uids(
+        self, extract_value: bool = False
+    ) -> dict[int, int]:
         """
         Queries the network for the maximum number of allowed user IDs (UIDs)
         for each network subnet.
@@ -2101,7 +2177,9 @@ class CommuneClient:
             "MaxAllowedUids"
         ]
 
-    def query_map_min_stake(self, extract_value: bool = False) -> dict[int, int]:
+    def query_map_min_stake(
+        self, extract_value: bool = False
+    ) -> dict[int, int]:
         """
         Retrieves a mapping of minimum allowed stake on the network.
 
@@ -2116,9 +2194,13 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("MinStake", extract_value=extract_value)["MinStake"]
+        return self.query_map("MinStake", extract_value=extract_value)[
+            "MinStake"
+        ]
 
-    def query_map_max_stake(self, extract_value: bool = False) -> dict[int, int]:
+    def query_map_max_stake(
+        self, extract_value: bool = False
+    ) -> dict[int, int]:
         """
         Retrieves a mapping of the maximum stake values for the network.
 
@@ -2132,7 +2214,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("MaxStake", extract_value=extract_value)["MaxStake"]
+        return self.query_map("MaxStake", extract_value=extract_value)[
+            "MaxStake"
+        ]
 
     def query_map_founder(self, extract_value: bool = False) -> dict[int, str]:
         """
@@ -2150,7 +2234,9 @@ class CommuneClient:
 
         return self.query_map("Founder", extract_value=extract_value)["Founder"]
 
-    def query_map_founder_share(self, extract_value: bool = False) -> dict[int, int]:
+    def query_map_founder_share(
+        self, extract_value: bool = False
+    ) -> dict[int, int]:
         """
         Retrieves a mapping of founder shares for the network.
 
@@ -2168,7 +2254,9 @@ class CommuneClient:
             "FounderShare"
         ]
 
-    def query_map_incentive_ratio(self, extract_value: bool = False) -> dict[int, int]:
+    def query_map_incentive_ratio(
+        self, extract_value: bool = False
+    ) -> dict[int, int]:
         """
         Retrieves a mapping of incentive ratios for the network.
 
@@ -2187,7 +2275,9 @@ class CommuneClient:
             "IncentiveRatio"
         ]
 
-    def query_map_trust_ratio(self, extract_value: bool = False) -> dict[int, int]:
+    def query_map_trust_ratio(
+        self, extract_value: bool = False
+    ) -> dict[int, int]:
         """
         Retrieves a mapping of trust ratios for the network.
 
@@ -2202,9 +2292,13 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("TrustRatio", extract_value=extract_value)["TrustRatio"]
+        return self.query_map("TrustRatio", extract_value=extract_value)[
+            "TrustRatio"
+        ]
 
-    def query_map_vote_mode_subnet(self, extract_value: bool = False) -> dict[int, str]:
+    def query_map_vote_mode_subnet(
+        self, extract_value: bool = False
+    ) -> dict[int, str]:
         """
         Retrieves a mapping of vote modes for subnets within the network.
 
@@ -2241,11 +2335,14 @@ class CommuneClient:
         """
 
         return self.query_map(
-            "LegitWhitelist", module="GovernanceModule", extract_value=extract_value)[
-            "LegitWhitelist"
-        ]
+            "LegitWhitelist",
+            module="GovernanceModule",
+            extract_value=extract_value,
+        )["LegitWhitelist"]
 
-    def query_map_subnet_names(self, extract_value: bool = False) -> dict[int, str]:
+    def query_map_subnet_names(
+        self, extract_value: bool = False
+    ) -> dict[int, str]:
         """
         Retrieves a mapping of subnet names within the network.
 
@@ -2260,7 +2357,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("SubnetNames", extract_value=extract_value)["SubnetNames"]
+        return self.query_map("SubnetNames", extract_value=extract_value)[
+            "SubnetNames"
+        ]
 
     def query_map_balances(
         self, extract_value: bool = False, block_hash: str | None = None
@@ -2279,9 +2378,12 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Account", module="System", extract_value=extract_value, block_hash=block_hash)[
-            "Account"
-        ]
+        return self.query_map(
+            "Account",
+            module="System",
+            extract_value=extract_value,
+            block_hash=block_hash,
+        )["Account"]
 
     def query_map_registration_blocks(
         self, netuid: int = 0, extract_value: bool = False
@@ -2325,7 +2427,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query_map("Name", [netuid], extract_value=extract_value)["Name"]
+        return self.query_map("Name", [netuid], extract_value=extract_value)[
+            "Name"
+        ]
 
     #  == QUERY FUNCTIONS == #
 
@@ -2505,7 +2609,9 @@ class CommuneClient:
             QueryError: If the query to the network fails or is invalid.
         """
 
-        return self.query("TotalIssuance", module="Balances", block_hash=block_hash)
+        return self.query(
+            "TotalIssuance", module="Balances", block_hash=block_hash
+        )
 
     def get_total_stake(self, block_hash: str | None = None) -> int:
         """
@@ -2926,7 +3032,9 @@ class CommuneClient:
         """
 
         # Has to use query map in order to iterate through the storage prefix.
-        return self.query_map("StakeFrom", [key], extract_value=False).get("StakeFrom", {})
+        return self.query_map("StakeFrom", [key], extract_value=False).get(
+            "StakeFrom", {}
+        )
 
     def get_staketo(
         self,
@@ -2949,7 +3057,9 @@ class CommuneClient:
         """
 
         # Has to use query map in order to iterate through the storage prefix.
-        return self.query_map("StakeTo", [key], extract_value=False).get("StakeTo", {})
+        return self.query_map("StakeTo", [key], extract_value=False).get(
+            "StakeTo", {}
+        )
 
     def get_balance(
         self,
@@ -3017,7 +3127,9 @@ class CommuneClient:
         return result
 
     def get_voting_power_delegators(self) -> list[Ss58Address]:
-        result = self.query("NotDelegatingVotingPower", [], module="GovernanceModule")
+        result = self.query(
+            "NotDelegatingVotingPower", [], module="GovernanceModule"
+        )
         return result
 
     def add_transfer_dao_treasury_proposal(
