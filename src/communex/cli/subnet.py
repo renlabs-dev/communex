@@ -11,7 +11,7 @@ from communex.cli._common import (
 )
 from communex.compat.key import resolve_key_ss58, try_classic_load_key
 from communex.errors import ChainTransactionError
-from communex.misc import IPFS_REGEX, get_map_subnets_params, get_map_displayable_subnets
+from communex.misc import IPFS_REGEX, get_map_displayable_subnets, get_map_subnets_params
 from communex.types import SubnetParams, VoteMode
 
 subnet_app = typer.Typer(no_args_is_help=True)
