@@ -161,7 +161,7 @@ def update(
     max_allowed_validators: int = typer.Option(None),
     max_encryption_period: int = typer.Option(None),
     copier_margin: int = typer.Option(None),
-    use_weights_encryption: int = typer.Option(None),
+    use_weights_encryption: bool = typer.Option(None),
 ):
     """
     Updates a subnet.
@@ -205,6 +205,7 @@ def update(
             "MaximumSetWeightCallsPerEpoch"
         )
     resolved_key = try_classic_load_key(key)
+    subnet_params["max_allowed_validators"] = None
     with context.progress_status("Updating subnet ..."):
         response = client.update_subnet(
             key=resolved_key, params=subnet_params, netuid=netuid

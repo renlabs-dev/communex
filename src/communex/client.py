@@ -6,6 +6,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Mapping, TypeVar, cast
 
+from communex.encryption import encrypt_weights
 from substrateinterface import (
     ExtrinsicReceipt,
     Keypair,
@@ -1263,6 +1264,51 @@ class CommuneClient:
         }
 
         response = self.compose_call("set_weights", params=params, key=key)
+
+        return response
+
+    def vote_encrypted(
+        self,
+        key: Keypair,
+        uids: list[int],
+        weights: list[int],
+        netuid: int = 0,
+    ) -> ExtrinsicReceipt:
+        """
+        Casts votes on a list of module UIDs with corresponding weights.
+
+        The length of the UIDs list and the weights list should be the same.
+        Each weight corresponds to the UID at the same index.
+
+        Args:
+            key: The keypair used for signing the vote transaction.
+            uids: A list of module UIDs to vote on.
+            weights: A list of weights corresponding to each UID.
+            netuid: The network identifier.
+
+        Returns:
+            A receipt of the voting transaction.
+
+        Raises:
+            InvalidParameterError: If the lengths of UIDs and weights lists
+                do not match.
+            ChainTransactionError: If the transaction fails.
+        """
+
+        assert len(uids) == len(weights)
+        public_key = key.public_key
+        decryptors = self.query_map(
+            "SubnetDecryptionData", module="SubnetEmissionModule"
+        )
+        params = {
+            "uids": uids,
+            "weights": weights,
+            "netuid": netuid,
+        }
+
+        response = self.compose_call(
+            "set_weights_encrypted", params=params, key=key
+        )
 
         return response
 
@@ -3157,3 +3203,12 @@ class CommuneClient:
             params=params,
             key=key,
         )
+
+
+if __name__ == "__main__":
+    from communex._common import get_node_url
+    from communex.compat.key import try_classic_load_key
+
+    kp = try_classic_load_key("dev01")
+    client = CommuneClient(get_node_url(use_testnet=True))
+    client.vote_encrypted(kp, [0, 1], [10, 20])

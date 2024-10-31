@@ -4,6 +4,7 @@ Common types for the communex module.
 
 from enum import Enum
 from typing import NewType, TypedDict
+from pydantic import BaseModel
 
 Ss58Address = NewType("Ss58Address", str)
 """Substrate SS58 address.
@@ -28,6 +29,12 @@ BurnConfig = NewType("BurnConfig", dict[MinBurn, MaxBurn])
 class VoteMode(Enum):
     authority = "Authority"
     vote = "Vote"
+
+
+class subnetDecryptionInfo(BaseModel):
+    node_id: Ss58Address
+    node_public_key: bytes
+    block_assigned: int
 
 
 class DisplayGovernanceConfiguration(TypedDict):
