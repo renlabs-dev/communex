@@ -1273,7 +1273,9 @@ class CommuneClient:
         params = {
             "new_authorities": new_authorities,
         }
-        response = self.compose_call("add_authorities", params=params, key=key)
+        response = self.compose_call(
+            "add_authorities", params=params, key=key, module="Offworker"
+        )
         return response
 
     def vote_encrypted(
