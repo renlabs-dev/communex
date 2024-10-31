@@ -1266,6 +1266,16 @@ class CommuneClient:
 
         return response
 
+    def add_authorities(
+        self, key: Keypair, new_authorities: list[tuple[Ss58Address, bytes]]
+    ):
+        """only for the sudo key"""
+        params = {
+            "new_authorities": new_authorities,
+        }
+        response = self.compose_call("add_authorities", params=params, key=key)
+        return response
+
     def vote_encrypted(
         self,
         key: Keypair,
@@ -3210,4 +3220,5 @@ if __name__ == "__main__":
 
     kp = try_classic_load_key("dev01")
     client = CommuneClient(get_node_url(use_testnet=True))
-    client.vote_encrypted(kp, [0, 1], [10, 20])
+    client.add_authorities(kp, [(kp.ss58_address, b"asfoqkmeoke")])
+    # client.vote_encrypted(kp, [0, 1], [10, 20])
