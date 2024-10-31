@@ -4,6 +4,7 @@ Common types for the communex module.
 
 from enum import Enum
 from typing import NewType, TypedDict
+
 from pydantic import BaseModel
 
 Ss58Address = NewType("Ss58Address", str)

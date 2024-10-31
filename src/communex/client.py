@@ -6,7 +6,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Mapping, TypeVar, cast
 
-from communex.encryption import encrypt_weights
 from substrateinterface import (
     ExtrinsicReceipt,
     Keypair,
