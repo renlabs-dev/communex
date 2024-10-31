@@ -1267,14 +1267,23 @@ class CommuneClient:
         return response
 
     def add_authorities(
-        self, key: Keypair, new_authorities: list[tuple[Ss58Address, bytes]]
+        self,
+        key: Keypair,
+        new_authorities: list[tuple[Ss58Address, tuple[str, str]]],
     ):
-        """only for the sudo key"""
+        """
+        only for the sudo key
+        give the authorities as hexadecimal
+        """
         params = {
             "new_authorities": new_authorities,
         }
         response = self.compose_call(
-            "add_authorities", params=params, key=key, module="Offworker"
+            "add_authorities",
+            params=params,
+            key=key,
+            module="Offworker",
+            sudo=True,
         )
         return response
 
