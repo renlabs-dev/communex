@@ -1,15 +1,28 @@
 import random
 import re
+import warnings
 from collections import defaultdict
 from enum import Enum
-from typing import Mapping, TypeVar
+from typing import Any, Callable, Mapping, TypeVar
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from communex.balance import from_nano
 from communex.types import Ss58Address
 
 IPFS_REGEX = re.compile(r"^Qm[1-9A-HJ-NP-Za-km-z]{44}$")
+
+
+def deprecated(func: Callable[..., Any]) -> Callable[..., Any]:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        warnings.warn(
+            f"The function {func.__name__} is deprecated and may be removed in a future version.",
+            DeprecationWarning,
+        )
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 class ComxSettings(BaseSettings):
@@ -19,6 +32,8 @@ class ComxSettings(BaseSettings):
         "wss://api.communeai.net",
     ]
     TESTNET_NODE_URLS: list[str] = ["wss://testnet.api.communeai.net"]
+    UNIVERSAL_PASSWORD: SecretStr | None = None
+    KEY_PASSWORDS: dict[str, SecretStr] | None = None
 
 
 def get_node_url(

@@ -13,7 +13,7 @@ from communex.cli._common import (
     tranform_network_params,
 )
 from communex.client import CommuneClient
-from communex.compat.key import local_key_addresses, try_classic_load_key
+from communex.compat.key import local_key_addresses
 from communex.misc import (
     IPFS_REGEX,
     get_global_params,
@@ -124,8 +124,9 @@ def propose_globally(
     Adds a global proposal to the network.
     """
     context = make_custom_context(ctx)
-    resolved_key = try_classic_load_key(key, context)
     client = context.com_client()
+
+    resolved_key = context.load_key(key, None)
 
     provided_params = cast(NetworkParams, provided_params)
     global_params = get_global_params(client)
@@ -139,7 +140,7 @@ def propose_globally(
 
     if not re.match(IPFS_REGEX, cid):
         context.error(f"CID provided is invalid: {cid}")
-        exit(1)
+        typer.Exit(code=1)
     with context.progress_status("Adding a proposal..."):
         client.add_global_proposal(resolved_key, global_params, cid)
     context.info("Proposal added.")
@@ -150,7 +151,7 @@ def get_valid_voting_keys(
     client: CommuneClient,
     threshold: int = 25000000000,  # 25 $COMAI
 ) -> dict[str, int]:
-    local_keys = local_key_addresses(ctx=ctx, universal_password=None)
+    local_keys = local_key_addresses(password_provider=ctx.password_manager)
     keys_stake = local_keys_to_stakedbalance(client, local_keys)
     keys_stake = {
         key: stake for key, stake in keys_stake.items() if stake >= threshold
@@ -184,9 +185,9 @@ def vote_proposal(
         keys_stake = {key: None}
 
     for voting_key in track(keys_stake.keys(), description="Voting..."):
-        resolved_key = try_classic_load_key(voting_key, context)
+        keypair = context.load_key(voting_key, None)
         try:
-            client.vote_on_proposal(resolved_key, proposal_id, agree)
+            client.vote_on_proposal(keypair, proposal_id, agree)
         except Exception as e:
             print(f"Error while voting with key {key}: ", e)
             print("Skipping...")
@@ -201,7 +202,7 @@ def unvote_proposal(ctx: Context, key: str, proposal_id: int):
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    resolved_key = try_classic_load_key(key, context)
+    resolved_key = context.load_key(key, None)
     with context.progress_status(f"Unvoting on a proposal {proposal_id}..."):
         client.unvote_on_proposal(resolved_key, proposal_id)
 
@@ -223,7 +224,7 @@ def add_custom_proposal(ctx: Context, key: str, cid: str):
     ipfs_prefix = "ipfs://"
     cid = ipfs_prefix + cid
 
-    resolved_key = try_classic_load_key(key, context)
+    resolved_key = context.load_key(key, None)
 
     with context.progress_status("Adding a proposal..."):
         client.add_custom_proposal(resolved_key, cid)
@@ -266,7 +267,7 @@ def set_root_weights(ctx: Context, key: str):
     for uid, weight in zip(uids, weights):
         typer.echo(f"Subnet {uid} ({subnet_names[uid]}): {weight}")
 
-    resolved_key = try_classic_load_key(key, context)
+    resolved_key = context.load_key(key, None)
 
     client.vote(netuid=rootnet_id, uids=uids, weights=weights, key=resolved_key)
 

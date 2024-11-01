@@ -10,7 +10,6 @@ from communex.cli._common import (
     make_custom_context,
     print_table_from_plain_dict,
 )
-from communex.compat.key import resolve_key_ss58_encrypted, try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.faucet.powv2 import solve_for_difficulty_fast
 
@@ -30,7 +29,7 @@ def free_balance(
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    key_address = resolve_key_ss58_encrypted(key, context, password)
+    key_address = context.resolve_key_ss58(key, password)
 
     with context.progress_status(
         f"Getting free balance of key {key_address}..."
@@ -53,7 +52,7 @@ def staked_balance(
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    key_address = resolve_key_ss58_encrypted(key, context, password)
+    key_address = context.resolve_key_ss58(key, password)
 
     with context.progress_status(
         f"Getting staked balance of key {key_address}..."
@@ -76,7 +75,7 @@ def show(
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    key_address = resolve_key_ss58_encrypted(key, context, password)
+    key_address = context.resolve_key_ss58(key, password)
 
     with context.progress_status(f"Getting value of key {key_address}..."):
         staked_balance = sum(client.get_staketo(key=key_address).values())
@@ -107,7 +106,7 @@ def get_staked(
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    key_address = resolve_key_ss58_encrypted(key, context, password)
+    key_address = context.resolve_key_ss58(key, password)
 
     with context.progress_status(f"Getting stake of {key_address}..."):
         result = sum(client.get_staketo(key=key_address).values())
@@ -124,8 +123,9 @@ def transfer(ctx: Context, key: str, amount: float, dest: str):
     client = context.com_client()
 
     nano_amount = to_nano(amount)
-    resolved_key = try_classic_load_key(key, context)
-    resolved_dest = resolve_key_ss58_encrypted(dest, context)
+
+    resolved_key = context.load_key(key, None)
+    resolved_dest = context.resolve_key_ss58(dest, None)
 
     if not context.confirm(
         f"Are you sure you want to transfer {amount} tokens to {dest}?"
@@ -153,16 +153,16 @@ def transfer_stake(
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    resolved_from = resolve_key_ss58_encrypted(from_key, context)
-    resolved_dest = resolve_key_ss58_encrypted(dest, context)
-    resolved_key = try_classic_load_key(key, context)
     nano_amount = to_nano(amount)
+    keypair = context.load_key(key, None)
+    resolved_from = context.resolve_key_ss58(from_key)
+    resolved_dest = context.resolve_key_ss58(dest)
 
     with context.progress_status(
         f"Transferring {amount} tokens from {from_key} to {dest}' ..."
     ):
         response = client.transfer_stake(
-            key=resolved_key,
+            key=keypair,
             amount=nano_amount,
             from_module_key=resolved_from,
             dest_module_address=resolved_dest,
@@ -188,8 +188,9 @@ def stake(
     client = context.com_client()
 
     nano_amount = to_nano(amount)
-    resolved_key = try_classic_load_key(key, context)
-    resolved_dest = resolve_key_ss58_encrypted(dest, context)
+    keypair = context.load_key(key, None)
+    resolved_dest = context.resolve_key_ss58(dest, None)
+
     delegating_message = (
         "By default you delegate DAO "
         "voting power to the validator you stake to. "
@@ -198,9 +199,10 @@ def stake(
     )
     context.info("INFO: ", style="bold green", end="")  # type: ignore
     context.info(delegating_message)  # type: ignore
+
     with context.progress_status(f"Staking {amount} tokens to {dest}..."):
         response = client.stake(
-            key=resolved_key, amount=nano_amount, dest=resolved_dest
+            key=keypair, amount=nano_amount, dest=resolved_dest
         )
 
     if response.is_success:
@@ -218,12 +220,12 @@ def unstake(ctx: Context, key: str, amount: float, dest: str):
     client = context.com_client()
 
     nano_amount = to_nano(amount)
-    resolved_key = try_classic_load_key(key, context)
-    resolved_dest = resolve_key_ss58_encrypted(dest, context)
+    keypair = context.load_key(key, None)
+    resolved_dest = context.resolve_key_ss58(dest, None)
 
     with context.progress_status(f"Unstaking {amount} tokens from {dest}'..."):
         response = client.unstake(
-            key=resolved_key, amount=nano_amount, dest=resolved_dest
+            key=keypair, amount=nano_amount, dest=resolved_dest
         )  # TODO: is it right?
 
     if response.is_success:
@@ -241,10 +243,13 @@ def run_faucet(
 ):
     context = make_custom_context(ctx)
     use_testnet = ctx.obj.use_testnet
+
     if not use_testnet:
         context.error("Faucet only enabled on testnet")
-        return
-    resolved_key = try_classic_load_key(key, context)
+        raise typer.Exit(code=1)
+
+    resolved_key = context.load_key(key, None)
+
     client = context.com_client()
     for _ in range(num_executions):
         with context.progress_status("Solving PoW..."):
@@ -279,17 +284,17 @@ def transfer_dao_funds(
     dest: str,
 ):
     context = make_custom_context(ctx)
+
     if not re.match(IPFS_REGEX, cid_hash):
         context.error(f"CID provided is invalid: {cid_hash}")
-        exit(1)
+        raise typer.Exit(code=1)
+
     ipfs_prefix = "ipfs://"
     cid = ipfs_prefix + cid_hash
 
-    client = context.com_client()
-
     nano_amount = to_nano(amount)
-    dest = resolve_key_ss58_encrypted(dest, context)
-    signer_keypair = try_classic_load_key(signer_key, context)
-    client.add_transfer_dao_treasury_proposal(
-        signer_keypair, cid, nano_amount, dest
-    )
+    keypair = context.load_key(signer_key, None)
+    dest = context.resolve_key_ss58(dest, None)
+
+    client = context.com_client()
+    client.add_transfer_dao_treasury_proposal(keypair, cid, nano_amount, dest)

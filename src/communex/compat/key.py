@@ -6,21 +6,23 @@ WIP
 
 import json
 import os
-from getpass import getpass
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import Any, cast
 
+from nacl.exceptions import CryptoError
 from substrateinterface import Keypair
 
 from communex.compat.storage import COMMUNE_HOME, classic_load, classic_put
 from communex.compat.types import CommuneKeyDict
+from communex.errors import (
+    InvalidPasswordError,
+    KeyNotFoundError,
+    PasswordNotProvidedError,
+)
 from communex.key import check_ss58_address, is_ss58_address
+from communex.password import NoPassword, PasswordProvider
 from communex.types import Ss58Address
 from communex.util import bytes_to_hex, check_str
-
-
-class GenericCtx(Protocol):
-    def info(self, message: str): ...
 
 
 def check_key_dict(key_dict: Any) -> CommuneKeyDict:
@@ -68,7 +70,7 @@ def classic_key_path(name: str) -> str:
 
 
 def from_classic_dict(
-    data: dict[Any, Any], from_mnemonic: bool = False
+    data: dict[Any, Any], from_mnemonic: bool = True
 ) -> Keypair:
     """
     Creates a `Key` from a dict conforming to the classic `commune` format.
@@ -126,7 +128,7 @@ def to_classic_dict(keypair: Keypair, path: str) -> CommuneKeyDict:
 def classic_load_key(
     name: str,
     password: str | None = None,
-    from_mnemonic: bool = False,
+    from_mnemonic: bool = True,
 ) -> Keypair:
     """
     Loads the keypair with the given name from a disk.
@@ -135,6 +137,47 @@ def classic_load_key(
     key_dict_json = classic_load(path, password=password)
     key_dict = json.loads(key_dict_json)
     return from_classic_dict(key_dict, from_mnemonic=from_mnemonic)
+
+
+def try_classic_load_key(
+    key_name: str,
+    password: str | None = None,
+    *,
+    password_provider: PasswordProvider = NoPassword(),
+) -> Keypair:
+    password = password or password_provider.get_password(key_name)
+    try:
+        try:
+            keypair = classic_load_key(key_name, password=password)
+        except PasswordNotProvidedError:
+            password = password_provider.ask_password(key_name)
+            keypair = classic_load_key(key_name, password=password)
+    except FileNotFoundError as err:
+        raise KeyNotFoundError(
+            f"Key '{key_name}' is not a valid SS58 address nor a valid key name",
+            err,
+        )
+    except CryptoError as err:
+        raise InvalidPasswordError(
+            f"Invalid password for key '{key_name}'", err
+        )
+
+    return keypair
+
+
+def try_load_key(name: str, password: str | None = None):
+    """
+    DEPRECATED
+    """
+    raise DeprecationWarning("Use try_classic_load_key instead")
+    # try:
+    #     key_dict = classic_load(name, password=password)
+    # except json.JSONDecodeError:
+    #     prompt = f"Please provide the password for the key {name}"
+    #     print(prompt)
+    #     password = getpass()
+    #     key_dict = classic_load(name, password=password)
+    # return key_dict
 
 
 def is_encrypted(name: str) -> bool:
@@ -160,97 +203,13 @@ def classic_store_key(
     classic_put(path, key_dict_json, password=password)
 
 
-def try_classic_load_key(
-    name: str,
-    context: GenericCtx | None = None,
-    password: str | None = None,
-    from_mnemonic: bool = False,
-) -> Keypair:
-    try:
-        keypair = classic_load_key(
-            name, password=password, from_mnemonic=from_mnemonic
-        )
-    except json.JSONDecodeError:
-        prompt = f"Please provide the password for the key {name}"
-        if context is not None:
-            context.info(prompt)
-        else:
-            print(prompt)
-        password = getpass()
-        keypair = classic_load_key(
-            name, password=password, from_mnemonic=from_mnemonic
-        )
-    return keypair
-
-
-def try_load_key(
-    name: str, context: GenericCtx | None = None, password: str | None = None
-):
-    try:
-        key_dict = classic_load(name, password=password)
-    except json.JSONDecodeError:
-        prompt = f"Please provide the password for the key {name}"
-        if context is not None:
-            context.info(prompt)
-        else:
-            print(prompt)
-        password = getpass()
-        key_dict = classic_load(name, password=password)
-    return key_dict
-
-
-def local_key_addresses(
-    ctx: GenericCtx | None = None, universal_password: str | None = None
-) -> dict[str, Ss58Address]:
-    """
-    Retrieves a mapping of local key names to their SS58 addresses.
-    If password is passed, it will be used to decrypt every key.
-    If password is not passed and ctx is,
-    the user will be prompted for the password.
-    """
-    home = Path.home()
-    key_dir = home / ".commune" / "key"
-
-    key_names = [
-        f.stem
-        for f in key_dir.iterdir()
-        if f.is_file() and not f.name.startswith(".")
-    ]
-
-    addresses_map: dict[str, Ss58Address] = {}
-
-    for key_name in key_names:
-        # issue #11 https://github.com/agicommies/communex/issues/12 added check for key2address to stop error from being thrown by wrong key type.
-        if key_name == "key2address":
-            print(
-                "key2address is saved in an invalid format. It will be ignored."
-            )
-            continue
-        encrypted = is_encrypted(key_name)
-        if encrypted:
-            if universal_password:
-                password = universal_password
-            elif ctx:
-                ctx.info(
-                    f"Please provide the password for the key '{key_name}'"
-                )
-                password = getpass()
-            else:
-                print(f"Please provide the password for the key '{key_name}'")
-                password = getpass()
-        else:
-            password = None
-        key_dict = classic_load_key(key_name, password=password)
-        addresses_map[key_name] = check_ss58_address(key_dict.ss58_address)
-
-    return addresses_map
-
-
 def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
     """
     Resolves a keypair or key name to its corresponding SS58 address.
 
     If the input is already an SS58 address, it is returned as is.
+
+    DEPRECATED
     """
 
     if isinstance(key, Keypair):
@@ -273,8 +232,8 @@ def resolve_key_ss58(key: Ss58Address | Keypair | str) -> Ss58Address:
 
 def resolve_key_ss58_encrypted(
     key: Ss58Address | Keypair | str,
-    context: GenericCtx,
     password: str | None = None,
+    password_provider: PasswordProvider = NoPassword(),
 ) -> Ss58Address:
     """
     Resolves a keypair or key name to its corresponding SS58 address.
@@ -288,17 +247,56 @@ def resolve_key_ss58_encrypted(
     if is_ss58_address(key):
         return key
 
-    try:
-        keypair = classic_load_key(key, password=password)
-    except json.JSONDecodeError:
-        context.info(f"Please provide the password for the key {key}")
-        password = getpass()
-        keypair = classic_load_key(key, password=password)
-    except FileNotFoundError:
-        raise ValueError(
-            f"Key is not a valid SS58 address nor a valid key name: {key}"
-        )
+    keypair = try_classic_load_key(
+        key, password=password, password_provider=password_provider
+    )
 
     address = keypair.ss58_address
 
     return check_ss58_address(address, keypair.ss58_format)
+
+
+def local_key_addresses(
+    password_provider: PasswordProvider = NoPassword(),
+) -> dict[str, Ss58Address]:
+    """
+    Retrieves a mapping of local key names to their SS58 addresses.
+    If password is passed, it will be used to decrypt every key.
+    If password is not passed and ctx is,
+    the user will be prompted for the password.
+    """
+
+    # TODO: refactor to return mapping of (key_name -> Keypair)
+    # Outside of this, Keypair can be mapped to Ss58Address
+
+    home = Path.home()
+    key_dir = home / ".commune" / "key"
+
+    key_names = [
+        f.stem
+        for f in key_dir.iterdir()
+        if f.is_file() and not f.name.startswith(".")
+    ]
+
+    addresses_map: dict[str, Ss58Address] = {}
+
+    for key_name in key_names:
+        # issue #12 https://github.com/agicommies/communex/issues/12
+        # added check for key2address to stop error
+        # from being thrown by wrong key type.
+        if key_name == "key2address":
+            print(
+                "key2address is saved in an invalid format. It will be ignored."
+            )
+            continue
+
+        password = password_provider.get_password(key_name)
+        try:
+            keypair = classic_load_key(key_name, password=password)
+        except PasswordNotProvidedError:
+            password = password_provider.ask_password(key_name)
+            keypair = classic_load_key(key_name, password=password)
+
+        addresses_map[key_name] = check_ss58_address(keypair.ss58_address)
+
+    return addresses_map
