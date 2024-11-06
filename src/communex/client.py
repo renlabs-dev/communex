@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Mapping, TypeVar, cast
+import hashlib
 
 from substrateinterface import (
     ExtrinsicReceipt,
@@ -14,6 +15,7 @@ from substrateinterface import (
 from substrateinterface.storage import StorageKey
 
 from communex._common import transform_stake_dmap
+from communex.encryption import encrypt_weights, bytes_from_hex
 from communex.errors import ChainTransactionError, NetworkQueryError
 from communex.types import NetworkParams, Ss58Address, SubnetParams
 
@@ -1316,18 +1318,43 @@ class CommuneClient:
         """
 
         assert len(uids) == len(weights)
-        public_key = key.public_key
-        decryptors = self.query_map(
-            "SubnetDecryptionData", module="SubnetEmissionModule"
+        decryptors = self.query(
+            "DecryptionNodes",
+            module="SubnetEmissionModule",
         )
+        breakpoint()
+        subnet_data = decryptors.get(netuid)
+        if subnet_data is None:
+            raise ValueError("Subnet data key not found")
+        subnet_key = subnet_data.get("node_public_key")
+        if not subnet_key:
+            raise ValueError("Subnet decryption key not found")
+        data = list(zip(uids, weights))
+        decryptor_tuple = (
+            bytes_from_hex(subnet_key[0]),
+            bytes_from_hex("010001"),
+        )
+        validator_key = [int(x) for x in key.public_key]
+        encrypted_weights = encrypt_weights(
+            decryptor_tuple,
+            data,
+            validator_key,
+        )
+        sha256_hash = hashlib.sha256()
+        sha256_hash.update(str(weights).encode())
+        decrypted_hash = sha256_hash.hexdigest()
         params = {
             "uids": uids,
-            "weights": weights,
+            "encrypted_weights": encrypted_weights,
             "netuid": netuid,
+            "decrypted_weights_hash": decrypted_hash,
         }
 
         response = self.compose_call(
-            "set_weights_encrypted", params=params, key=key
+            "set_weights_encrypted",
+            params=params,
+            key=key,
+            module="SubnetEmissionModule",
         )
 
         return response
@@ -3230,6 +3257,8 @@ if __name__ == "__main__":
     from communex.compat.key import try_classic_load_key
 
     kp = try_classic_load_key("dev01")
-    client = CommuneClient(get_node_url(use_testnet=True))
-    client.add_authorities(kp, [(kp.ss58_address, b"asfoqkmeoke")])
-    # client.vote_encrypted(kp, [0, 1], [10, 20])
+    node = get_node_url(use_testnet=True)
+    print(f"Using node: {node}")
+    client = CommuneClient(node)
+    # client.add_authorities(kp, [(kp.ss58_address, b"asfoqkmeoke")])
+    client.vote_encrypted(kp, [0], [10], netuid=39)
