@@ -12,3 +12,19 @@ class NetworkQueryError(NetworkError):
 
 class NetworkTimeoutError(NetworkError):
     """Timeout error"""
+
+
+class PasswordError(Exception):
+    """Password related error."""
+
+
+class PasswordNotProvidedError(PasswordError):
+    """Password is not provided."""
+
+
+class InvalidPasswordError(PasswordError):
+    """Password is invalid."""
+
+
+class KeyNotFoundError(Exception):
+    """Key not found error."""

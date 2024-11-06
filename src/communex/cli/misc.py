@@ -5,11 +5,7 @@ from communex._common import BalanceUnit, format_balance
 from communex.balance import from_nano
 from communex.cli._common import make_custom_context, print_module_info
 from communex.client import CommuneClient
-from communex.compat.key import (
-    local_key_addresses,
-    resolve_key_ss58_encrypted,
-    try_classic_load_key,
-)
+from communex.compat.key import local_key_addresses
 from communex.misc import get_map_modules
 from communex.types import ModuleInfoWithOptionalBalance
 
@@ -89,7 +85,7 @@ def stats(ctx: Context, balances: bool = False, netuid: int = 0):
             client, netuid=netuid, include_balances=balances
         )
     modules_to_list = [value for _, value in modules.items()]
-    local_keys = local_key_addresses()
+    local_keys = local_key_addresses(password_provider=context.password_manager)
     local_modules = [
         *filter(
             lambda module: module["key"] in local_keys.values(), modules_to_list
@@ -132,8 +128,8 @@ def delegate_rootnet_control(ctx: Context, key: str, target: str):
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-    resolved_key = try_classic_load_key(key, context)
-    ss58_target = resolve_key_ss58_encrypted(target, context)
+    resolved_key = context.load_key(key, None)
+    ss58_target = context.resolve_key_ss58(target, None)
 
     with context.progress_status("Delegating control of the rootnet..."):
         client.delegate_rootnet_control(resolved_key, ss58_target)

@@ -12,7 +12,6 @@ from communex.cli._common import (
     print_module_info,
     print_table_from_plain_dict,
 )
-from communex.compat.key import try_classic_load_key
 from communex.errors import ChainTransactionError
 from communex.key import check_ss58_address
 from communex.misc import get_map_modules
@@ -71,7 +70,8 @@ def register(
             context.info("Not registering")
             raise typer.Abort()
 
-    resolved_key = try_classic_load_key(key, context)
+    resolved_key = context.load_key(key, None)
+
     with context.progress_status(f"Registering Module {name}..."):
         subnet_name = client.get_subnet_name(netuid)
         address = f"{ip}:{port}"
@@ -98,7 +98,8 @@ def deregister(ctx: Context, key: str, netuid: int):
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    resolved_key = try_classic_load_key(key, context)
+    resolved_key = context.load_key(key, None)
+
     with context.progress_status(
         f"Deregistering your module on subnet {netuid}..."
     ):
@@ -127,9 +128,11 @@ def update(
 
     context = make_custom_context(ctx)
     client = context.com_client()
+
     if metadata and len(metadata) > 59:
         raise ValueError("Metadata must be less than 60 characters")
-    resolved_key = try_classic_load_key(key)
+
+    resolved_key = context.load_key(key, None)
 
     if ip and not is_ip_valid(ip):
         raise ValueError("Invalid ip address")
@@ -249,7 +252,8 @@ def serve(
         context.error(f"Class `{class_name}` not found in module `{module}`")
         raise typer.Exit(code=1)
 
-    keypair = try_classic_load_key(key, context)
+    keypair = context.load_key(key, None)
+
     if test_mode:
         subnets_whitelist = None
     token_refill_rate = token_refill_rate_base_multiplier or 1
