@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.35
+- Refactored password handling to support environment variables
+- Added COMX_UNIVERSAL_PASSWORD for a default password
+- Added COMX_KEY_PASSWORDS for a key-password mapping, e.g., COMX_KEY_PASSWORDS='{"foo": "bar"}'
+
 ## 0.1.34.6
 
 - Add `py.typed` so type-checkers will know to use our type annotations.
