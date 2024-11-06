@@ -385,10 +385,6 @@ def list_curator_applications(
     with context.progress_status("Querying applications..."):
         apps = client.query_map_curator_applications()
 
-    # if json:
-    #    print(apps)
-    # else:
-
     keys = apps.keys()
 
     data: dict[str, dict[object, object]] = {}
@@ -416,6 +412,9 @@ def list_curator_applications(
             ipfs_url = item_data.replace('ipfs://', '')
         else:
             ipfs_url = item_data
+
+        if not re.match(IPFS_REGEX, ipfs_url):
+            continue # Invalid IPFS cid, skip
 
         requests[key] = ipfs_url # type: ignore
 
