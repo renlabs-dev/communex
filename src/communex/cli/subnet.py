@@ -4,6 +4,10 @@ from typing import Any, cast
 import typer
 from typer import Context
 
+import asyncio
+import aiohttp
+
+import json
 from communex.cli._common import (
     make_custom_context,
     print_table_from_plain_dict,
@@ -175,38 +179,38 @@ def update(
     client = context.com_client()
     resolved_key = try_classic_load_key(key)
 
-    module_burn_config: BurnConfiguration = cast(BurnConfiguration, {
-        'min_burn': min_burn,
-        'max_burn': max_burn,
-        'adjustment_alpha': adjustment_alpha,
-        'target_registrations_interval': target_registrations_interval,
-        'target_registrations_per_interval': target_registrations_per_interval,
-        'max_registrations_per_interval': max_registrations_per_interval
-    })
+    module_burn_config = BurnConfiguration(
+        min_burn = min_burn,
+        max_burn = max_burn,
+        adjustment_alpha = adjustment_alpha,
+        target_registrations_interval = target_registrations_interval,
+        target_registrations_per_interval = target_registrations_per_interval,
+        max_registrations_per_interval = max_registrations_per_interval
+    )
 
-    subnet = cast(SubnetParamsWithVoteMode, {
-        'name': name,
-        'tempo': tempo,
-        'min_allowed_weights': min_allowed_weights,
-        'max_allowed_weights': max_allowed_weights,
-        'max_allowed_uids': max_allowed_uids,
-        'max_weight_age': max_weight_age,
-        'trust_ratio': trust_ratio ,
-        'founder_share': founder_share ,
-        'incentive_ratio': incentive_ratio ,
-        'founder': resolve_key_ss58(founder),
-        'maximum_set_weight_calls_per_epoch':
+    subnet = SubnetParamsWithVoteMode(
+        name = name,
+        tempo = tempo,
+        min_allowed_weights = min_allowed_weights,
+        max_allowed_weights = max_allowed_weights,
+        max_allowed_uids = max_allowed_uids,
+        max_weight_age = max_weight_age,
+        trust_ratio = trust_ratio ,
+        founder_share = founder_share ,
+        incentive_ratio = incentive_ratio ,
+        founder = resolve_key_ss58(founder),
+        maximum_set_weight_calls_per_epoch =
             client.query("MaximumSetWeightCallsPerEpoch")
                 if maximum_set_weight_calls_per_epoch is None # type: ignore
                 else maximum_set_weight_calls_per_epoch,
-        'bonds_ma': client.query("BondsMovingAverage") if bonds_ma is None else bonds_ma, # type: ignore
-        'immunity_period': immunity_period ,
-        'min_validator_stake': min_validator_stake ,
-        'max_allowed_validators': max_allowed_validators ,
-        'module_burn_config': module_burn_config,
-        'subnet_metadata': metadata,
-        'vote_mode': vote_mode,
-    })
+        bonds_ma = client.query("BondsMovingAverage") if bonds_ma is None else bonds_ma, # type: ignore
+        immunity_period = immunity_period ,
+        min_validator_stake = min_validator_stake ,
+        max_allowed_validators = max_allowed_validators ,
+        module_burn_config = module_burn_config,
+        subnet_metadata = metadata,
+        vote_mode = vote_mode,
+    )
 
     with context.progress_status("Updating subnet ..."):
         response = client.update_subnet(
@@ -270,38 +274,38 @@ def propose_on_subnet(
     client = context.com_client()
     resolved_key = try_classic_load_key(key)
 
-    module_burn_config: BurnConfiguration = cast(BurnConfiguration, {
-        'min_burn': min_burn,
-        'max_burn': max_burn,
-        'adjustment_alpha': adjustment_alpha,
-        'target_registrations_interval': target_registrations_interval,
-        'target_registrations_per_interval': target_registrations_per_interval,
-        'max_registrations_per_interval': max_registrations_per_interval
-    })
+    module_burn_config = BurnConfiguration(
+        min_burn = min_burn,
+        max_burn = max_burn,
+        adjustment_alpha = adjustment_alpha,
+        target_registrations_interval = target_registrations_interval,
+        target_registrations_per_interval = target_registrations_per_interval,
+        max_registrations_per_interval = max_registrations_per_interval
+    )
 
-    subnet = cast(SubnetParamsWithVoteMode, {
-        'name': name,
-        'tempo': tempo,
-        'min_allowed_weights': min_allowed_weights,
-        'max_allowed_weights': max_allowed_weights,
-        'max_allowed_uids': max_allowed_uids,
-        'max_weight_age': max_weight_age,
-        'trust_ratio': trust_ratio ,
-        'founder_share': founder_share ,
-        'incentive_ratio': incentive_ratio ,
-        'founder': resolve_key_ss58(founder),
-        'maximum_set_weight_calls_per_epoch':
+    subnet = SubnetParamsWithVoteMode(
+        name = name,
+        tempo = tempo,
+        min_allowed_weights = min_allowed_weights,
+        max_allowed_weights = max_allowed_weights,
+        max_allowed_uids = max_allowed_uids,
+        max_weight_age = max_weight_age,
+        trust_ratio = trust_ratio ,
+        founder_share = founder_share ,
+        incentive_ratio = incentive_ratio ,
+        founder = resolve_key_ss58(founder),
+        maximum_set_weight_calls_per_epoch =
             client.query("MaximumSetWeightCallsPerEpoch")
                 if maximum_set_weight_calls_per_epoch is None # type: ignore
                 else maximum_set_weight_calls_per_epoch,
-        'bonds_ma': client.query("BondsMovingAverage") if bonds_ma is None else bonds_ma, # type: ignore
-        'immunity_period': immunity_period ,
-        'min_validator_stake': min_validator_stake ,
-        'max_allowed_validators': max_allowed_validators ,
-        'module_burn_config': module_burn_config,
-        'subnet_metadata': metadata,
-        'vote_mode': vote_mode,
-    })
+        bonds_ma = client.query("BondsMovingAverage") if bonds_ma is None else bonds_ma, # type: ignore
+        immunity_period = immunity_period,
+        min_validator_stake = min_validator_stake,
+        max_allowed_validators = max_allowed_validators,
+        module_burn_config = module_burn_config,
+        subnet_metadata = metadata,
+        vote_mode = vote_mode,
+    )
 
     resolved_key = try_classic_load_key(key)
     with context.progress_status("Adding a proposal..."):
@@ -368,7 +372,6 @@ def add_custom_proposal(
     with context.progress_status("Adding a proposal..."):
         client.add_custom_subnet_proposal(resolved_key, cid, netuid=netuid)
 
-
 @subnet_app.command()
 def list_curator_applications(
     ctx: Context
@@ -381,4 +384,74 @@ def list_curator_applications(
 
     with context.progress_status("Querying applications..."):
         apps = client.query_map_curator_applications()
-    print(apps)
+
+    keys = apps.keys()
+
+    data: dict[str, dict[object, object]] = {}
+    requests: dict[int, str] = {}
+
+    for key in keys:
+        value = apps.get(key, {})
+
+        if 'data' not in value:
+            continue # IGNORE: no data field
+
+        item_data = value.get('data', '')
+        ipfs_url = None
+
+        # Check if the field is the RAW data
+        try:
+            json_data = json.loads(item_data)
+
+            data[key] = json_data # type: ignore
+            continue
+        except json.JSONDecodeError:
+            pass
+
+        if item_data.startswith('ipfs://'):
+            ipfs_url = item_data.replace('ipfs://', '')
+        else:
+            ipfs_url = item_data
+
+        if not re.match(IPFS_REGEX, ipfs_url):
+            continue # Invalid IPFS cid, skip
+
+        requests[key] = ipfs_url # type: ignore
+
+    with context.progress_status("Fetching curator applications data..."):
+        async def ipfs_request(key: int, cid: str):
+            """
+            Do an IPFS request to obtain information about the application from it's IPFS cid, using the public
+            API: [ipfs.io](https://ipfs.io/ipfs)
+            """
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f'https://ipfs.io/ipfs/{cid}') as response:
+                    if response.status != 200:
+                        return (key, None)
+
+                    return (key, await response.json())
+
+        async def fetch_all(): # type: ignore
+            """
+            Fetch data from all applications that are using IPFS
+            """
+            tasks = []
+
+            for key in requests.keys():
+                cid = requests.get(key, '')
+                tasks.append(ipfs_request(key, cid)) # type: ignore
+
+            return await asyncio.gather(*tasks) # type: ignore
+
+        items = asyncio.run(fetch_all()) # type: ignore
+
+        for (key, item) in items: # type: ignore
+            data[key] = item
+
+    for key in keys:
+        value = apps.get(key, {})
+        value_data = data.get(key, {})
+
+        value["data"] = value_data # type: ignore
+
+        print_table_from_plain_dict(value, ["Params", "Values"], context.console)
