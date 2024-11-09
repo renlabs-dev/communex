@@ -1297,67 +1297,56 @@ class CommuneClient:
         netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
-        Casts votes on a list of module UIDs with corresponding weights.
-
-        The length of the UIDs list and the weights list should be the same.
-        Each weight corresponds to the UID at the same index.
+        Casts encrypted votes for module UIDs with corresponding weights.
 
         Args:
-            key: The keypair used for signing the vote transaction.
-            uids: A list of module UIDs to vote on.
-            weights: A list of weights corresponding to each UID.
-            netuid: The network identifier.
+            key (Keypair): The keypair used for signing the transaction.
+            uids (list[int]): List of UIDs to vote for.
+            weights (list[int]): List of weights corresponding to each UID.
+            netuid (int, optional): Network UID. Defaults to 0.
 
         Returns:
-            A receipt of the voting transaction.
+            ExtrinsicReceipt: Receipt of the submitted extrinsic.
 
         Raises:
-            InvalidParameterError: If the lengths of UIDs and weights lists
-                do not match.
-            ChainTransactionError: If the transaction fails.
+            ValueError: If there's a length mismatch between UIDs and weights,
+                if subnet data is not found, or if subnet key format is invalid.
         """
+        if len(uids) != len(weights):
+            raise ValueError("Length mismatch between UIDs and weights")
 
-        assert len(uids) == len(weights)
-        decryptors = self.query(
-            "DecryptionNodes",
+        subnet_data = self.query(
+            "SubnetDecryptionData",
             module="SubnetEmissionModule",
+            params=[netuid]
         )
-        breakpoint()
-        subnet_data = decryptors.get(netuid)
-        if subnet_data is None:
-            raise ValueError("Subnet data key not found")
+        if not subnet_data:
+            raise ValueError("Subnet data not found")
+
         subnet_key = subnet_data.get("node_public_key")
-        if not subnet_key:
-            raise ValueError("Subnet decryption key not found")
-        data = list(zip(uids, weights))
-        decryptor_tuple = (
-            bytes_from_hex(subnet_key[0]),
-            bytes_from_hex("010001"),
-        )
+        if not subnet_key or len(subnet_key) < 2:
+            raise ValueError("Invalid subnet key format")
+
+        vote_data = list(zip(uids, weights))
+        decryptor = (bytes_from_hex(subnet_key[0]), bytes_from_hex(subnet_key[1]))
         validator_key = [int(x) for x in key.public_key]
-        encrypted_weights = encrypt_weights(
-            decryptor_tuple,
-            data,
-            validator_key,
-        )
-        sha256_hash = hashlib.sha256()
-        sha256_hash.update(str(weights).encode())
-        decrypted_hash = sha256_hash.hexdigest()
+
+        encrypted_weights = encrypt_weights(decryptor, vote_data, validator_key)
+        weights_hash = hashlib.sha256(str(weights).encode()).hexdigest()
+
         params = {
             "uids": uids,
             "encrypted_weights": encrypted_weights,
             "netuid": netuid,
-            "decrypted_weights_hash": decrypted_hash,
+            "decrypted_weights_hash": weights_hash,
         }
 
-        response = self.compose_call(
+        return self.compose_call(
             "set_weights_encrypted",
             params=params,
             key=key,
             module="SubnetEmissionModule",
         )
-
-        return response
 
     def update_subnet(
         self,
