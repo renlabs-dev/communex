@@ -1,20 +1,25 @@
 from dataclasses import dataclass
 from getpass import getpass
-from typing import Any, Mapping, TypeVar, cast
+from typing import Any, Callable, Mapping, TypeVar, cast
 
 import rich
+import rich.prompt
 import typer
 from rich import box
 from rich.console import Console
 from rich.table import Table
+from substrateinterface import Keypair
 from typer import Context
 
-from communex._common import get_node_url
+from communex._common import ComxSettings, get_node_url
 from communex.balance import dict_from_nano, from_horus, from_nano
 from communex.client import CommuneClient
+from communex.compat.key import resolve_key_ss58_encrypted, try_classic_load_key
+from communex.errors import InvalidPasswordError, PasswordNotProvidedError
 from communex.types import (
     ModuleInfoWithOptionalBalance,
     NetworkParams,
+    Ss58Address,
     SubnetParamsWithEmission,
 )
 
@@ -30,17 +35,68 @@ class ExtendedContext(Context):
     obj: ExtraCtxData
 
 
-@dataclass
+class CliPasswordProvider:
+    def __init__(
+        self, settings: ComxSettings, prompt_secret: Callable[[str], str]
+    ):
+        self.settings = settings
+        self.prompt_secret = prompt_secret
+
+    def get_password(self, key_name: str) -> str | None:
+        key_map = self.settings.KEY_PASSWORDS
+        if key_map is not None:
+            password = key_map.get(key_name)
+            if password is not None:
+                return password.get_secret_value()
+        # fallback to universal password
+        password = self.settings.UNIVERSAL_PASSWORD
+        if password is not None:
+            return password.get_secret_value()
+        else:
+            return None
+
+    def ask_password(self, key_name: str) -> str:
+        password = self.prompt_secret(
+            f"Please provide the password for the key '{key_name}'"
+        )
+        return password
+
+
 class CustomCtx:
     ctx: ExtendedContext
+    settings: ComxSettings
     console: rich.console.Console
     console_err: rich.console.Console
+    password_manager: CliPasswordProvider
     _com_client: CommuneClient | None = None
 
+    def __init__(
+        self,
+        ctx: ExtendedContext,
+        settings: ComxSettings,
+        console: rich.console.Console,
+        console_err: rich.console.Console,
+        com_client: CommuneClient | None = None,
+    ):
+        self.ctx = ctx
+        self.settings = settings
+        self.console = console
+        self.console_err = console_err
+        self._com_client = com_client
+        self.password_manager = CliPasswordProvider(
+            self.settings, self.prompt_secret
+        )
+
+    def get_use_testnet(self) -> bool:
+        return self.ctx.obj.use_testnet
+
+    def get_node_url(self) -> str:
+        use_testnet = self.get_use_testnet()
+        return get_node_url(self.settings, use_testnet=use_testnet)
+
     def com_client(self) -> CommuneClient:
-        use_testnet = self.ctx.obj.use_testnet
         if self._com_client is None:
-            node_url = get_node_url(None, use_testnet=use_testnet)
+            node_url = self.get_node_url()
             self.info(f"Using node: {node_url}")
             for _ in range(5):
                 try:
@@ -51,16 +107,13 @@ class CustomCtx:
                     )
                 except Exception:
                     self.info(f"Failed to connect to node: {node_url}")
-                    node_url = get_node_url(None, use_testnet=use_testnet)
+                    node_url = self.get_node_url()
                     self.info(f"Will retry with node {node_url}")
                     continue
             if self._com_client is None:
                 raise ConnectionError("Could not connect to any node")
 
         return self._com_client
-
-    def get_use_testnet(self) -> bool:
-        return self.ctx.obj.use_testnet
 
     def output(
         self,
@@ -78,9 +131,14 @@ class CustomCtx:
     ) -> None:
         self.console_err.print(message, *args, **kwargs)  # type: ignore
 
-    def error(self, message: str) -> None:
+    def error(
+        self,
+        message: str,
+        *args: tuple[Any, ...],
+        **kwargs: dict[str, Any],
+    ) -> None:
         message = f"ERROR: {message}"
-        self.console_err.print(message, style="bold red")
+        self.console_err.print(message, *args, style="bold red", **kwargs)  # type: ignore
 
     def progress_status(self, message: str):
         return self.console_err.status(message)
@@ -89,12 +147,46 @@ class CustomCtx:
         if self.ctx.obj.yes_to_all:
             print(f"{message} (--yes)")
             return True
-        return typer.confirm(message)
+        return typer.confirm(message, err=True)
+
+    def prompt_secret(self, message: str) -> str:
+        return rich.prompt.Prompt.ask(
+            message, password=True, console=self.console_err
+        )
+
+    def load_key(self, key: str, password: str | None = None) -> Keypair:
+        try:
+            keypair = try_classic_load_key(
+                key, password, password_provider=self.password_manager
+            )
+            return keypair
+        except PasswordNotProvidedError:
+            self.error(f"Password not provided for key '{key}'")
+            raise typer.Exit(code=1)
+        except InvalidPasswordError:
+            self.error(f"Incorrect password for key '{key}'")
+            raise typer.Exit(code=1)
+
+    def resolve_key_ss58(
+        self, key: Ss58Address | Keypair | str, password: str | None = None
+    ) -> Ss58Address:
+        try:
+            address = resolve_key_ss58_encrypted(
+                key, password, password_provider=self.password_manager
+            )
+            return address
+        except PasswordNotProvidedError:
+            self.error(f"Password not provided for key '{key}'")
+            raise typer.Exit(code=1)
+        except InvalidPasswordError:
+            self.error(f"Incorrect password for key '{key}'")
+            raise typer.Exit(code=1)
 
 
 def make_custom_context(ctx: typer.Context) -> CustomCtx:
     return CustomCtx(
-        ctx=cast(ExtendedContext, ctx),
+        ctx=cast(ExtendedContext, ctx),  # TODO: better check
+        settings=ComxSettings(),
         console=Console(),
         console_err=Console(stderr=True),
     )
@@ -114,7 +206,7 @@ def eprint(e: Any) -> None:
 
 
 def print_table_from_plain_dict(
-    result: Mapping[str, str | int | float | dict[Any, Any]],
+    result: Mapping[str, str | int | float | dict[Any, Any] | Ss58Address],
     column_names: list[str],
     console: Console,
 ) -> None:

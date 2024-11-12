@@ -9,7 +9,7 @@ from communex.cli._common import (
     print_table_from_plain_dict,
     print_table_standardize,
 )
-from communex.compat.key import resolve_key_ss58, try_classic_load_key
+from communex.compat.key import resolve_key_ss58
 from communex.errors import ChainTransactionError
 from communex.misc import (
     IPFS_REGEX,
@@ -117,8 +117,8 @@ def register(
     Registers a new subnet.
     """
     context = make_custom_context(ctx)
-    resolved_key = try_classic_load_key(key)
     client = context.com_client()
+    resolved_key = context.load_key(key, None)
 
     with context.progress_status("Registering subnet ..."):
         response = client.register_subnet(resolved_key, name, metadata)
@@ -204,8 +204,7 @@ def update(
         subnet_params["maximum_set_weight_calls_per_epoch"] = client.query(
             "MaximumSetWeightCallsPerEpoch"
         )
-    resolved_key = try_classic_load_key(key)
-    subnet_params["max_allowed_validators"] = None
+    resolved_key = context.load_key(key, None)
     with context.progress_status("Updating subnet ..."):
         response = client.update_subnet(
             key=resolved_key, params=subnet_params, netuid=netuid
@@ -305,7 +304,7 @@ def propose_on_subnet(
             "MaximumSetWeightCallsPerEpoch"
         )
 
-    resolved_key = try_classic_load_key(key)
+    resolved_key = context.load_key(key, None)
     with context.progress_status("Adding a proposal..."):
         client.add_subnet_proposal(
             resolved_key, subnet_params, cid, netuid=netuid
@@ -328,7 +327,7 @@ def submit_general_subnet_application(
 
     client = context.com_client()
 
-    resolved_key = try_classic_load_key(key)
+    resolved_key = context.load_key(key, None)
     resolved_application_key = resolve_key_ss58(application_key)
 
     # append the ipfs hash
@@ -349,17 +348,16 @@ def add_custom_proposal(
     """
     Adds a custom proposal to a specific subnet.
     """
-
     context = make_custom_context(ctx)
+
     if not re.match(IPFS_REGEX, cid):
         context.error(f"CID provided is invalid: {cid}")
         exit(1)
 
     client = context.com_client()
 
-    resolved_key = try_classic_load_key(key)
+    resolved_key = context.load_key(key, None)
 
-    # append the ipfs hash
     ipfs_prefix = "ipfs://"
     cid = ipfs_prefix + cid
 

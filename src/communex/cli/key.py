@@ -1,25 +1,22 @@
-import json
 import re
 from enum import Enum
 from typing import Any, Optional, cast
 
 import typer
 from substrateinterface import Keypair
+from typeguard import check_type
 from typer import Context
 
+import communex.compat.key as comx_key
 from communex._common import BalanceUnit, format_balance
 from communex.cli._common import (
-    get_universal_password,
     make_custom_context,
     print_table_from_plain_dict,
     print_table_standardize,
 )
 from communex.compat.key import (
-    classic_key_path,
     classic_store_key,
     local_key_addresses,
-    try_classic_load_key,
-    try_load_key,
 )
 from communex.key import check_ss58_address, generate_keypair, is_ss58_address
 from communex.misc import (
@@ -61,8 +58,9 @@ def regen(
     """
     Stores the given key on a disk. Works with private key or mnemonic.
     """
-    # TODO: secret input from env var and stdin
     context = make_custom_context(ctx)
+    # TODO: secret input from env var and stdin
+
     # Determine the input type based on the presence of spaces.
     if re.search(r"\s", key_input):
         # If mnemonic (contains spaces between words).
@@ -96,14 +94,15 @@ def show(
     """
     context = make_custom_context(ctx)
 
-    path = classic_key_path(key)
-    key_dict_json = try_load_key(path, context, password=password)
-    key_dict = json.loads(key_dict_json)
+    keypair = context.load_key(key, password)
+    key_dict = comx_key.to_classic_dict(keypair, path=key)
 
     if show_private is not True:
         key_dict["private_key"] = "[SENSITIVE-MODE]"
         key_dict["seed_hex"] = "[SENSITIVE-MODE]"
         key_dict["mnemonic"] = "[SENSITIVE-MODE]"
+
+    key_dict = check_type(key_dict, dict[str, Any])
 
     print_table_from_plain_dict(key_dict, ["Key", "Value"], context.console)
 
@@ -113,29 +112,14 @@ def balances(
     ctx: Context,
     unit: BalanceUnit = BalanceUnit.joule,
     sort_balance: SortBalance = SortBalance.all,
-    use_universal_password: bool = typer.Option(
-        False,
-        help="""
-        If you want to use a password to decrypt all keys.
-        This will only work if all encrypted keys uses the same password.
-        If this is not the case, leave it blank and you will be prompted to give
-        every password.
-        """,
-    ),
 ):
     """
     Gets balances of all keys.
     """
     context = make_custom_context(ctx)
     client = context.com_client()
-    if use_universal_password:
-        universal_password = get_universal_password(context)
-    else:
-        universal_password = None
 
-    local_keys = local_key_addresses(
-        context, universal_password=universal_password
-    )
+    local_keys = local_key_addresses(context.password_manager)
     with context.console.status(
         "Getting balances of all keys, this might take a while..."
     ):
@@ -199,25 +183,13 @@ def balances(
 @key_app.command(name="list")
 def inventory(
     ctx: Context,
-    use_universal_password: bool = typer.Option(
-        False,
-        help="""
-        Password to decrypt all keys.
-        This will only work if all encrypted keys uses the same password.
-        If this is not the case, leave it blank and you will be prompted to give
-        every password.
-        """,
-    ),
 ):
     """
     Lists all keys stored on disk.
     """
     context = make_custom_context(ctx)
-    if use_universal_password:
-        universal_password = get_universal_password(context)
-    else:
-        universal_password = None
-    key_to_address = local_key_addresses(context, universal_password)
+
+    key_to_address = local_key_addresses(context.password_manager)
     general_key_to_address: dict[str, str] = cast(
         dict[str, str], key_to_address
     )
@@ -242,7 +214,7 @@ def stakefrom(
     if is_ss58_address(key):
         key_address = key
     else:
-        keypair = try_classic_load_key(key, context, password)
+        keypair = context.load_key(key, password)
         key_address = keypair.ss58_address
         key_address = check_ss58_address(key_address)
     with context.progress_status(
@@ -271,7 +243,7 @@ def staketo(
     if is_ss58_address(key):
         key_address = key
     else:
-        keypair = try_classic_load_key(key, context, password)
+        keypair = context.load_key(key, password)
         key_address = keypair.ss58_address
         key_address = check_ss58_address(key_address)
 
@@ -303,11 +275,7 @@ def total_free_balance(
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    if use_universal_password:
-        universal_password = get_universal_password(context)
-    else:
-        universal_password = None
-    local_keys = local_key_addresses(context, universal_password)
+    local_keys = local_key_addresses(context.password_manager)
     with context.progress_status("Getting total free balance of all keys..."):
         key2balance: dict[str, int] = local_keys_to_freebalance(
             client, local_keys
@@ -338,11 +306,7 @@ def total_staked_balance(
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    if use_universal_password:
-        universal_password = get_universal_password(context)
-    else:
-        universal_password = None
-    local_keys = local_key_addresses(context, universal_password)
+    local_keys = local_key_addresses(context.password_manager)
     with context.progress_status("Getting total staked balance of all keys..."):
         key2stake: dict[str, int] = local_keys_to_stakedbalance(
             client,
@@ -374,11 +338,7 @@ def total_balance(
     context = make_custom_context(ctx)
     client = context.com_client()
 
-    if use_universal_password:
-        universal_password = get_universal_password(context)
-    else:
-        universal_password = None
-    local_keys = local_key_addresses(context, universal_password)
+    local_keys = local_key_addresses(context.password_manager)
     with context.progress_status("Getting total tokens of all keys..."):
         key2balance, key2stake = local_keys_allbalance(client, local_keys)
         key2tokens = {k: v + key2stake[k] for k, v in key2balance.items()}
@@ -392,7 +352,6 @@ def power_delegation(
     ctx: Context,
     key: Optional[str] = None,
     enable: bool = typer.Option(True, "--disable"),
-    use_universal_password: bool = typer.Option(False),
 ):
     """
     Gets power delegation of a key.
@@ -409,15 +368,11 @@ def power_delegation(
             context.info("Aborted.")
             exit(0)
 
-        if use_universal_password:
-            universal_password = get_universal_password(context)
-        else:
-            universal_password = None
-        local_keys = local_key_addresses(context, universal_password)
+        local_keys = local_key_addresses(context.password_manager)
     else:
         local_keys = {key: None}
     for key_name in local_keys.keys():
-        keypair = try_classic_load_key(key_name, context)
+        keypair = context.load_key(key_name, None)
         if enable is True:
             context.info(
                 f"Enabling vote power delegation on key {key_name} ..."

@@ -14,6 +14,7 @@ from typing import Any
 from nacl.secret import SecretBox
 from nacl.utils import random
 
+from communex.errors import PasswordNotProvidedError
 from communex.util import ensure_parent_dir_exists
 
 # from cryptography.fernet import Fernet
@@ -84,14 +85,16 @@ def classic_load(
     full_path = os.path.expanduser(os.path.join(COMMUNE_HOME, path))
     with open(full_path, "r") as file:
         body = json.load(file)
-        if body["encrypted"] and password is None:
-            raise json.JSONDecodeError(
-                "Data is encrypted but no password provided", "", 0
-            )
-        if body["encrypted"] and password is not None:
-            content = _decrypt_data(password, body["data"])
-        else:
-            content = body["data"]
+
+    if body["encrypted"] and password is None:
+        raise PasswordNotProvidedError(
+            "Data is encrypted but no password provided"
+        )
+    if body["encrypted"] and password is not None:
+        content = _decrypt_data(password, body["data"])
+    else:
+        content = body["data"]
+
     assert isinstance(body, dict)
     assert isinstance(body["timestamp"], int)
     assert isinstance(content, (dict, list, tuple, set, float, str, int))
@@ -111,7 +114,6 @@ def classic_put(
         encrypt: Whether to encrypt the data.
 
     Todo:
-        * Encryption support.
         * Other serialization modes support. Only json mode is supported now.
 
     Raises:
@@ -140,13 +142,13 @@ def classic_put(
 
     if password:
         value = _encrypt_data(password, value)
-        encrypt = True
+        encrypted = True
     else:
-        encrypt = False
+        encrypted = False
 
     with open(full_path, "w") as file:
         json.dump(
-            {"data": value, "encrypted": encrypt, "timestamp": timestamp},
+            {"data": value, "encrypted": encrypted, "timestamp": timestamp},
             file,
             indent=4,
         )
