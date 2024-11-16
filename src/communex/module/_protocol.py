@@ -3,6 +3,7 @@ import json
 from typing import Any
 
 from substrateinterface import Keypair
+from pydantic import BaseModel
 
 from communex.types import Ss58Address
 
@@ -10,7 +11,10 @@ from ._signer import sign
 
 
 def serialize(data: Any) -> bytes:
-    txt = json.dumps(data)
+    if isinstance(data, BaseModel):
+        txt = data.json()
+    else:
+        txt = json.dumps(data)
     return txt.encode()
 
 
