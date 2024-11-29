@@ -3230,17 +3230,6 @@ class CommuneClient:
             key=key,
         )
 
-    def delegate_rootnet_control(self, key: Keypair, dest: Ss58Address):
-        params = {"origin": key, "target": dest}
-
-        return self.compose_call(
-            module="SubspaceModule",
-            fn="delegate_rootnet_control",
-            params=params,
-            key=key,
-        )
-
-
 if __name__ == "__main__":
     from communex._common import get_node_url
     from communex.compat.key import try_classic_load_key

@@ -119,18 +119,3 @@ def get_treasury_address(ctx: Context):
     with context.progress_status("Getting DAO treasury address..."):
         dao_address = client.get_dao_treasury_address()
     context.output(dao_address)
-
-
-@misc_app.command()
-def delegate_rootnet_control(ctx: Context, key: str, target: str):
-    """
-    Delegates control of the rootnet to a key
-    """
-    context = make_custom_context(ctx)
-    client = context.com_client()
-    resolved_key = context.load_key(key, None)
-    ss58_target = context.resolve_key_ss58(target, None)
-
-    with context.progress_status("Delegating control of the rootnet..."):
-        client.delegate_rootnet_control(resolved_key, ss58_target)
-    context.info("Control delegated.")
