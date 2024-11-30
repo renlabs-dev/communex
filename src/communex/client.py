@@ -1,18 +1,20 @@
-import json
-import queue
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
+import threading
+import json
 from typing import Any, Mapping, TypeVar, cast
 import hashlib
+import websocket
+import queue
 
+from substrateinterface.storage import StorageKey
 from substrateinterface import (
     ExtrinsicReceipt,
     Keypair,
     SubstrateInterface,
 )
-from substrateinterface.storage import StorageKey
 
 from communex._common import transform_stake_dmap
 from communex.encryption import encrypt_weights, bytes_from_hex
@@ -25,6 +27,13 @@ MAX_REQUEST_SIZE = 9_000_000
 
 
 @dataclass
+class ConnectionContainer:
+    substrate: SubstrateInterface
+    stop_event: threading.Event
+    lock: threading.Lock
+
+
+@dataclass
 class Chunk:
     batch_requests: list[tuple[Any, Any]]
     prefix_list: list[list[str]]
@@ -33,6 +42,38 @@ class Chunk:
 
 T1 = TypeVar("T1")
 T2 = TypeVar("T2")
+
+
+def send_heartbeat(
+    si: SubstrateInterface,
+    stop: threading.Event,
+    lock: threading.Lock,
+):
+    while not stop.is_set():
+        # uses substrateinterface wrapper because its very stateful
+        # and we could mess with something by directly using the websocket
+        with lock:
+            _ = si.rpc_request("system_health", [])  # type: ignore
+        sleep(28)  # Send heartbeat every 30 seconds
+
+
+def _instantiate_substrateinterface(
+    url: str, ws_options: dict[str, bool | int], lock: threading.Lock
+):
+    ws = websocket.WebSocket()
+    ws.connect(url)  # type: ignore
+    stop_event = threading.Event()
+    si = SubstrateInterface(websocket=ws, ws_options=ws_options)
+    heartbeat_thread = threading.Thread(
+        target=send_heartbeat, args=(si, stop_event, lock), daemon=True
+    )
+    heartbeat_thread.start()
+
+    return ConnectionContainer(
+        si,
+        stop_event,
+        lock,
+    )
 
 
 class CommuneClient:
@@ -56,7 +97,8 @@ class CommuneClient:
 
     wait_for_finalization: bool
     _num_connections: int
-    _connection_queue: queue.Queue[SubstrateInterface]
+    _connection_queue: queue.Queue[ConnectionContainer]
+    _ws_options: dict[str, int]
     url: str
 
     def __init__(
@@ -76,13 +118,16 @@ class CommuneClient:
         self.wait_for_finalization = wait_for_finalization
         self._connection_queue = queue.Queue(num_connections)
         self.url = url
-        ws_options: dict[str, int] = {}
-        if timeout is not None:
-            ws_options["timeout"] = timeout
-        self.ws_options = ws_options
+
         for _ in range(num_connections):
+            ws_options: dict[str, int] = {}
+            if timeout is not None:
+                ws_options["timeout"] = timeout
+            self._ws_options = ws_options
             self._connection_queue.put(
-                SubstrateInterface(url, ws_options=ws_options)
+                _instantiate_substrateinterface(
+                    url, ws_options, threading.Lock()
+                )
             )
 
     @property
@@ -114,13 +159,19 @@ class CommuneClient:
         """
         conn = self._connection_queue.get(timeout=timeout)
         if init:
-            conn.init_runtime()  # type: ignore
+            conn.substrate.init_runtime()  # type: ignore
         try:
-            if conn.websocket and conn.websocket.connected:  # type: ignore
-                yield conn
+            if conn.substrate.websocket and conn.substrate.websocket.connected:  # type: ignore
+                with conn.lock:
+                    yield conn.substrate
             else:
-                conn = SubstrateInterface(self.url, ws_options=self.ws_options)
-                yield conn
+                # reconnects
+                conn.stop_event.set()
+                conn = _instantiate_substrateinterface(
+                    self.url, self._ws_options, threading.Lock()
+                )
+                with conn.lock:
+                    yield conn.substrate
         finally:
             self._connection_queue.put(conn)
 
@@ -1101,6 +1152,7 @@ class CommuneClient:
         address: str,
         metadata: str | None = None,
         delegation_fee: int = 20,
+        weight_setting_delegation_fee: int | None = None,
         netuid: int = 0,
     ) -> ExtrinsicReceipt:
         """
@@ -1130,7 +1182,8 @@ class CommuneClient:
             "netuid": netuid,
             "name": name,
             "address": address,
-            "delegation_fee": delegation_fee,
+            "stake_delegation_fee": delegation_fee,
+            "validator_weight_fee": weight_setting_delegation_fee,
             "metadata": metadata,
         }
 
@@ -1264,7 +1317,12 @@ class CommuneClient:
             "netuid": netuid,
         }
 
-        response = self.compose_call("set_weights", params=params, key=key)
+        response = self.compose_call(
+            "set_weights",
+            params=params,
+            key=key,
+            module="SubnetEmissionModule",
+        )
 
         return response
 
@@ -1318,7 +1376,7 @@ class CommuneClient:
         subnet_data = self.query(
             "SubnetDecryptionData",
             module="SubnetEmissionModule",
-            params=[netuid]
+            params=[netuid],
         )
         if not subnet_data:
             raise ValueError("Subnet data not found")
@@ -1328,7 +1386,10 @@ class CommuneClient:
             raise ValueError("Invalid subnet key format")
 
         vote_data = list(zip(uids, weights))
-        decryptor = (bytes_from_hex(subnet_key[0]), bytes_from_hex(subnet_key[1]))
+        decryptor = (
+            bytes_from_hex(subnet_key[0]),
+            bytes_from_hex(subnet_key[1]),
+        )
         validator_key = [int(x) for x in key.public_key]
 
         encrypted_weights = encrypt_weights(decryptor, vote_data, validator_key)
@@ -1869,7 +1930,10 @@ class CommuneClient:
         """
 
         weights_dict = self.query_map(
-            "Weights", [netuid], extract_value=extract_value
+            "Weights",
+            [netuid],
+            extract_value=extract_value,
+            module="SubnetEmissionModule",
         ).get("Weights")
         return weights_dict
 
@@ -3230,13 +3294,21 @@ class CommuneClient:
             key=key,
         )
 
+
 if __name__ == "__main__":
+    from time import sleep
+
     from communex._common import get_node_url
     from communex.compat.key import try_classic_load_key
 
-    kp = try_classic_load_key("dev01")
+    kp = try_classic_load_key("testkey")
     node = get_node_url(use_testnet=True)
     print(f"Using node: {node}")
-    client = CommuneClient(node)
-    # client.add_authorities(kp, [(kp.ss58_address, b"asfoqkmeoke")])
-    client.vote_encrypted(kp, [0], [10], netuid=39)
+    client = CommuneClient(node, timeout=65)
+    timeout = 120
+    sleep(timeout)
+    block = client.get_block()
+    print(block["header"]["number"])  # type: ignore
+    sleep(timeout)
+    block = client.get_block()
+    print(block["header"]["number"])  # type: ignore
