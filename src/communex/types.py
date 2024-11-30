@@ -202,7 +202,8 @@ class ModuleInfo(TypedDict):
     regblock: int  # block number
     last_update: int  # block number
     stake: int
-    delegation_fee: int
+    stake_delegation_fee: int
+    validator_weight_fee: int
     metadata: str | None
 
 

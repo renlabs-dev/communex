@@ -383,3 +383,25 @@ def power_delegation(
                 f"Disabling vote power delegation on key {key_name} ..."
             )
             client.disable_vote_power_delegation(keypair)
+
+
+@key_app.command()
+def weight_delegation(
+    ctx: Context,
+    key: str,
+    target: str,
+    netuid: int,
+):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+    resolved_key = context.load_key(key, None)
+    resolved_target = context.resolve_key_ss58(target, None)
+
+    if not context.confirm(
+        "Are you sure you want to delegate vote "
+        f"power from {typer.style(key, fg=typer.colors.CYAN)} to "
+        f"{typer.style(target, fg=typer.colors.CYAN)}?"
+    ):
+        raise typer.Abort()
+
+    client.delegate_weight_control(resolved_key, resolved_target, netuid)

@@ -37,7 +37,7 @@ def get_map_modules(
             ("Name", [netuid]),
             ("Address", [netuid]),
             ("RegistrationBlock", [netuid]),
-            ("DelegationFee", []),
+            ("ValidatorFeeConfig", []),
             ("Emission", []),
             ("Incentive", []),
             ("Dividends", []),
@@ -68,7 +68,7 @@ def get_map_modules(
         bulk_query["Name"],
         bulk_query["Address"],
         bulk_query["RegistrationBlock"],
-        bulk_query["DelegationFee"],
+        bulk_query["ValidatorFeeConfig"],
         bulk_query["Emission"],
         bulk_query["Incentive"],
         bulk_query["Dividends"],
@@ -88,9 +88,12 @@ def get_map_modules(
         regblock = uid_to_regblock[uid]
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
-        delegation_fee = ss58_to_delegationfee.get(
-            key, 5
-        )  # 5% default delegation fee
+        stake_delegation_fee = ss58_to_delegationfee.get(key, {}).get(
+            "stake_delegation_fee", 0
+        )
+        validator_weight_fee = ss58_to_delegationfee.get(key, {}).get(
+            "validator_weight_fee", 0
+        )
         metadata = ss58_to_metadata.get(key, None)
 
         balance = None
@@ -116,7 +119,8 @@ def get_map_modules(
             "last_update": last_update,
             "balance": balance,
             "stake": stake,
-            "delegation_fee": delegation_fee,
+            "stake_delegation_fee": stake_delegation_fee,
+            "validator_weight_fee": validator_weight_fee,
             "metadata": metadata,
         }
 

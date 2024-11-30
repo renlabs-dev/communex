@@ -119,7 +119,8 @@ def update(
     name: Optional[str] = None,
     ip: Optional[str] = None,
     port: Optional[int] = None,
-    delegation_fee: Optional[int] = None,
+    stake_delegation_fee: Optional[int] = None,
+    validator_weight_fee: Optional[int] = None,
     metadata: Optional[str] = None,
 ):
     """
@@ -154,7 +155,7 @@ def update(
         "name": name,
         "ip": ip,
         "port": port,
-        "delegation_fee": delegation_fee,
+        "delegation_fee": stake_delegation_fee,
         "metadata": metadata,
     }
     to_update = {
@@ -183,7 +184,8 @@ def update(
             key=resolved_key,
             name=module["name"],
             address=module["address"],
-            delegation_fee=module["delegation_fee"],
+            delegation_fee=module["stake_delegation_fee"],
+            weight_setting_delegation_fee=validator_weight_fee,
             netuid=netuid,
             metadata=module["metadata"],
         )
