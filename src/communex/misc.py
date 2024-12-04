@@ -3,7 +3,6 @@ from typing import Any, TypeVar, cast
 
 from communex._common import transform_stake_dmap
 from communex.balance import to_nano
-from communex.cli._common import transform_subnet_params
 from communex.client import CommuneClient
 from communex.key import check_ss58_address
 from communex.types import (
@@ -137,6 +136,7 @@ def to_snake_case(d: dict[str, T]) -> dict[str, T]:
 
 
 def get_map_displayable_subnets(client: CommuneClient):
+    from communex.cli._common import transform_subnet_params
     subnets = get_map_subnets_params(client)
     display_values = transform_subnet_params(subnets)
     return display_values
