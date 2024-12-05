@@ -6,6 +6,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass
+from time import sleep
 from typing import Any, Mapping, TypeVar, cast
 
 import websocket
@@ -476,7 +477,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i : i + max_n_keys]
+                        splitted_keys = result_keys[i: i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -621,7 +622,7 @@ class CommuneClient:
 
                     item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
-                        scale_bytes="0x" + item[0][len(prefix) :],
+                        scale_bytes="0x" + item[0][len(prefix):],
                         return_scale_obj=True,
                         block_hash=block_hash,
                     )
