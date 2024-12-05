@@ -104,12 +104,15 @@ class CustomCtx:
                         url=node_url,
                         num_connections=1,
                         wait_for_finalization=False,
+                        timeout=65,
                     )
                 except Exception:
                     self.info(f"Failed to connect to node: {node_url}")
                     node_url = self.get_node_url()
                     self.info(f"Will retry with node {node_url}")
                     continue
+                else:
+                    break
             if self._com_client is None:
                 raise ConnectionError("Could not connect to any node")
 
