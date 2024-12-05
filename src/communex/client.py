@@ -10,11 +10,7 @@ from time import sleep
 from typing import Any, Mapping, TypeVar, cast
 
 import websocket
-from substrateinterface import (
-    ExtrinsicReceipt,
-    Keypair,
-    SubstrateInterface,
-)
+from substrateinterface import ExtrinsicReceipt, Keypair, SubstrateInterface
 from substrateinterface.storage import StorageKey
 
 from communex._common import transform_stake_dmap
