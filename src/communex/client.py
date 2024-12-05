@@ -50,8 +50,8 @@ def send_heartbeat(
         # uses substrateinterface wrapper because its very stateful
         # and we could mess with something by directly using the websocket
         with lock:
-            _ = si.rpc_request("system_health", [])  # type: ignore
-        sleep(28)  # Send heartbeat every 30 seconds
+            _ = si.websocket.pong()  # type: ignore
+        sleep(11)  # Send heartbeat every 30 seconds
 
 
 def _instantiate_substrateinterface(
@@ -473,7 +473,7 @@ class CommuneClient:
                     mutaded_chunk_info.pop(chunk_info_idx)
                     for i in range(0, keys_amount, max_n_keys):
                         new_chunk = deepcopy(chunk)
-                        splitted_keys = result_keys[i: i + max_n_keys]
+                        splitted_keys = result_keys[i : i + max_n_keys]
                         splitted_query = deepcopy(query)
                         splitted_query[1][0] = splitted_keys
                         new_chunk.batch_requests = [splitted_query]
@@ -618,7 +618,7 @@ class CommuneClient:
 
                     item_key_obj = substrate.decode_scale(  # type: ignore
                         type_string=f"({', '.join(key_type_string)})",
-                        scale_bytes="0x" + item[0][len(prefix):],
+                        scale_bytes="0x" + item[0][len(prefix) :],
                         return_scale_obj=True,
                         block_hash=block_hash,
                     )
@@ -3301,11 +3301,45 @@ if __name__ == "__main__":
     kp = try_classic_load_key("testkey")
     node = get_node_url(use_testnet=True)
     print(f"Using node: {node}")
-    client = CommuneClient(node, timeout=65)
-    timeout = 120
-    sleep(timeout)
-    block = client.get_block()
-    print(block["header"]["number"])  # type: ignore
-    sleep(timeout)
-    block = client.get_block()
-    print(block["header"]["number"])  # type: ignore
+    client = CommuneClient(node, timeout=65, num_connections=1)
+    bulk_query = client.query_batch_map(
+        {
+            "SubspaceModule": [
+                ("ImmunityPeriod", []),
+                ("MinAllowedWeights", []),
+                ("MaxAllowedWeights", []),
+                ("Tempo", []),
+                ("MaxAllowedUids", []),
+                ("Founder", []),
+                ("FounderShare", []),
+                ("IncentiveRatio", []),
+                ("SubnetNames", []),
+                ("MaxWeightAge", []),
+                ("BondsMovingAverage", []),
+                ("MaximumSetWeightCallsPerEpoch", []),
+                ("MinValidatorStake", []),
+                ("MaxAllowedValidators", []),
+                ("ModuleBurnConfig", []),
+                ("SubnetMetadata", []),
+                ("MaxEncryptionPeriod", []),
+                ("CopierMargin", []),
+                ("UseWeightsEncryption", []),
+            ],
+            "GovernanceModule": [
+                ("SubnetGovernanceConfig", []),
+            ],
+            "SubnetEmissionModule": [
+                ("SubnetEmission", []),
+            ],
+        },
+        None,
+    )
+    print(bulk_query)
+    exit(0)
+    # timeout = 120
+    # sleep(timeout)
+    # block = client.get_block()
+    # print(block["header"]["number"])  # type: ignore
+    # sleep(timeout)
+    # block = client.get_block()
+    # print(block["header"]["number"])  # type: ignore
