@@ -129,7 +129,6 @@ def classic_put(
         raise TypeError(
             f"Invalid type for commune data storage value: {type(value)}"
         )
-
     timestamp = int(time.time())
 
     full_path = os.path.expanduser(os.path.join(COMMUNE_HOME, path))

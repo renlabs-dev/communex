@@ -5,6 +5,8 @@ Common types for the communex module.
 from enum import Enum
 from typing import NewType, TypedDict
 
+from pydantic import BaseModel
+
 Ss58Address = NewType("Ss58Address", str)
 """Substrate SS58 address.
 
@@ -25,9 +27,15 @@ MaxBurn = NewType("MaxBurn", int)
 BurnConfig = NewType("BurnConfig", dict[MinBurn, MaxBurn])
 
 
-class VoteMode (Enum):
+class VoteMode(Enum):
     authority = "Authority"
     vote = "Vote"
+
+
+class subnetDecryptionInfo(BaseModel):
+    node_id: Ss58Address
+    node_public_key: bytes
+    block_assigned: int
 
 
 class DisplayGovernanceConfiguration(TypedDict):
@@ -104,7 +112,6 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_max_weight_age: dict[int, int]
     netuid_to_name: dict[int, str]
     netuid_to_tempo: dict[int, int]
-    netuid_to_trust_ratio: dict[int, int]
     netuid_to_bonds_ma: dict[int, int]
     netuid_to_maximum_set_weight_calls_per_epoch: dict[int, int]
     netuid_to_emission: dict[int, int]
@@ -114,15 +121,22 @@ class SubnetParamsMaps(TypedDict):
     netuid_to_max_allowed_validators: dict[int, int]
     netuid_to_module_burn_config: dict[int, BurnConfiguration]
     netuid_to_subnet_metadata: dict[int, str]
+    netuid_to_max_encryption_period: dict[int, int]
+    netuid_to_copier_margin: dict[int, int]
+    netuid_to_use_weights_encryption: dict[int, int]
 
-class SubnetParams(TypedDict):
-    name: str
+
+# WIP
+class UpdatableSubnetParams(TypedDict):
     tempo: int
+
+
+class SubnetParams(UpdatableSubnetParams, TypedDict):
+    name: str
     min_allowed_weights: int
     max_allowed_weights: int
     max_allowed_uids: int
     max_weight_age: int
-    trust_ratio: int
     founder_share: int
     incentive_ratio: int
     founder: Ss58Address
@@ -134,6 +148,9 @@ class SubnetParams(TypedDict):
     max_allowed_validators: int | None
     module_burn_config: BurnConfiguration
     subnet_metadata: str | None
+    max_encryption_period: int
+    copier_margin: int
+    use_weights_encryption: int
 
 
 class DisplaySubnetParams(TypedDict):
@@ -156,9 +173,15 @@ class DisplaySubnetParams(TypedDict):
     module_burn_config: DisplayBurnConfiguration
     subnet_metadata: str | None
     emission: float
+    max_encryption_period: int
+    copier_margin: int
+    use_weights_encryption: int
+
 
 # redundant "TypedDict" inheritance because of pdoc warns.
 # see https://github.com/mitmproxy/pdoc/blob/26d40827ddbe1658e8ac46cd092f17a44cf0287b/pdoc/doc.py#L691-L692
+
+
 class SubnetParamsWithEmission(SubnetParams, TypedDict):
     """SubnetParams with emission field."""
 
@@ -179,7 +202,8 @@ class ModuleInfo(TypedDict):
     regblock: int  # block number
     last_update: int  # block number
     stake: int
-    delegation_fee: int
+    stake_delegation_fee: int
+    validator_weight_fee: int
     metadata: str | None
 
 

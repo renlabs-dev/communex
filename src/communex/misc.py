@@ -36,7 +36,7 @@ def get_map_modules(
             ("Name", [netuid]),
             ("Address", [netuid]),
             ("RegistrationBlock", [netuid]),
-            ("DelegationFee", []),
+            ("ValidatorFeeConfig", []),
             ("Emission", []),
             ("Incentive", []),
             ("Dividends", []),
@@ -67,7 +67,7 @@ def get_map_modules(
         bulk_query["Name"],
         bulk_query["Address"],
         bulk_query["RegistrationBlock"],
-        bulk_query["DelegationFee"],
+        bulk_query["ValidatorFeeConfig"],
         bulk_query["Emission"],
         bulk_query["Incentive"],
         bulk_query["Dividends"],
@@ -87,9 +87,12 @@ def get_map_modules(
         regblock = uid_to_regblock[uid]
         stake_from = ss58_to_stakefrom.get(key, [])
         last_update = uid_to_lastupdate[netuid][uid]
-        delegation_fee = ss58_to_delegationfee.get(
-            key, 5
-        )  # 5% default delegation fee
+        stake_delegation_fee = ss58_to_delegationfee.get(key, {}).get(
+            "stake_delegation_fee", 0
+        )
+        validator_weight_fee = ss58_to_delegationfee.get(key, {}).get(
+            "validator_weight_fee", 0
+        )
         metadata = ss58_to_metadata.get(key, None)
 
         balance = None
@@ -115,7 +118,8 @@ def get_map_modules(
             "last_update": last_update,
             "balance": balance,
             "stake": stake,
-            "delegation_fee": delegation_fee,
+            "stake_delegation_fee": stake_delegation_fee,
+            "validator_weight_fee": validator_weight_fee,
             "metadata": metadata,
         }
 
@@ -159,7 +163,6 @@ def get_map_subnets_params(
                 ("Founder", []),
                 ("FounderShare", []),
                 ("IncentiveRatio", []),
-                ("TrustRatio", []),
                 ("SubnetNames", []),
                 ("MaxWeightAge", []),
                 ("BondsMovingAverage", []),
@@ -168,6 +171,9 @@ def get_map_subnets_params(
                 ("MaxAllowedValidators", []),
                 ("ModuleBurnConfig", []),
                 ("SubnetMetadata", []),
+                ("MaxEncryptionPeriod", []),
+                ("CopierMargin", []),
+                ("UseWeightsEncryption", []),
             ],
             "GovernanceModule": [
                 ("SubnetGovernanceConfig", []),
@@ -187,7 +193,6 @@ def get_map_subnets_params(
         "netuid_to_founder": bulk_query["Founder"],
         "netuid_to_founder_share": bulk_query["FounderShare"],
         "netuid_to_incentive_ratio": bulk_query["IncentiveRatio"],
-        "netuid_to_trust_ratio": bulk_query["TrustRatio"],
         "netuid_to_name": bulk_query["SubnetNames"],
         "netuid_to_max_weight_age": bulk_query["MaxWeightAge"],
         "netuid_to_bonds_ma": bulk_query.get("BondsMovingAverage", {}),
@@ -206,6 +211,13 @@ def get_map_subnets_params(
         ),
         "netuid_to_module_burn_config": bulk_query.get("ModuleBurnConfig", {}),
         "netuid_to_subnet_metadata": bulk_query.get("SubnetMetadata", {}),
+        "netuid_to_max_encryption_period": bulk_query.get(
+            "MaxEncryptionPeriod", {}
+        ),
+        "netuid_to_copier_margin": bulk_query.get("CopierMargin", {}),
+        "netuid_to_use_weights_encryption": bulk_query.get(
+            "UseWeightsEncryption", {}
+        ),
     }
     result_subnets: dict[int, SubnetParamsWithEmission] = {}
 
@@ -225,7 +237,6 @@ def get_map_subnets_params(
                 netuid
             ],
             "tempo": subnet_maps["netuid_to_tempo"][netuid],
-            "trust_ratio": subnet_maps["netuid_to_trust_ratio"][netuid],
             "emission": subnet_maps["netuid_to_emission"][netuid],
             "max_weight_age": subnet_maps["netuid_to_max_weight_age"][netuid],
             "bonds_ma": subnet_maps["netuid_to_bonds_ma"].get(netuid, None),
@@ -249,6 +260,15 @@ def get_map_subnets_params(
             "subnet_metadata": subnet_maps["netuid_to_subnet_metadata"].get(
                 netuid, None
             ),
+            "max_encryption_period": subnet_maps[
+                "netuid_to_max_encryption_period"
+            ].get(netuid, 0),
+            "copier_margin": subnet_maps["netuid_to_copier_margin"].get(
+                netuid, 0
+            ),
+            "use_weights_encryption": subnet_maps[
+                "netuid_to_use_weights_encryption"
+            ].get(netuid, 0),
         }
 
         result_subnets[netuid] = subnet

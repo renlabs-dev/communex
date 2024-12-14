@@ -159,6 +159,9 @@ def update(
     max_registrations_per_interval: int = typer.Option(None),
     min_validator_stake: int = typer.Option(None),
     max_allowed_validators: int = typer.Option(None),
+    max_encryption_period: int = typer.Option(None),
+    copier_margin: int = typer.Option(None),
+    use_weights_encryption: bool = typer.Option(None),
 ):
     """
     Updates a subnet.
@@ -247,6 +250,9 @@ def propose_on_subnet(
     max_registrations_per_interval: int = typer.Option(None),
     min_validator_stake: int = typer.Option(None),
     max_allowed_validators: int = typer.Option(None),
+    max_encryption_period: int = typer.Option(None),
+    copier_margin: int = typer.Option(None),
+    use_weights_encryption: int = typer.Option(None),
 ):
     """
     Adds a proposal to a specific subnet.
