@@ -1323,6 +1323,27 @@ class CommuneClient:
 
         return response
 
+    def delegate_weight_control(
+        self, key: Keypair, target: Ss58Address, netuid: int
+    ):
+        """
+        delegates weight setting control from the current account to the target account.
+        Both accounts have to be registered and have a valid validator `spec`
+        """
+
+        params = {
+            "netuid": netuid,
+            "target": target,
+        }
+
+        response = self.compose_call(
+            "delegate_weight_control",
+            params=params,
+            key=key,
+            module="SubnetEmissionModule",
+        )
+        return response
+
     def add_authorities(
         self,
         key: Keypair,

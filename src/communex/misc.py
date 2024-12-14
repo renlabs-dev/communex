@@ -141,6 +141,7 @@ def to_snake_case(d: dict[str, T]) -> dict[str, T]:
 
 def get_map_displayable_subnets(client: CommuneClient):
     from communex.cli._common import transform_subnet_params
+
     subnets = get_map_subnets_params(client)
     display_values = transform_subnet_params(subnets)
     return display_values
