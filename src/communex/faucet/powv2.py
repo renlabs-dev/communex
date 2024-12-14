@@ -14,10 +14,11 @@ from queue import Empty
 from time import sleep
 from typing import Generic, Optional, TypeVar, cast
 
-from communex.client import CommuneClient
-from communex.util.mutex import MutexBox
 from Crypto.Hash import keccak
 from substrateinterface import Keypair
+
+from communex.client import CommuneClient
+from communex.util.mutex import MutexBox
 
 SEAL_LIMIT = 2**256 - 1  # U256_MAX
 DIFFICULTY = 1_000_000
