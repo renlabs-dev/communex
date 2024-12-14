@@ -3,6 +3,6 @@
         "editorconfig.editorconfig",
         "jnoortheen.nix-ide",
         "ms-python.python",
-        "ms-python.isort"
+        "charliermarsh.ruff"
     ]
 }
