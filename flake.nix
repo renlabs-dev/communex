@@ -2,7 +2,7 @@
   description = "Alternative library/SDK to the original Commune AI";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     poetry2nix = {
       url = "github:nix-community/poetry2nix";
@@ -14,7 +14,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
-          system=system;
+          system = system;
           config.allowUnfree = true;
         };
         p2n = poetry2nix.lib.mkPoetry2Nix {
@@ -23,19 +23,20 @@
         p2n-overrides = import ./nix/poetry2nix-overrides.nix {
           inherit pkgs p2n;
         };
+        python = pkgs.python310;
       in
       {
         devShells.default = pkgs.mkShell {
-	  buildInputs = [
-	    pkgs.python310
-	    pkgs.poetry
-	    pkgs.ruff
-	  ];
-	};
+          buildInputs = [
+            python
+            pkgs.poetry
+            pkgs.ruff
+          ];
+        };
         packages = rec {
           communex = p2n.mkPoetryApplication {
             projectDir = ./.;
-            python = pkgs.python311;
+            python = python;
             overrides = p2n-overrides;
           };
           default = communex;
