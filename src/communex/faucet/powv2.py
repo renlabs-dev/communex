@@ -1,4 +1,3 @@
-# from threading import Lock
 import binascii
 import hashlib
 import math
@@ -470,7 +469,7 @@ def get_cpu_count():
     """
 
     try:
-        return len(os.sched_getaffinity(0))
+        return len(os.sched_getaffinity(0))  # type: ignore
     except AttributeError:
         # OSX does not have sched_getaffinity
         count = os.cpu_count()
