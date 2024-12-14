@@ -1,6 +1,14 @@
 # Changelog
 
+## 0.1.36
+
+- Features releated to weight copying prevention on runtime version 126.
+- Fix WS connection dropping after some time without activity.
+
+Spec version: 126
+
 ## 0.1.35
+
 - Refactored password handling to support environment variables
 - Added COMX_UNIVERSAL_PASSWORD for a default password
 - Added COMX_KEY_PASSWORDS for a key-password mapping, e.g., COMX_KEY_PASSWORDS='{"foo": "bar"}'

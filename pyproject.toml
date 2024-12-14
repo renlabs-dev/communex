@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "communex"
-version = "0.1.35"
+version = "0.1.36"
 description = "A library for Commune network focused on simplicity"
 authors = ["agicommies <info@agicommies.org>"]
 license = "MIT"
@@ -17,8 +17,8 @@ in-place = true
 recursive = true
 max_line_length = 80
 ignore = [
-  "E265", # block comment should start with '# '
-  "E501", # line too long
+    "E265", # block comment should start with '# '
+    "E501", # line too long
 ]
 
 [tool.poetry.dependencies]
@@ -50,7 +50,7 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 # Type-checking
-pyright = "^1.1.335"
+pyright = "^1.1.390"
 # Testing
 pytest = "^7.4.2"
 # Linter
