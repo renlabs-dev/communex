@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.36.1
+
+- Implement `delegate_weight_control` and re-enable CLI command
+  `comx key weight_delegation`.
+
 ## 0.1.36
 
 - Features releated to weight copying prevention on runtime version 126.
