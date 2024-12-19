@@ -8,6 +8,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from time import sleep
 from typing import Any, Mapping, TypeVar, cast
+import gc
 
 import websocket
 from substrateinterface import ExtrinsicReceipt, Keypair, SubstrateInterface
@@ -158,6 +159,7 @@ class CommuneClient:
         if init:
             conn.substrate.init_runtime()  # type: ignore
         try:
+            gc.collect()
             if conn.substrate.websocket and conn.substrate.websocket.connected:  # type: ignore
                 with conn.lock:
                     yield conn.substrate
@@ -3323,44 +3325,8 @@ if __name__ == "__main__":
     node = get_node_url(use_testnet=True)
     print(f"Using node: {node}")
     client = CommuneClient(node, timeout=65, num_connections=1)
-    bulk_query = client.query_batch_map(
-        {
-            "SubspaceModule": [
-                ("ImmunityPeriod", []),
-                ("MinAllowedWeights", []),
-                ("MaxAllowedWeights", []),
-                ("Tempo", []),
-                ("MaxAllowedUids", []),
-                ("Founder", []),
-                ("FounderShare", []),
-                ("IncentiveRatio", []),
-                ("SubnetNames", []),
-                ("MaxWeightAge", []),
-                ("BondsMovingAverage", []),
-                ("MaximumSetWeightCallsPerEpoch", []),
-                ("MinValidatorStake", []),
-                ("MaxAllowedValidators", []),
-                ("ModuleBurnConfig", []),
-                ("SubnetMetadata", []),
-                ("MaxEncryptionPeriod", []),
-                ("CopierMargin", []),
-                ("UseWeightsEncryption", []),
-            ],
-            "GovernanceModule": [
-                ("SubnetGovernanceConfig", []),
-            ],
-            "SubnetEmissionModule": [
-                ("SubnetEmission", []),
-            ],
-        },
-        None,
-    )
-    print(bulk_query)
-    exit(0)
-    # timeout = 120
-    # sleep(timeout)
-    # block = client.get_block()
-    # print(block["header"]["number"])  # type: ignore
-    # sleep(timeout)
-    # block = client.get_block()
-    # print(block["header"]["number"])  # type: ignore
+    while True:
+        timeout = 8
+        sleep(timeout)
+        block = client.get_block()
+        print(block["header"]["number"])  # type: ignore
