@@ -71,6 +71,8 @@ class ModuleClient:
             raise NetworkTimeoutError(
                 f"The call took longer than the timeout of {timeout} second(s)"
             ).with_traceback(e.__traceback__)
+        except Exception as e:
+            print(e)
 
 
 if __name__ == "__main__":
