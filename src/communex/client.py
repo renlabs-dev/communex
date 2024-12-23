@@ -1,3 +1,4 @@
+import gc
 import hashlib
 import json
 import queue
@@ -8,7 +9,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from time import sleep
 from typing import Any, Mapping, TypeVar, cast
-import gc
 
 import websocket
 from substrateinterface import ExtrinsicReceipt, Keypair, SubstrateInterface
