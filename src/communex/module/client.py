@@ -11,7 +11,7 @@ import aiohttp.client_exceptions
 import aiohttp.web_exceptions
 from substrateinterface import Keypair
 
-from communex.errors import NetworkTimeoutError
+from communex.errors import NetworkTimeoutError, ClientConnectionError
 from communex.key import check_ss58_address
 from communex.types import Ss58Address
 
@@ -71,8 +71,12 @@ class ModuleClient:
             raise NetworkTimeoutError(
                 f"The call took longer than the timeout of {timeout} second(s)"
             ).with_traceback(e.__traceback__)
+        except aiohttp.client_exceptions.ClientConnectorError as e:
+            raise ClientConnectionError(
+                f"The server is not listening on {self.host}:{self.port}"
+            )
         except Exception as e:
-            print(e)
+            raise
 
 
 if __name__ == "__main__":

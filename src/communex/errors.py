@@ -14,6 +14,10 @@ class NetworkTimeoutError(NetworkError):
     """Timeout error"""
 
 
+class ClientConnectionError(NetworkError):
+    """Client connection error"""
+
+
 class PasswordError(Exception):
     """Password related error."""
 
