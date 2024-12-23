@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.36.2
+- Fixed a problem with the garbage collector causing memory leaks
+
 ## 0.1.36.1
 
 - Implement `delegate_weight_control` and re-enable CLI command
