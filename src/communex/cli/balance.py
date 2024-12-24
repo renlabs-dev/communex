@@ -297,3 +297,45 @@ def transfer_dao_funds(
 
     client = context.com_client()
     client.add_transfer_dao_treasury_proposal(keypair, cid, nano_amount, dest)
+
+
+@balance_app.command()
+def bridge(
+    ctx: Context,
+    key: str,
+    amount: float,
+):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    nano_amount = to_nano(amount)
+    keypair = context.load_key(key, None)
+
+    with context.progress_status(f"Bridging {amount} tokens..."):
+        try:
+            client.bridge(keypair, nano_amount)
+        except Exception as e:
+            context.error(f"Failed to bridge {amount} tokens: {e}")
+        else:
+            context.info(f"Bridged {amount}$j successfully")
+
+
+@balance_app.command()
+def bridge_withdraw(
+    ctx: Context,
+    key: str,
+    amount: float,
+):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+
+    nano_amount = to_nano(amount)
+    keypair = context.load_key(key, None)
+
+    with context.progress_status(f"Withdrawing {amount} tokens..."):
+        try:
+            client.bridge_withdraw(keypair, nano_amount)
+        except Exception as e:
+            context.error(f"Failed to withdraw {amount} tokens: {e}")
+        else:
+            context.info(f"Withdrew {amount}$j successfully")

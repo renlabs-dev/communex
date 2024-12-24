@@ -1506,6 +1506,58 @@ class CommuneClient:
 
         return response
 
+    def bridge(
+        self,
+        key: Keypair,
+        amount: int,
+    ):
+        """
+        Bridge tokens from the Subspace network to the Torus network.
+
+        Args:
+            key: The keypair associated with the account that is bridging the tokens.
+            amount: The amount of tokens to bridge, in nanotokens.
+
+        Returns:
+            A receipt of the bridging transaction.
+
+        Raises:
+            InsufficientBalanceError: If the account does not have enough balance.
+            ChainTransactionError: If the transaction fails.
+        """
+
+        params = {"amount": amount}
+
+        response = self.compose_call("bridge", key=key, params=params)
+
+        return response
+
+    def bridge_withdraw(
+        self,
+        key: Keypair,
+        amount: int,
+    ):
+        """
+        Withdraw bridged tokens from the Torus network to the Subspace network.
+
+        Args:
+            key: The keypair associated with the account that is withdrawing the tokens.
+            amount: The amount of tokens to withdraw, in nanotokens.
+
+        Returns:
+            A receipt of the withdrawal transaction.
+
+        Raises:
+            InsufficientBalanceError: If the account does not have enough balance.
+            ChainTransactionError: If the transaction fails.
+        """
+
+        params = {"amount": amount}
+
+        response = self.compose_call("bridge_withdraw", key=key, params=params)
+
+        return response
+
     def multiunstake(
         self,
         key: Keypair,
