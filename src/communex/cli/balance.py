@@ -1,15 +1,16 @@
 import re
-from typing import Optional
+from typing import Optional, cast
 
 import typer
 from typer import Context
 
 from communex._common import IPFS_REGEX, BalanceUnit, format_balance
-from communex.balance import to_nano
+from communex.balance import from_nano, to_nano
 from communex.cli._common import (
     make_custom_context,
     print_table_from_plain_dict,
 )
+from communex.compat.key import local_key_addresses
 from communex.errors import ChainTransactionError
 from communex.faucet.powv2 import solve_for_difficulty_fast
 
@@ -339,3 +340,32 @@ def bridge_withdraw(
             context.error(f"Failed to withdraw {amount} tokens: {e}")
         else:
             context.info(f"Withdrew {amount}$j successfully")
+
+
+@balance_app.command()
+def bridged_balance(
+    ctx: Context,
+    key: Optional[str] = None,
+):
+    context = make_custom_context(ctx)
+    client = context.com_client()
+    with context.progress_status("Getting bridged balance..."):
+        bridge_map = client.query_map(
+            "Bridged", params=[], extract_value=False
+        )["Bridged"]
+        bridge_map = cast(dict[str, int], bridge_map)
+    if key is None:
+        local_keys = local_key_addresses(context.password_manager)
+        local_bridge_map = {
+            address: from_nano(ammount)
+            for address, ammount in bridge_map.items()
+            if address in local_keys.values()
+        }
+    else:
+        key = cast(str, context.resolve_key_ss58(key, None))
+        bridged_amount = from_nano(bridge_map.get(key, 0))
+        local_bridge_map = {key: bridged_amount}
+
+    print_table_from_plain_dict(
+        local_bridge_map, ["Address", "Amount"], context.console
+    )
