@@ -128,7 +128,7 @@ def to_classic_dict(keypair: Keypair, path: str) -> CommuneKeyDict:
 def classic_load_key(
     name: str,
     password: str | None = None,
-    from_mnemonic: bool = True,
+    from_mnemonic: bool = True, # Should be removed in future versions
 ) -> Keypair:
     """
     Loads the keypair with the given name from a disk.
@@ -136,7 +136,13 @@ def classic_load_key(
     path = classic_key_path(name)
     key_dict_json = classic_load(path, password=password)
     key_dict = json.loads(key_dict_json)
-    return from_classic_dict(key_dict, from_mnemonic=from_mnemonic)
+    try:
+        kp = from_classic_dict(key_dict, from_mnemonic=from_mnemonic)
+    except ValueError:
+        kp = from_classic_dict(
+            key_dict, from_mnemonic=(not from_mnemonic)
+        )
+    return kp
 
 
 def try_classic_load_key(
