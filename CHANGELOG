@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.36.5
+- Fixed a bug that made commands using keys generated from private keys raise an error
+
 ## 0.1.36.4
 - Added the `bridged-balance` command
 
